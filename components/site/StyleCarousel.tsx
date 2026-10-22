@@ -33,7 +33,12 @@ function Phone({ styleId, offset }: { styleId: string; offset: number }) {
     >
       <div className="overflow-hidden rounded-[30px] border-[5px] border-ink bg-ink ring-1 ring-white/10 shadow-[0_40px_70px_-25px_rgba(40,20,10,0.6)]">
         <div className="overflow-hidden rounded-[24px]">
-          <StyleReel styleId={styleId} playing={offset === 0} />
+          {/* Only the visible phones mount a reel: each one holds a video, and browsers cap those. */}
+          {distance <= 2 ? (
+            <StyleReel styleId={styleId} playing={offset === 0} />
+          ) : (
+            <div className="aspect-[9/16] bg-ink" />
+          )}
         </div>
       </div>
     </div>

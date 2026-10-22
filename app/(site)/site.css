@@ -90,6 +90,20 @@
   animation-delay: calc(0.9s + var(--i, 0) * 0.16s);
 }
 
+@keyframes site-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Layers that load late (the hero's ASCII glow) fade in instead of popping. */
+.site-fade {
+  animation: site-fade 0.6s ease-out both;
+}
+
 @keyframes site-pop {
   from {
     opacity: 0;
@@ -139,6 +153,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .site-rise,
+  .site-fade,
   .site-cut::before,
   .site-cut::after,
   .site-word,

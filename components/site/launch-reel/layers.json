@@ -348,10 +348,10 @@
       "clips": [
         {
           "id": "mountains",
-          "name": "mountains.png",
+          "name": "mountains-hd.jpg",
           "from": 0,
           "duration": 150,
-          "src": "assets/mountains.png",
+          "src": "assets/mountains-hd.jpg",
           "fit": "cover"
         }
       ]

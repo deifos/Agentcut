@@ -17,7 +17,7 @@ export function MountainReel() {
   return (
     <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "#1d232b" }}>
       <Img
-        src={staticFile("hero/mountains.png")}
+        src={staticFile("demo/launch-reel/assets/mountains-hd.jpg")}
         style={{
           width: "100%",
           height: "100%",

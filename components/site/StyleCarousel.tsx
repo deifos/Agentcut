@@ -1,15 +1,13 @@
 "use client";
 
-// One real clip, restyled by a prompt every few seconds. The center phone
-// plays the current style's reel; the others wait on a curved track and slide in when picked.
-import { useEffect, useState } from "react";
+// Pick a style, then press Play. Other phones show still frames.
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { StyleReel } from "@/components/site/StyleReel";
 import { cn } from "@/lib/utils";
 import { MOTION_STYLES } from "@/motion/components";
 
 const STYLES = Object.values(MOTION_STYLES);
-const CYCLE_MS = 4800;
 
 /** Where a phone sits relative to the selected one: -3…4 around the circle. */
 function offsetFrom(index: number, selected: number) {
@@ -48,27 +46,19 @@ function Phone({ styleId, offset }: { styleId: string; offset: number }) {
 export function StyleCarousel({ tone = "light" }: { tone?: "light" | "dark" }) {
   const dark = tone === "dark";
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-
-  // Advance through the styles; picking one by hand restarts the timer.
-  useEffect(() => {
-    if (paused) return;
-    const timer = window.setTimeout(() => setIndex((current) => (current + 1) % STYLES.length), CYCLE_MS);
-    return () => window.clearTimeout(timer);
-  }, [index, paused]);
 
   const current = STYLES[index];
   const words = `Restyle it as ${current.name}`.split(" ");
 
   return (
-    <div
-      className="relative mx-auto aspect-[11/10] w-full max-w-[620px] select-none"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {/* Every style on a curved track; the selected one is centered and playing. */}
+    <div className="relative mx-auto aspect-[11/10] w-full max-w-[620px] select-none">
+      {/* Pick a style to center its player. Playback starts only with Play. */}
       {STYLES.map((style, i) => (
-        <Phone key={style.id} styleId={style.id} offset={offsetFrom(i, index)} />
+        <Phone
+          key={style.id}
+          styleId={style.id}
+          offset={offsetFrom(i, index)}
+        />
       ))}
 
       {/* The prompt that restyles it. */}
@@ -80,7 +70,14 @@ export function StyleCarousel({ tone = "light" }: { tone?: "light" | "dark" }) {
         )}
       >
         {words.map((word, i) => (
-          <span key={i} className="site-word" style={{ ["--i" as string]: i, animationDelay: `${0.1 + i * 0.09}s` }}>
+          <span
+            key={i}
+            className="site-word"
+            style={{
+              ["--i" as string]: i,
+              animationDelay: `${0.1 + i * 0.09}s`,
+            }}
+          >
             {word}{" "}
           </span>
         ))}
@@ -99,7 +96,11 @@ export function StyleCarousel({ tone = "light" }: { tone?: "light" | "dark" }) {
       </div>
 
       {/* Every style: click to jump. */}
-      <div className="absolute inset-x-0 bottom-0 z-30 flex flex-wrap justify-center gap-1.5" role="radiogroup" aria-label="Video style">
+      <div
+        className="absolute inset-x-0 bottom-0 z-30 flex flex-wrap justify-center gap-1.5"
+        role="radiogroup"
+        aria-label="Video style"
+      >
         {STYLES.map((style, i) => (
           <button
             key={style.id}
@@ -121,7 +122,9 @@ export function StyleCarousel({ tone = "light" }: { tone?: "light" | "dark" }) {
             <span
               aria-hidden
               className="size-2.5 rounded-full"
-              style={{ background: `linear-gradient(135deg, ${style.tokens.backdrop} 50%, ${style.tokens.accent} 50%)` }}
+              style={{
+                background: `linear-gradient(135deg, ${style.tokens.backdrop} 50%, ${style.tokens.accent} 50%)`,
+              }}
             />
             {style.name}
           </button>

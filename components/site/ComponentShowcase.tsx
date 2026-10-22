@@ -3,8 +3,15 @@ import { ArrowRight } from "lucide-react";
 import { ComponentTile } from "@/components/motion/ComponentGallery";
 import { COMPONENT_METAS } from "@/motion/components/catalog";
 
-// A spread across categories; the first one plays on its own.
-const FEATURED = ["kinetic-poster", "prompt-box", "stat-counter", "chat-thread", "split-flap", "sticker-slam"];
+// A spread across categories; previews stay still until interaction.
+const FEATURED = [
+  "kinetic-poster",
+  "prompt-box",
+  "stat-counter",
+  "chat-thread",
+  "split-flap",
+  "sticker-slam",
+];
 
 export function ComponentShowcase() {
   const count = Object.keys(COMPONENT_METAS).length;
@@ -12,7 +19,9 @@ export function ComponentShowcase() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">Components</p>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
+            Components
+          </p>
           <h2 className="mt-4 max-w-2xl font-display text-4xl font-extrabold leading-[0.95] tracking-[-0.04em] md:text-6xl">
             {count} motion components, ready to drop in.
           </h2>
@@ -25,12 +34,12 @@ export function ComponentShowcase() {
         </Link>
       </div>
       <p className="mt-4 max-w-xl text-lg text-ink/60">
-        Titles, lower thirds, stats, chat threads, transitions. Hover to play. The agent uses them by name,
-        and you tune their props in the inspector.
+        Titles, lower thirds, stats, chat threads, transitions. Hover to play.
+        The agent uses them by name, and you tune their props in the inspector.
       </p>
       <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURED.filter((id) => COMPONENT_METAS[id]).map((id, index) => (
-          <ComponentTile key={id} id={id} autoPlay={index === 0} />
+        {FEATURED.filter((id) => COMPONENT_METAS[id]).map((id) => (
+          <ComponentTile key={id} id={id} />
         ))}
       </div>
     </div>

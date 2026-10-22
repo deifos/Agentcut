@@ -51,14 +51,15 @@ import { cn } from "@/lib/utils";
 
 const W = 1440;
 const H = 960;
-const PANEL = "min-h-0 overflow-hidden rounded-2xl border border-border bg-background shadow-sm";
+const PANEL =
+  "min-h-0 overflow-hidden rounded-2xl border border-border bg-background shadow-sm";
 const VARIANT = "wide";
 const noop = () => {};
 const noopAsync = async () => {};
 
 const STEPS = [
   { icon: FileText, text: "Read brief.md and the clip's transcript" },
-  { icon: ImageIcon, text: "Opened on mountains.png with a title" },
+  { icon: ImageIcon, text: "Opened on mountains-hd.jpg with a title" },
   { icon: Captions, text: "Captioned the talking head word by word" },
   { icon: Shapes, text: "Placed lower third, sticker and end card" },
   { icon: Camera, text: "Checked 6 frames, wide and mobile" },
@@ -66,7 +67,7 @@ const STEPS = [
 
 const PROJECT_FILES = [
   { icon: Film, name: "footage.mp4", size: "1.4 MB" },
-  { icon: ImageIcon, name: "mountains.png", size: "837 KB" },
+  { icon: ImageIcon, name: "mountains-hd.jpg", size: "538 KB" },
   { icon: Play, name: "music.mp3", size: "145 KB" },
 ];
 
@@ -118,7 +119,12 @@ function Header() {
 
 function Chat() {
   return (
-    <aside className={cn(PANEL, "relative flex w-[330px] shrink-0 flex-col overflow-visible")}>
+    <aside
+      className={cn(
+        PANEL,
+        "relative flex w-[330px] shrink-0 flex-col overflow-visible",
+      )}
+    >
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
         <Bot className="size-4" />
         <span className="text-xs font-bold">Claude</span>
@@ -128,26 +134,38 @@ function Chat() {
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-3 py-3 text-[13px] leading-relaxed">
         <p className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-muted px-3.5 py-2">
-          Make a 17 second launch reel: a cinematic opener on the mountains, my talking-head clip with
-          captions, end on the logo. LFG.
+          Make a 17 second launch reel: a cinematic opener on the mountains, my
+          talking-head clip with captions, end on the logo. LFG.
         </p>
         <ul className="space-y-1.5 text-[12px] text-muted-foreground">
           {STEPS.map((step, index) => (
-            <li key={step.text} className="site-step flex items-center gap-2" style={{ ["--i" as string]: index }}>
+            <li
+              key={step.text}
+              className="site-step flex items-center gap-2"
+              style={{ ["--i" as string]: index }}
+            >
               <step.icon className="size-3.5" /> {step.text}
             </li>
           ))}
         </ul>
-        <div className="site-step space-y-2" style={{ ["--i" as string]: STEPS.length }}>
+        <div
+          className="site-step space-y-2"
+          style={{ ["--i" as string]: STEPS.length }}
+        >
           <p>
-            Done: 17 seconds, 7 tracks. The captions follow your voice word by word, and the
-            &ldquo;100% open source&rdquo; sticker lands on the line.
+            Done: 17 seconds, 7 tracks. The captions follow your voice word by
+            word, and the &ldquo;100% open source&rdquo; sticker lands on the
+            line.
           </p>
-          <p className="text-[11px] text-muted-foreground">Claude · Worked for 48s · 2 files changed</p>
+          <p className="text-[11px] text-muted-foreground">
+            Claude · Worked for 48s · 2 files changed
+          </p>
         </div>
       </div>
       <div className="m-2 mt-0 rounded-2xl border border-border p-3">
-        <p className="h-12 text-[14px] text-muted-foreground">Describe a change… drop a file here to point at it</p>
+        <p className="h-12 text-[14px] text-muted-foreground">
+          Describe a change… drop a file here to point at it
+        </p>
         <div className="flex items-center gap-3 text-muted-foreground">
           <span className="flex items-center gap-1.5 text-[13px]">
             <Camera className="size-4" /> Attach frame
@@ -160,13 +178,19 @@ function Chat() {
       {/* The styles tab on the chat's edge, as in the studio. */}
       <span className="absolute -right-[29px] top-12 flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm">
         <Shapes className="size-3.5 text-brand" />
-        <span className="text-[10px] font-black uppercase tracking-wider [writing-mode:vertical-rl]">Styles</span>
+        <span className="text-[10px] font-black uppercase tracking-wider [writing-mode:vertical-rl]">
+          Styles
+        </span>
       </span>
     </aside>
   );
 }
 
-function Inspector({ frameStore }: { frameStore: ReturnType<typeof createFrameStore> }) {
+function Inspector({
+  frameStore,
+}: {
+  frameStore: ReturnType<typeof createFrameStore>;
+}) {
   return (
     <aside className={cn(PANEL, "flex w-[358px] shrink-0 flex-col")}>
       <div className="flex h-11 shrink-0 items-center gap-5 border-b border-border px-4 text-[11px] font-semibold uppercase tracking-wider">
@@ -190,10 +214,15 @@ function Inspector({ frameStore }: { frameStore: ReturnType<typeof createFrameSt
         </div>
         <div className="space-y-0.5">
           {PROJECT_FILES.map((file) => (
-            <div key={file.name} className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[12px]">
+            <div
+              key={file.name}
+              className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[12px]"
+            >
               <file.icon className="size-3.5 text-muted-foreground" />
               <span className="flex-1">{file.name}</span>
-              <span className="text-[10px] text-muted-foreground">{file.size}</span>
+              <span className="text-[10px] text-muted-foreground">
+                {file.size}
+              </span>
             </div>
           ))}
         </div>
@@ -239,24 +268,13 @@ export function HeroStudio() {
     const frame = frameRef.current;
     if (!frame) return;
     const observer = new ResizeObserver(([entry]) => {
-      canvasRef.current?.style.setProperty("--s", String(entry.contentRect.width / W));
+      canvasRef.current?.style.setProperty(
+        "--s",
+        String(entry.contentRect.width / W),
+      );
     });
     observer.observe(frame);
     return () => observer.disconnect();
-  }, []);
-
-  // Start the reel playing, muted (browsers only autoplay silent media).
-  useEffect(() => {
-    let tries = 0;
-    const timer = window.setInterval(() => {
-      const player = playerRef.current;
-      tries += 1;
-      if (player || tries > 40) window.clearInterval(timer);
-      if (!player) return;
-      player.mute();
-      player.play();
-    }, 150);
-    return () => window.clearInterval(timer);
   }, []);
 
   return (
@@ -271,15 +289,21 @@ export function HeroStudio() {
       >
         <div
           ref={canvasRef}
-          aria-label="The Agentcut studio playing a launch reel"
+          aria-label="The Agentcut studio with a launch reel preview"
           role="group"
           className="studio-app absolute left-0 top-0 flex origin-top-left flex-col bg-muted font-sans text-foreground"
-          style={{ width: W, height: H, transform: "scale(var(--s, calc(100cqw / 1440px)))" }}
+          style={{
+            width: W,
+            height: H,
+            transform: "scale(var(--s, calc(100cqw / 1440px)))",
+          }}
         >
           <Header />
           <div className="flex min-h-0 flex-1 gap-2 px-2 pb-2">
             <Chat />
-            <main className={cn(PANEL, "ml-[30px] flex min-w-0 flex-1 flex-col")}>
+            <main
+              className={cn(PANEL, "ml-[30px] flex min-w-0 flex-1 flex-col")}
+            >
               <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 px-2 text-[11px] text-muted-foreground">
                 <PanelLeftClose className="mx-1 size-3.5" />
                 7 tracks · built in 92 ms
@@ -304,7 +328,12 @@ export function HeroStudio() {
             <Inspector frameStore={frameStore} />
           </div>
           {/* The real timeline, read-only (the scaled frame would throw off dragging). */}
-          <div className={cn(PANEL, "pointer-events-none mx-2 mb-2 h-[352px] shrink-0")}>
+          <div
+            className={cn(
+              PANEL,
+              "pointer-events-none mx-2 mb-2 h-[352px] shrink-0",
+            )}
+          >
             <TimelineThumbs.Provider value={thumbSource}>
               <StudioTimeline
                 layers={LAUNCH_REEL_LAYERS}
@@ -334,7 +363,12 @@ export function HeroStudio() {
 function MobileReel() {
   const inputProps = useMemo(
     () => ({
-      ...buildInputProps(LAUNCH_REEL_SLUG, LAUNCH_REEL_PROJECT, LAUNCH_REEL_LAYERS, VARIANT),
+      ...buildInputProps(
+        LAUNCH_REEL_SLUG,
+        LAUNCH_REEL_PROJECT,
+        LAUNCH_REEL_LAYERS,
+        VARIANT,
+      ),
       assetBase: LAUNCH_REEL_ASSETS,
     }),
     [],

@@ -2,8 +2,15 @@
 
 // A style's demo reel on the built-in talking-head clip (9:16): playing, or a still from its hook.
 import { Player, Thumbnail } from "@remotion/player";
-import { StyleDemo, type StyleDemoProps } from "@/components/studio/styles/StyleDemo";
-import { DEMO_CLIP, DEMO_FRAMES, DEMO_WORDS } from "@/components/studio/styles/demo-script";
+import {
+  StyleDemo,
+  type StyleDemoProps,
+} from "@/components/studio/styles/StyleDemo";
+import {
+  DEMO_CLIP,
+  DEMO_FRAMES,
+  DEMO_WORDS,
+} from "@/components/studio/styles/demo-script";
 
 const WIDTH = 720;
 const HEIGHT = 1280;
@@ -46,10 +53,10 @@ export function StyleReel({
       fps={30}
       compositionWidth={WIDTH}
       compositionHeight={HEIGHT}
-      autoPlay
+      controls
       loop
       initiallyMuted={muted}
-      clickToPlay={false}
+      clickToPlay
       acknowledgeRemotionLicense
       style={style}
     />

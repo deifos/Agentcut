@@ -83,6 +83,11 @@ export default function RootLayout({
           {children}
           <Toaster style={{ zIndex: 9999 }} />
         </TooltipProvider>
+        <Script
+          id="feedbackbasket"
+          src="https://feedbackbasket.com/api/widget/script/cmvjwne18000008l0f09myyfg"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

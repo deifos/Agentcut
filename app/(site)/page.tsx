@@ -154,7 +154,7 @@ export default function LandingPage() {
       </section>
 
       {/* Styles */}
-      <section className="bg-ink py-24 text-paper md:py-32">
+      <section className="overflow-hidden bg-ink py-24 text-paper md:py-32">
         <div className="site-reveal mx-auto max-w-7xl px-5 md:px-8">
           <StyleShowcase />
         </div>

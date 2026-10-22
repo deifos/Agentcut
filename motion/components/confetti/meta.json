@@ -1,0 +1,28 @@
+{
+  "id": "confetti",
+  "name": "Confetti Burst",
+  "category": "Overlays",
+  "description": "Seeded confetti with real physics: a burst from a point, two cannons from the bottom corners, or rain from the top, with pieces that spin, tumble and flutter down.",
+  "useWhen": "Celebrating a moment: a launch, a milestone, a payment going through, \"you did it\" at the end of a flow, a number hitting its target. Put it on a track above the moment and start it on the beat.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["confetti", "celebration", "party", "burst", "particles", "success", "launch", "win"],
+  "props": {
+    "mode": { "type": "select", "label": "Style", "default": "burst", "options": [{ "value": "burst", "label": "Burst from a point" }, { "value": "cannons", "label": "Corner cannons" }, { "value": "rain", "label": "Rain from the top" }] },
+    "count": { "type": "number", "label": "Pieces", "default": 160, "min": 20, "max": 400, "step": 10 },
+    "power": { "type": "number", "label": "Power", "default": 0.7, "min": 0.2, "max": 1.5, "step": 0.05, "help": "How far the pieces fly (burst and cannons)." },
+    "gravity": { "type": "number", "label": "Gravity", "default": 1, "min": 0.2, "max": 2.5, "step": 0.1 },
+    "size": { "type": "number", "label": "Piece size", "default": 1.2, "min": 0.5, "max": 3, "step": 0.1 },
+    "palette": { "type": "lines", "label": "Colors", "default": ["#f43f5e", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ffffff"], "max": 8, "help": "Hex colors, one per line." },
+    "originX": { "type": "number", "label": "Burst X", "default": 50, "min": 0, "max": 100, "step": 1, "unit": "%" },
+    "originY": { "type": "number", "label": "Burst Y", "default": 55, "min": 0, "max": 100, "step": 1, "unit": "%" },
+    "seed": { "type": "number", "label": "Seed", "default": 7, "min": 0, "max": 999, "step": 1, "help": "Change for a different scatter." },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." }
+  },
+  "examples": [
+    { "name": "Burst", "props": { "background": "#0b0b0f" } },
+    { "name": "Cannons", "props": { "mode": "cannons", "count": 240, "power": 0.9, "background": "#0b0b0f" } },
+    { "name": "Gold rain", "props": { "mode": "rain", "count": 200, "gravity": 0.6, "palette": ["#facc15", "#fde68a", "#f59e0b", "#ffffff"], "background": "#111111" } }
+  ],
+  "stillAt": 0.3
+}

@@ -1,0 +1,232 @@
+{
+  "id": "list-card",
+  "name": "List Card",
+  "category": "Talking Head",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "description": "A titled card of label / value rows (a feature, a ledger, specs) in the project's look.",
+  "useWhen": "Showing what a thing is or does, item by item: a tool in a list video, numbers that belong together. Rows are \"Label | value\"; *star* a value to highlight it.",
+  "tags": [
+    "list",
+    "card",
+    "ledger",
+    "feature",
+    "talking head",
+    "stats"
+  ],
+  "props": {
+    "kicker": {
+      "type": "text",
+      "label": "Kicker",
+      "default": "Mod 01 / 05"
+    },
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Token Ledger"
+    },
+    "subtitle": {
+      "type": "text",
+      "label": "Subtitle",
+      "default": "Every turn's cost, live, in the status line."
+    },
+    "rows": {
+      "type": "lines",
+      "label": "Rows",
+      "default": [
+        "Context used | 41%",
+        "Tokens saved | *128k*",
+        "Turns | 17"
+      ],
+      "max": 6,
+      "help": "Label | value per line."
+    },
+    "footer": {
+      "type": "text",
+      "label": "Footer",
+      "default": "costs you, *live*",
+      "help": "A phrase under the card (empty for none)."
+    },
+    "layout": {
+      "type": "select",
+      "label": "Layout",
+      "default": "full",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full frame"
+        },
+        {
+          "value": "card",
+          "label": "Card over video"
+        }
+      ]
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 10.5,
+      "min": 4,
+      "max": 18,
+      "step": 0.5,
+      "unit": "% of frame"
+    },
+    "look": {
+      "type": "select",
+      "style": "look",
+      "label": "Look",
+      "default": "ink",
+      "options": [
+        {
+          "value": "ink",
+          "label": "Ink (bold borders)"
+        },
+        {
+          "value": "paper",
+          "label": "Cut paper"
+        },
+        {
+          "value": "notebook",
+          "label": "Notebook"
+        },
+        {
+          "value": "crt",
+          "label": "Terminal"
+        },
+        {
+          "value": "neon",
+          "label": "Neon (cyberpunk)"
+        },
+        {
+          "value": "line",
+          "label": "Line (black & white)"
+        },
+        {
+          "value": "vhs",
+          "label": "VHS (90s tape)"
+        },
+        {
+          "value": "clean",
+          "label": "Clean"
+        }
+      ],
+      "help": "The graphic language. Follows the project style."
+    },
+    "font": {
+      "type": "select",
+      "style": "font",
+      "label": "Headline font",
+      "default": "archivo",
+      "options": [
+        {
+          "value": "archivo",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "caveat",
+          "label": "Caveat"
+        },
+        {
+          "value": "pixel",
+          "label": "VT323"
+        },
+        {
+          "value": "tech",
+          "label": "Orbitron"
+        },
+        {
+          "value": "heavy",
+          "label": "Montserrat"
+        },
+        {
+          "value": "retro",
+          "label": "Bungee"
+        },
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        }
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Accent",
+      "default": "#ff3d8b"
+    },
+    "panel": {
+      "type": "color",
+      "style": "panel",
+      "label": "Card",
+      "default": "#ffffff"
+    },
+    "panelText": {
+      "type": "color",
+      "style": "panelText",
+      "label": "Card text",
+      "default": "#111111"
+    },
+    "line": {
+      "type": "color",
+      "style": "line",
+      "label": "Ink",
+      "default": "#111111",
+      "help": "Borders, hard shadows, pen strokes."
+    },
+    "backdrop": {
+      "type": "color",
+      "style": "backdrop",
+      "label": "Backdrop",
+      "default": "#ffe14d",
+      "help": "Full-frame and split backgrounds."
+    },
+    "onVideo": {
+      "type": "color",
+      "style": "text",
+      "label": "Text on video",
+      "default": "#ffffff"
+    }
+  },
+  "examples": [
+    {
+      "name": "Ledger",
+      "props": {}
+    },
+    {
+      "name": "Over video",
+      "props": {
+        "layout": "card",
+        "footer": "",
+        "kicker": "",
+        "rows": [
+          "Setup | 2 min",
+          "Price | *free*"
+        ]
+      }
+    }
+  ]
+}

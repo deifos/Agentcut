@@ -1,0 +1,28 @@
+{
+  "id": "highlighter",
+  "name": "Highlighter",
+  "category": "Text & Titles",
+  "description": "A sentence fades in, then a marker sweeps behind each *starred* word in turn (or underlines or boxes them).",
+  "useWhen": "Calling out the important words in a claim, a problem statement, a stat in a sentence or a key takeaway: \"Editing took *3 hours*. Now it takes *3 minutes*.\" Mark the words to highlight with *stars*.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["highlight", "marker", "underline", "emphasis", "callout", "sentence", "explainer"],
+  "props": {
+    "lines": { "type": "lines", "label": "Text", "default": ["Editing used to take *hours.*", "Now it takes *minutes.*"], "max": 5, "help": "One line per row. *Starred* words get highlighted, in order." },
+    "style": { "type": "select", "label": "Style", "default": "marker", "options": [{ "value": "marker", "label": "Marker" }, { "value": "underline", "label": "Underline" }, { "value": "box", "label": "Box" }] },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "marker": { "type": "color", "style": "accent", "label": "Marker", "default": "#facc15" },
+    "markedText": { "type": "color", "style": "onAccent", "label": "Highlighted text", "default": "#111111", "help": "Text color on top of the marker." },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 7.5, "min": 3, "max": 16, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "700", "options": [{ "value": "500", "label": "Medium" }, { "value": "600", "label": "Semibold" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "sans", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "align": { "type": "select", "label": "Align", "default": "center", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }] }
+  },
+  "examples": [
+    { "name": "Marker", "props": {} },
+    { "name": "On paper", "props": { "lines": ["Your demo has *8 seconds*", "to make them *care*."], "color": "#111111", "marker": "#fde047", "background": "#fafaf9", "font": "fraunces", "align": "left" } },
+    { "name": "Underline", "props": { "lines": ["Built for *speed*,", "designed for *focus*."], "style": "underline", "marker": "#38bdf8", "font": "display", "weight": "800" } }
+  ],
+  "stillAt": 0.75
+}

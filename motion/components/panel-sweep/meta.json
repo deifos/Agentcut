@@ -1,0 +1,25 @@
+{
+  "id": "panel-sweep",
+  "name": "Panel Sweep",
+  "category": "Transitions",
+  "description": "Slanted color panels sweep across one after another, the stack covering the frame at the midpoint, then peel off the other side.",
+  "useWhen": "Fast, branded cuts between scenes, like a whip pan in color: between features, before a title, on a beat drop. Use the brand colors. Put it on a track above both clips and center it on the cut (from = cut frame − half its length).",
+  "durationInFrames": 30,
+  "layer": "overlay",
+  "tags": ["transition", "wipe", "panels", "slide", "whip", "swipe", "brand"],
+  "props": {
+    "color1": { "type": "color", "label": "Back panel", "default": "#fde047" },
+    "color2": { "type": "color", "label": "Middle panel", "default": "#fb7185" },
+    "color3": { "type": "color", "label": "Front panel", "default": "#111111" },
+    "panels": { "type": "number", "label": "Panels", "default": 3, "min": 1, "max": 6, "step": 1 },
+    "direction": { "type": "select", "label": "Direction", "default": "right", "options": [{ "value": "right", "label": "Left to right" }, { "value": "left", "label": "Right to left" }, { "value": "down", "label": "Top to bottom" }, { "value": "up", "label": "Bottom to top" }] },
+    "angle": { "type": "number", "label": "Slant", "default": 14, "min": 0, "max": 35, "step": 1, "unit": "°" },
+    "streaks": { "type": "boolean", "label": "Speed lines", "default": false }
+  },
+  "examples": [
+    { "name": "Pop", "props": {} },
+    { "name": "Mono", "props": { "color1": "#3f3f46", "color2": "#a1a1aa", "color3": "#fafafa", "angle": 0, "direction": "up" } },
+    { "name": "Brand streak", "props": { "color1": "#1d4ed8", "color2": "#60a5fa", "color3": "#0b1220", "streaks": true, "angle": 22 } }
+  ],
+  "stillAt": 0.3
+}

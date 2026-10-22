@@ -1,0 +1,28 @@
+{
+  "id": "arcade-title",
+  "name": "Arcade Title",
+  "category": "Text & Titles",
+  "description": "A retro game title screen in big hard-edged pixels: dithered sky, parallax hills, city or space scrolling in whole pixels, a running sprite, a bitmap title that drops in with a bounce and a blinking \"press start\".",
+  "useWhen": "Playful, nostalgic or gaming moments: an intro or chapter card (\"Level 2\"), a launch framed as a game, an indie game or 8-bit music promo, an \"achievement unlocked\" beat, a fun end card. Keep the title short (one to three words) so the pixels stay big.",
+  "durationInFrames": 150,
+  "layer": "full",
+  "tags": ["pixel", "pixel art", "8-bit", "retro", "game", "arcade", "dithering", "parallax", "sprite", "crt", "title screen"],
+  "props": {
+    "title": { "type": "text", "label": "Title", "default": "Pixel Quest", "maxLength": 24, "help": "A–Z, 0–9 and basic punctuation, shown in capitals." },
+    "subtitle": { "type": "text", "label": "Subtitle", "default": "Press start", "maxLength": 24, "help": "Blinks under the title. Leave empty for none." },
+    "scene": { "type": "select", "label": "Scene", "default": "hills", "options": [{ "value": "hills", "label": "Hills" }, { "value": "city", "label": "Night city" }, { "value": "space", "label": "Space" }] },
+    "palette": { "type": "select", "label": "Palette", "default": "pico8", "options": [{ "value": "pico8", "label": "PICO-8" }, { "value": "nes", "label": "NES" }, { "value": "gameboy", "label": "Game Boy" }, { "value": "sunset", "label": "Sunset" }] },
+    "sprite": { "type": "select", "label": "Sprite", "default": "auto", "options": [{ "value": "auto", "label": "Auto (runner, ship in space)" }, { "value": "runner", "label": "Runner" }, { "value": "ship", "label": "Spaceship" }, { "value": "coins", "label": "Spinning coins" }, { "value": "none", "label": "None" }] },
+    "resolution": { "type": "number", "label": "Pixels", "default": 90, "min": 60, "max": 180, "step": 1, "unit": "px", "help": "Virtual pixels across the short side: lower is chunkier." },
+    "spriteFps": { "type": "number", "label": "Frame rate", "default": 10, "min": 6, "max": 15, "step": 1, "unit": "fps", "help": "Everything moves in steps at this rate, like a sprite sheet." },
+    "speed": { "type": "number", "label": "Scroll speed", "default": 2, "min": 0, "max": 6, "step": 0.5, "unit": "px/step" },
+    "crt": { "type": "boolean", "label": "CRT scanlines", "default": true },
+    "seed": { "type": "number", "label": "Pattern", "default": 7, "min": 0, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Arcade hills", "props": {} },
+    { "name": "Neon night", "props": { "title": "Neon Nights", "subtitle": "Insert coin", "scene": "city", "palette": "sunset" } },
+    { "name": "Pocket space", "props": { "title": "Level 2", "subtitle": "Get ready", "scene": "space", "palette": "gameboy", "sprite": "ship" } }
+  ],
+  "stillAt": 0.4
+}

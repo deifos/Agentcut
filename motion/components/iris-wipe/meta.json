@@ -1,0 +1,24 @@
+{
+  "id": "iris-wipe",
+  "name": "Iris Burst",
+  "category": "Transitions",
+  "description": "Colored circles or diamonds burst out from a point to cover the frame, then open a hole from the same point to reveal the next shot.",
+  "useWhen": "Playful, graphic cuts between scenes: from a clicked button to the next screen (set the origin to the click), between chapters, into a title card. Put it on a track above both clips and center it on the cut (from = cut frame − half its length).",
+  "durationInFrames": 30,
+  "layer": "overlay",
+  "tags": ["transition", "iris", "circle", "wipe", "reveal", "burst", "shape"],
+  "props": {
+    "color": { "type": "color", "label": "Color", "default": "#111111" },
+    "accent": { "type": "color", "label": "Ring color", "default": "#f97316" },
+    "rings": { "type": "boolean", "label": "Two rings", "default": true, "help": "An accent ring leads the main color in and trails it out." },
+    "originX": { "type": "number", "label": "Origin X", "default": 50, "min": 0, "max": 100, "step": 1, "unit": "%" },
+    "originY": { "type": "number", "label": "Origin Y", "default": 50, "min": 0, "max": 100, "step": 1, "unit": "%" },
+    "shape": { "type": "select", "label": "Shape", "default": "circle", "options": [{ "value": "circle", "label": "Circle" }, { "value": "diamond", "label": "Diamond" }] }
+  },
+  "examples": [
+    { "name": "Center burst", "props": {} },
+    { "name": "From a click", "props": { "originX": 78, "originY": 30, "color": "#2563eb", "accent": "#93c5fd" } },
+    { "name": "Diamond", "props": { "shape": "diamond", "color": "#fafafa", "accent": "#ec4899" } }
+  ],
+  "stillAt": 0.25
+}

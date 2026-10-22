@@ -1,0 +1,24 @@
+{
+  "id": "tile-wipe",
+  "name": "Tile Wave",
+  "category": "Transitions",
+  "description": "A grid of tiles grows in a wave from a corner or the center, covering the frame at the midpoint, then shrinks away in the same order.",
+  "useWhen": "Clean, geometric cuts between scenes: tech and product videos, a switch between two app screens, into an end card. Put it on a track above both clips and center it on the cut (from = cut frame − half its length).",
+  "durationInFrames": 36,
+  "layer": "overlay",
+  "tags": ["transition", "tiles", "grid", "mosaic", "pixel", "wave", "geometric"],
+  "props": {
+    "color": { "type": "color", "label": "Color", "default": "#6366f1" },
+    "accent": { "type": "color", "label": "Checker color", "default": "#a5b4fc" },
+    "columns": { "type": "number", "label": "Columns", "default": 12, "min": 4, "max": 32, "step": 1 },
+    "origin": { "type": "select", "label": "From", "default": "corner", "options": [{ "value": "corner", "label": "Top-left corner" }, { "value": "center", "label": "Center" }, { "value": "left", "label": "Left" }, { "value": "bottom", "label": "Bottom" }] },
+    "shape": { "type": "select", "label": "Tiles", "default": "square", "options": [{ "value": "square", "label": "Squares" }, { "value": "rounded", "label": "Rounded" }, { "value": "circle", "label": "Circles to squares" }] },
+    "checker": { "type": "boolean", "label": "Checkerboard", "default": false }
+  },
+  "examples": [
+    { "name": "Diagonal", "props": {} },
+    { "name": "Center dots", "props": { "origin": "center", "shape": "circle", "color": "#7c3aed", "columns": 16 } },
+    { "name": "Checker", "props": { "checker": true, "color": "#fafafa", "accent": "#f43f5e", "origin": "left", "columns": 9 } }
+  ],
+  "stillAt": 0.3
+}

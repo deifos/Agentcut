@@ -1,0 +1,27 @@
+{
+  "id": "type-zoom",
+  "name": "Type Zoom",
+  "category": "Transitions",
+  "description": "One big word fills the frame, then the camera dives into it until the letters' color swallows the screen, and the color clears to reveal the next shot.",
+  "useWhen": "A bold, type-led cut between scenes or into a section: \"NEXT\", \"WAIT\", a product or chapter name, a hype word in a launch video. Put it on a track above both clips and center it on the cut (from = cut frame − half its length): the screen is fully covered at its midpoint. Short words (1–6 letters) zoom best.",
+  "durationInFrames": 40,
+  "layer": "overlay",
+  "tags": ["transition", "zoom", "type", "kinetic", "word", "dive", "cut", "bold", "reveal"],
+  "props": {
+    "text": { "type": "text", "label": "Word", "default": "NEXT", "maxLength": 14 },
+    "color": { "type": "color", "label": "Text color", "default": "#facc15", "help": "Also the color that fills the screen at the cut." },
+    "background": { "type": "color", "label": "Background", "default": "#0a0a0a" },
+    "backdrop": { "type": "boolean", "label": "Start on background", "default": true, "help": "Off: the word dives in over the outgoing shot." },
+    "font": { "type": "select", "label": "Font", "default": "condensed", "options": [{ "value": "condensed", "label": "Anton" }, { "value": "wide", "label": "Unbounded" }, { "value": "display", "label": "Bricolage" }, { "value": "sans", "label": "Inter" }, { "value": "syne", "label": "Syne" }, { "value": "grotesk", "label": "Space Grotesk" }] },
+    "originX": { "type": "number", "label": "Zoom point X", "default": 50, "min": 0, "max": 100, "step": 1, "unit": "%", "help": "Aim it at a letter's stroke to dive into the letter." },
+    "originY": { "type": "number", "label": "Zoom point Y", "default": 50, "min": 0, "max": 100, "step": 1, "unit": "%" },
+    "zoom": { "type": "number", "label": "Zoom depth", "default": 80, "min": 8, "max": 160, "step": 1, "unit": "×" },
+    "reveal": { "type": "select", "label": "Reveal", "default": "iris", "options": [{ "value": "iris", "label": "Iris from zoom point" }, { "value": "wipe", "label": "Wipe up" }, { "value": "fade", "label": "Fade" }] }
+  },
+  "examples": [
+    { "name": "Yellow dive", "props": {} },
+    { "name": "Over the shot", "props": { "text": "WAIT", "backdrop": false, "color": "#ffffff", "reveal": "fade", "originX": 44 } },
+    { "name": "Wide wipe", "props": { "text": "LAUNCH", "font": "wide", "color": "#a78bfa", "background": "#0c0a1d", "reveal": "wipe", "zoom": 60 } }
+  ],
+  "stillAt": 0.15
+}

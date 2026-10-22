@@ -1,0 +1,25 @@
+{
+  "id": "bento-grid",
+  "name": "Bento Grid",
+  "category": "AI & Product",
+  "description": "A launch-style bento grid: a big hero card with an animated bar chart and smaller feature cards that spring into place one by one.",
+  "useWhen": "Summing up a product's features in one shot: a launch video's \"everything you get\" moment, a changelog recap, a plan overview, the closing beat before the call to action.",
+  "durationInFrames": 120,
+  "layer": "full",
+  "tags": ["bento", "grid", "features", "cards", "launch", "product", "overview", "showcase"],
+  "props": {
+    "title": { "type": "text", "label": "Heading", "default": "Everything you need to ship", "help": "Leave empty for none." },
+    "cards": { "type": "lines", "label": "Cards", "default": ["10× faster — Edit a launch video in minutes", "Auto zoom — Follows your cursor", "Captions — 40+ languages", "Music — Royalty-free", "Export — 4K, 60 fps"], "max": 6, "help": "4 to 6 lines, \"Title — detail\". The first is the big card." },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#8b5cf6" },
+    "theme": { "type": "select", "style": "theme", "label": "Theme", "default": "dark", "options": [{ "value": "dark", "label": "Dark" }, { "value": "light", "label": "Light" }] },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" uses the theme's background." },
+    "chart": { "type": "boolean", "label": "Chart in big card", "default": true },
+    "font": { "type": "select", "style": "font", "label": "Heading font", "default": "display", "options": [{ "value": "display", "label": "Bricolage" }, { "value": "sans", "label": "Inter" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "syne", "label": "Syne" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] }
+  },
+  "examples": [
+    { "name": "Launch", "props": {} },
+    { "name": "Light, four cards", "props": { "title": "", "cards": ["$2.4M — Saved in production", "Teams — Invite your whole crew", "Brand kits — Fonts and colors", "API — Render from code"], "theme": "light", "accent": "#0ea5e9", "font": "sans" } },
+    { "name": "Six cards", "props": { "title": "New in version 4", "cards": ["Studio — Claude edits with you", "Raw takes — Cursor and clicks", "Themes — Dark and light", "Components — 30+ animations", "Fonts — Nine families", "Export — In your browser"], "accent": "#f97316", "font": "grotesk" } }
+  ],
+  "stillAt": 0.7
+}

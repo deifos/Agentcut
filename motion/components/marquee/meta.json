@@ -1,0 +1,30 @@
+{
+  "id": "marquee",
+  "name": "Marquee",
+  "category": "Backgrounds",
+  "description": "Rows of huge type scrolling endlessly in alternating directions, solid and outlined, with an optional tilt.",
+  "useWhen": "Energetic backdrops and breaks: behind a product shot or a speaker cut-out, a brand-name wall, a list of features or integrations streaming by, an end card. Works full screen or as a band (fewer rows, transparent background).",
+  "durationInFrames": 150,
+  "layer": "full",
+  "tags": ["marquee", "ticker", "scrolling text", "loop", "background", "big type", "brand"],
+  "props": {
+    "rows": { "type": "lines", "label": "Rows", "default": ["Record", "Edit", "Export", "Share"], "max": 8, "help": "One phrase per row; rows alternate direction." },
+    "separator": { "type": "text", "label": "Separator", "default": "✦", "maxLength": 3 },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Separator color", "default": "#f97316" },
+    "background": { "type": "color", "style": "backdrop", "label": "Background", "default": "#0b0d10", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 20, "min": 5, "max": 40, "step": 0.5, "unit": "% of frame" },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "condensed", "options": [{ "value": "condensed", "label": "Anton" }, { "value": "wide", "label": "Unbounded" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "syne", "label": "Syne" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "400", "options": [{ "value": "400", "label": "Regular" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }, { "value": "900", "label": "Black" }] },
+    "uppercase": { "type": "boolean", "label": "Uppercase", "default": true },
+    "outline": { "type": "boolean", "label": "Outline every other row", "default": true },
+    "speed": { "type": "number", "label": "Speed", "default": 1, "min": 0.1, "max": 4, "step": 0.1, "unit": "×" },
+    "tilt": { "type": "number", "label": "Tilt", "default": -6, "min": -20, "max": 20, "step": 1, "unit": "°" }
+  },
+  "examples": [
+    { "name": "Tilted wall", "props": {} },
+    { "name": "Single band", "props": { "rows": ["New in Agentcut"], "tilt": 0, "background": "transparent", "size": 12, "font": "wide", "weight": "800", "outline": false, "uppercase": false, "accent": "#a3e635" } },
+    { "name": "Editorial", "props": { "rows": ["Launch", "Tutorial", "Demo"], "font": "serif", "uppercase": false, "background": "#f5f1e8", "color": "#1c1917", "accent": "#dc2626", "tilt": 0, "separator": "—" } }
+  ],
+  "stillAt": 0.4
+}

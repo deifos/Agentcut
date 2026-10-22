@@ -1,0 +1,28 @@
+{
+  "id": "lava-lamp",
+  "name": "Lava Lamp",
+  "category": "Backgrounds",
+  "description": "Glossy blobs that rise, sink and melt into each other like a lava lamp, in a three-color gradient. Loops for any length.",
+  "useWhen": "A living, colorful background behind titles, product shots, a speaker cut-out or an end card; anything retro, playful, music-led or \"vibe\". Put text components on a track above it. \"Soft\" turns it into a blurry gradient field.",
+  "durationInFrames": 300,
+  "layer": "full",
+  "tags": ["lava", "blobs", "metaballs", "goo", "liquid", "gradient", "background", "loop", "retro"],
+  "props": {
+    "colorA": { "type": "color", "label": "Top color", "default": "#ff6b3d" },
+    "colorB": { "type": "color", "label": "Middle color", "default": "#ff2e88" },
+    "colorC": { "type": "color", "label": "Bottom color", "default": "#7b2cff" },
+    "background": { "type": "color", "label": "Background", "default": "#140a1f" },
+    "blobs": { "type": "number", "label": "Blobs", "default": 9, "min": 3, "max": 18, "step": 1 },
+    "blobSize": { "type": "number", "label": "Blob size", "default": 1, "min": 0.4, "max": 2.5, "step": 0.05, "unit": "×" },
+    "speed": { "type": "number", "label": "Speed", "default": 1, "min": 0.1, "max": 4, "step": 0.1, "unit": "×" },
+    "look": { "type": "select", "label": "Look", "default": "lava", "options": [{ "value": "lava", "label": "Lava (merging blobs)" }, { "value": "soft", "label": "Soft (blurred)" }] },
+    "grain": { "type": "boolean", "label": "Film grain", "default": true },
+    "seed": { "type": "number", "label": "Pattern", "default": 4, "min": 0, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Sunset lava", "props": {} },
+    { "name": "Acid", "props": { "colorA": "#d9f99d", "colorB": "#22c55e", "colorC": "#0ea5e9", "background": "#04130d", "seed": 12, "blobSize": 1.3 } },
+    { "name": "Soft aura", "props": { "colorA": "#fbcfe8", "colorB": "#a5b4fc", "colorC": "#67e8f9", "background": "#f8fafc", "look": "soft", "blobs": 7, "blobSize": 1.8, "speed": 0.6, "grain": false } }
+  ],
+  "stillAt": 0.3
+}

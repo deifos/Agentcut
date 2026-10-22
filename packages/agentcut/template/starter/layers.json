@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "tracks": [
+    {
+      "id": "text",
+      "name": "Text",
+      "kind": "text",
+      "clips": [
+        {
+          "id": "tagline",
+          "name": "Tagline",
+          "from": 96,
+          "duration": 84,
+          "text": "Ask Claude in the chat. Edit anything on the timeline.",
+          "box": { "x": 0.1, "y": 0.62, "width": 0.8, "height": 0.12 },
+          "style": { "fontFamily": "Inter", "fontSize": 44, "fontWeight": 600, "color": "#c7c9d9" },
+          "enter": { "preset": "slide-up", "frames": 14 },
+          "exit": { "preset": "fade", "frames": 10 },
+          "variants": {
+            "mobile": { "box": { "x": 0.08, "y": 0.6, "width": 0.84, "height": 0.14 } }
+          }
+        }
+      ]
+    },
+    {
+      "id": "scenes",
+      "name": "Scenes",
+      "kind": "scene",
+      "clips": [
+        {
+          "id": "title",
+          "name": "Title",
+          "from": 0,
+          "duration": 180,
+          "scene": "Title",
+          "props": { "title": "Agentcut", "accent": "#34d399" },
+          "exit": { "preset": "fade", "frames": 12 }
+        }
+      ]
+    }
+  ],
+  "markers": [
+    { "id": "m-title", "frame": 0, "label": "Title", "kind": "section" },
+    { "id": "m-tagline", "frame": 96, "label": "Tagline", "kind": "cue" }
+  ]
+}

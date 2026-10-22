@@ -1,0 +1,28 @@
+{
+  "id": "text-reveal",
+  "name": "Text Reveal",
+  "category": "Text & Titles",
+  "description": "A headline whose words rise into place one by one, with an optional kicker line and accent words.",
+  "useWhen": "Opening titles, section headers, a feature name before its demo, a promise or tagline. Mark words with *stars* to color them with the accent.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["title", "headline", "kinetic type", "intro", "tagline"],
+  "props": {
+    "kicker": { "type": "text", "label": "Kicker", "default": "New in Agentcut", "help": "Small line above the headline (leave empty for none)." },
+    "lines": { "type": "lines", "label": "Headline", "default": ["Make videos", "with *Claude*"], "max": 4, "help": "One line per row. *Starred* words use the accent color." },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#34d399" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 11, "min": 4, "max": 22, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "800", "options": [{ "value": "500", "label": "Medium" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }, { "value": "900", "label": "Black" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "sans", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "align": { "type": "select", "label": "Align", "default": "center", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }] },
+    "stagger": { "type": "number", "label": "Word delay", "default": 4, "min": 1, "max": 12, "step": 1, "unit": "frames" },
+    "blur": { "type": "boolean", "label": "Motion blur", "default": true }
+  },
+  "examples": [
+    { "name": "Launch title", "props": { "kicker": "New in Agentcut", "lines": ["Make videos", "with *Claude*"] } },
+    { "name": "Editorial", "props": { "kicker": "", "lines": ["Sharper recordings.", "*Clearer* zooms."], "font": "serif", "weight": "500", "accent": "#f59e0b" } },
+    { "name": "Left, on brand color", "props": { "kicker": "Chapter 02", "lines": ["Simpler", "editor *controls*"], "align": "left", "background": "#111827", "accent": "#60a5fa" } }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "cut-and-paste",
+  "name": "Cut & Paste",
+  "category": "Text & Titles",
+  "description": "A stop-motion cut-paper collage: torn color blocks, a constructivist wedge, a halftone sun and cut-outs get slapped onto newsprint by hand, then the headline lands as ransom-note scraps with a pointing hand, a speech bubble and scribbles.",
+  "useWhen": "Loud, crafty, retro moments: music and streetwear drops, event posters, a zine-style title card, an announcement that should feel handmade rather than slick. Pass your own photos in images to cut them in as paper scraps.",
+  "durationInFrames": 120,
+  "layer": "full",
+  "tags": ["collage", "cut paper", "ransom note", "zine", "stop motion", "halftone", "constructivist", "retro", "poster", "streetwear", "music"],
+  "props": {
+    "headline": { "type": "lines", "label": "Headline", "default": ["Cut it", "*LOUD*"], "max": 4, "help": "One to four short lines. *Starred* words are cut letter by letter." },
+    "kicker": { "type": "text", "label": "Kicker", "default": "Vol. 03 · Out now", "help": "Taped above the headline. Leave empty for none." },
+    "bubble": { "type": "text", "label": "Speech bubble", "default": "Wow!", "maxLength": 10, "help": "Leave empty to hide the bubble." },
+    "paper": { "type": "color", "label": "Paper", "default": "#ece2cc" },
+    "ink": { "type": "color", "label": "Ink", "default": "#1b1714" },
+    "accent": { "type": "color", "label": "Accent", "default": "#e2402b" },
+    "accent2": { "type": "color", "label": "Second accent", "default": "#f2b92f" },
+    "rate": { "type": "number", "label": "Frame rate", "default": 12, "min": 6, "max": 15, "step": 1, "unit": "fps", "help": "Drawings per second: lower feels more hand-animated." },
+    "jitter": { "type": "number", "label": "Hand jitter", "default": 2, "min": 0, "max": 6, "step": 0.5, "unit": "px", "help": "How much pieces shift between drawings." },
+    "images": { "type": "lines", "label": "Images", "default": [], "max": 3, "help": "Up to 3 image URLs cut in as photo scraps (must allow cross-origin loading)." },
+    "seed": { "type": "number", "label": "Shuffle", "default": 3, "min": 0, "max": 999, "step": 1, "help": "Another mix of fonts, scraps and tilts." }
+  },
+  "examples": [
+    { "name": "Poster", "props": {} },
+    { "name": "Blue riot", "props": { "headline": ["The *NEW* sound", "of Friday"], "kicker": "Live at Hall 4", "bubble": "Yeah!", "paper": "#e9e4d8", "accent": "#2f5bd3", "accent2": "#ff5a36", "rate": 8, "seed": 21 } },
+    { "name": "Launch zine", "props": { "headline": ["Made by hand.", "Shipped *FAST*"], "kicker": "agentcut", "bubble": "", "paper": "#f1ead9", "ink": "#121212", "accent": "#ff3d7f", "accent2": "#3dd6b5", "jitter": 1, "seed": 9 } }
+  ],
+  "stillAt": 0.7
+}

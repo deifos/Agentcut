@@ -1,0 +1,27 @@
+{
+  "id": "word-stack",
+  "name": "Word Stack",
+  "category": "Text & Titles",
+  "description": "A fixed lead phrase beside a slot-reel of words: the reel snaps up one word at a time, the centered word lit in the accent while its neighbours fade, shrink and blur.",
+  "useWhen": "Listing what a product does or who it's for while showing the whole list at once: \"We help you / design / ship / grow\", features, integrations, audiences. It lands on the last word, so put the payoff last. 3–6 short words; mobile always stacks the lead above the reel.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["word list", "slot", "reel", "roller", "rotating text", "headline", "features", "use cases"],
+  "props": {
+    "lead": { "type": "text", "label": "Lead", "default": "We help you" },
+    "words": { "type": "lines", "label": "Words", "default": ["design", "record", "edit", "ship"], "max": 10, "help": "One per line; the reel lands on the last one." },
+    "layout": { "type": "select", "label": "Layout", "default": "side", "options": [{ "value": "side", "label": "Side by side" }, { "value": "stacked", "label": "Stacked" }] },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Active word", "default": "#facc15" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 9, "min": 4, "max": 18, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "700", "options": [{ "value": "500", "label": "Medium" }, { "value": "600", "label": "Semibold" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "sans", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] }
+  },
+  "examples": [
+    { "name": "We help you", "props": { "background": "#0b0b0f" } },
+    { "name": "Light, stacked", "props": { "lead": "Built for", "words": ["founders", "marketers", "creators", "everyone"], "layout": "stacked", "color": "#0f172a", "accent": "#2563eb", "background": "#f8fafc", "font": "display", "weight": "800" } },
+    { "name": "Serif", "props": { "lead": "Make it", "words": ["simple", "honest", "yours"], "font": "serif", "weight": "500", "accent": "#fb7185", "size": 12, "background": "#140c0f" } }
+  ],
+  "stillAt": 0.4
+}

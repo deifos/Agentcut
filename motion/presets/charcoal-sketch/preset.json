@@ -1,0 +1,17 @@
+{
+  "name": "Charcoal Sketch",
+  "description": "Product explainer as a pencil comic: boiling graphite lines on paper, one full-colour hero that dashes across and erases each pain into its fix, 80s synth-pop.",
+  "kind": "Product explainer",
+  "aspect": "wide",
+  "preview": "preview.mp4",
+  "poster": "poster.jpg",
+  "fields": [
+    { "id": "topic", "label": "Product or topic", "type": "longtext", "required": true, "placeholder": "What it is and who it's for" },
+    { "id": "story", "label": "Story", "type": "longtext", "placeholder": "Pains and how it fixes each one, or the beats you want" },
+    { "id": "hero", "label": "Colour hero", "type": "images", "help": "Mascot, logo or product images to keep in colour (one per pose)." },
+    { "id": "length", "label": "Length", "type": "text", "placeholder": "~60 s" },
+    { "id": "voice", "label": "Voice-over", "type": "text", "placeholder": "Yes (Gemini Puck) or no" },
+    { "id": "music", "label": "Music", "type": "audio", "help": "Leave empty to make new 80s synth-pop." },
+    { "id": "endcard", "label": "End card", "type": "text", "placeholder": "Name · tagline · URL" }
+  ]
+}

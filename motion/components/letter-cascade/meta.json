@@ -1,0 +1,29 @@
+{
+  "id": "letter-cascade",
+  "name": "Letter Cascade",
+  "category": "Text & Titles",
+  "description": "Every letter springs out of its own mask with a slight tilt, one after another, then drops back out in order.",
+  "useWhen": "Energetic titles and section headers: launch day, a big feature name, a hype line before a demo. Works best with short, bold lines; uppercase in Anton or Unbounded feels like a sports or fashion promo.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["title", "letters", "cascade", "spring", "kinetic type", "intro", "bold"],
+  "props": {
+    "lines": { "type": "lines", "label": "Text", "default": ["Ship *faster*"], "max": 3, "help": "One line per row. *Starred* words use the accent." },
+    "direction": { "type": "select", "label": "Direction", "default": "rise", "options": [{ "value": "rise", "label": "Rise up" }, { "value": "drop", "label": "Drop down" }] },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#f97316" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 15, "min": 4, "max": 30, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "800", "options": [{ "value": "500", "label": "Medium" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }, { "value": "900", "label": "Black" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "wide", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "uppercase": { "type": "boolean", "label": "Uppercase", "default": false },
+    "stagger": { "type": "number", "label": "Letter delay", "default": 1.5, "min": 0.5, "max": 6, "step": 0.5, "unit": "frames" },
+    "bounce": { "type": "number", "label": "Bounce", "default": 0.4, "min": 0, "max": 1, "step": 0.05 }
+  },
+  "examples": [
+    { "name": "Rise", "props": {} },
+    { "name": "Poster", "props": { "lines": ["*Launch*", "week"], "font": "condensed", "weight": "500", "uppercase": true, "size": 22, "accent": "#facc15", "background": "#111111" } },
+    { "name": "Soft drop", "props": { "lines": ["Hello, *world*"], "direction": "drop", "font": "fraunces", "weight": "700", "bounce": 0.7, "accent": "#f472b6" } }
+  ],
+  "stillAt": 0.6
+}

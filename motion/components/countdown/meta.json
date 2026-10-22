@@ -1,0 +1,28 @@
+{
+  "id": "countdown",
+  "name": "Countdown",
+  "category": "Text & Titles",
+  "description": "Big numbers count down, each punching in on its own beat with an arc draining around it, then a final word lands with a ripple.",
+  "useWhen": "Build-up before a reveal: \"3, 2, 1, GO\" before a launch, a livestream or event starting, a challenge timer, a drop. The clip is split evenly among the numbers and the final word, so 1 second per number = 30 frames × (from + 1).",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["countdown", "timer", "3 2 1", "numbers", "launch", "reveal", "build-up", "ring"],
+  "props": {
+    "from": { "type": "number", "label": "Count from", "default": 3, "min": 1, "max": 10, "step": 1 },
+    "final": { "type": "text", "label": "Final word", "default": "GO", "maxLength": 16, "help": "Leave empty to end on 1." },
+    "style": { "type": "select", "label": "Style", "default": "ring", "options": [{ "value": "ring", "label": "Ring" }, { "value": "bold", "label": "Bold disc" }, { "value": "minimal", "label": "Minimal" }] },
+    "color": { "type": "color", "style": "text", "label": "Numbers", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#f97316", "help": "The arc, the disc and the final word." },
+    "track": { "type": "color", "label": "Track", "default": "#2a2a2e", "help": "The ring's track and the alternate disc." },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 22, "min": 8, "max": 40, "step": 1, "unit": "% of frame" },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "condensed", "options": [{ "value": "condensed", "label": "Anton" }, { "value": "wide", "label": "Unbounded" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "glow": { "type": "boolean", "label": "Glow", "default": true }
+  },
+  "examples": [
+    { "name": "Ring", "props": {} },
+    { "name": "Bold disc", "props": { "style": "bold", "final": "LIVE", "accent": "#facc15", "track": "#18181b", "background": "#0a0a0a", "glow": false } },
+    { "name": "Minimal", "props": { "style": "minimal", "from": 5, "final": "Launching now", "font": "sans", "color": "#0f172a", "accent": "#6366f1", "track": "#e2e8f0", "background": "#f8fafc", "glow": false, "size": 18 } }
+  ],
+  "stillAt": 0.1
+}

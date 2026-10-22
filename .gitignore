@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# next.js
+/.next/
+/out/
+/build
+
+# helper build output
+packages/agentcut/dist/
+packages/agentcut/.tmp/
+
+# misc
+.DS_Store
+*.pem
+*.tgz
+
+# debug
+npm-debug.log*
+
+# env files
+.env*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

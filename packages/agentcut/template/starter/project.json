@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": "Welcome to Agentcut",
+  "fps": 30,
+  "durationInFrames": 180,
+  "background": "#07070b",
+  "variants": {
+    "wide": { "width": 1920, "height": 1080 },
+    "mobile": { "width": 1080, "height": 1920 }
+  },
+  "defaultVariant": "wide",
+  "fonts": ["Inter:400;600;800;900"]
+}

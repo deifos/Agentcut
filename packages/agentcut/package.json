@@ -1,0 +1,52 @@
+{
+  "name": "agentcut",
+  "version": "0.1.0",
+  "description": "Local helper for Agentcut: runs your coding agent (Claude Code or Codex), your video workspace and live preview bundles for the Agentcut studio page.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agentcut": "dist/studio/cli.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deifos/Agentcut.git",
+    "directory": "packages/agentcut"
+  },
+  "files": [
+    "dist",
+    "template",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "studio": "tsx src/studio/cli.ts",
+    "sync:skill": "node scripts/sync-studio-skill.mjs",
+    "prepack": "npm run sync:skill && npm run build"
+  },
+  "keywords": [
+    "agentcut",
+    "mcp",
+    "remotion",
+    "video",
+    "claude-code",
+    "codex"
+  ],
+  "engines": {
+    "node": ">=20.10"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "esbuild": "^0.28.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

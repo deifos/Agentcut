@@ -1,0 +1,25 @@
+{
+  "id": "checklist",
+  "name": "Checklist",
+  "category": "Overlays",
+  "description": "A to-do card whose items get ticked off one by one: a circle fills, a checkmark draws in, the text dims and strikes through, and a progress bar fills.",
+  "useWhen": "Showing steps getting done or features included: an onboarding flow, \"what's in the box\", a launch checklist, before/after task lists, a recap of what the product just did for you.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["checklist", "todo", "tasks", "steps", "checkmark", "progress", "list", "features"],
+  "props": {
+    "title": { "type": "text", "label": "Title", "default": "Launch checklist", "help": "Leave empty for none." },
+    "items": { "type": "lines", "label": "Items", "default": ["Record the demo", "Add captions", "Pick the music", "Export in 4K"], "max": 6, "help": "3 to 6 items, ticked in order." },
+    "accent": { "type": "color", "style": "accent", "label": "Check color", "default": "#22c55e" },
+    "theme": { "type": "select", "style": "theme", "label": "Theme", "default": "dark", "options": [{ "value": "dark", "label": "Dark" }, { "value": "light", "label": "Light" }] },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "strike": { "type": "boolean", "label": "Strike through", "default": true },
+    "progress": { "type": "boolean", "label": "Progress bar", "default": true }
+  },
+  "examples": [
+    { "name": "Launch", "props": { "background": "#0b0b0f" } },
+    { "name": "Light onboarding", "props": { "title": "Get started", "items": ["Create your workspace", "Invite your team", "Connect GitHub", "Ship your first video", "Share the link"], "accent": "#6366f1", "theme": "light", "strike": false, "background": "#eef0f5" } },
+    { "name": "No title", "props": { "title": "", "items": ["No editing skills", "No stock footage", "No waiting on renders"], "accent": "#f97316", "progress": false } }
+  ],
+  "stillAt": 0.6
+}

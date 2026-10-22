@@ -1,0 +1,30 @@
+{
+  "id": "kinetic-punch",
+  "name": "Kinetic Punch",
+  "category": "Text & Titles",
+  "description": "Fast kinetic typography: one word per beat slams in from a blurred scale, with optional color flips on every other beat.",
+  "useWhen": "High-energy intros, hype reels and social cuts: a string of short words that land on the music's beats (\"Record. Edit. Ship.\"). Set the beat to the song's beat length in frames (30 fps: 120 BPM = 15 frames). Use | inside a word to break it onto two lines.",
+  "durationInFrames": 90,
+  "layer": "full",
+  "tags": ["kinetic type", "beat", "punch", "hype", "social", "fast", "music", "strobe"],
+  "props": {
+    "words": { "type": "lines", "label": "Words", "default": ["Record.", "Edit.", "Polish.", "Ship.", "Repeat."], "max": 16, "help": "One per beat. Use | for a line break inside a beat." },
+    "beat": { "type": "number", "label": "Beat", "default": 15, "min": 4, "max": 45, "step": 1, "unit": "frames", "help": "Frames per word (shrinks to fit the clip)." },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#d9f99d" },
+    "background": { "type": "color", "style": "backdrop", "label": "Background", "default": "#0b0d10", "help": "\"transparent\" to sit over footage." },
+    "flashBackground": { "type": "color", "style": "backdrop", "label": "Flip text", "default": "#0b0d10", "help": "Text color on the flipped (accent) beats." },
+    "size": { "type": "number", "label": "Size", "default": 32, "min": 8, "max": 60, "step": 1, "unit": "% of frame", "help": "Largest size; long words shrink to fit." },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "condensed", "options": [{ "value": "condensed", "label": "Anton" }, { "value": "wide", "label": "Unbounded" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "400", "options": [{ "value": "400", "label": "Regular" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }, { "value": "900", "label": "Black" }] },
+    "uppercase": { "type": "boolean", "label": "Uppercase", "default": true },
+    "alternate": { "type": "boolean", "label": "Flip colors every other beat", "default": true },
+    "shake": { "type": "boolean", "label": "Impact shake", "default": true }
+  },
+  "examples": [
+    { "name": "Strobe", "props": {} },
+    { "name": "Over footage", "props": { "background": "transparent", "alternate": false, "words": ["No", "more", "boring|demos"], "beat": 20, "font": "wide", "weight": "800", "size": 22 } },
+    { "name": "Serif rhythm", "props": { "words": ["Slow", "down.", "Look", "closer."], "font": "serif", "uppercase": false, "accent": "#fca5a5", "background": "#1c1917", "beat": 18, "shake": false } }
+  ],
+  "stillAt": 0.1
+}

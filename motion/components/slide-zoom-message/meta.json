@@ -1,0 +1,199 @@
+{
+  "id": "slide-zoom-message",
+  "name": "Slide & Zoom Message",
+  "category": "Text & Titles",
+  "description": "A message slides in from the side with motion blur, the camera pushes in on its first words, travels along the line, then pulls back to show it all.",
+  "useWhen": "Introducing a message or claim with energy: the hook of a promo, a feature name, a bold statement before a reveal. Works best with one or two short lines; give it 3–5 seconds.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": [
+    "intro",
+    "kinetic type",
+    "camera",
+    "zoom",
+    "pan",
+    "motion blur",
+    "hook"
+  ],
+  "props": {
+    "lines": {
+      "type": "lines",
+      "label": "Message",
+      "default": [
+        "Your demos, *finally* sharp."
+      ],
+      "max": 2,
+      "help": "One or two short lines. *Starred* words use the accent color."
+    },
+    "enterFrom": {
+      "type": "select",
+      "label": "Slides in from",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    "pan": {
+      "type": "select",
+      "label": "Camera travels",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left → right along the line"
+        },
+        {
+          "value": "right",
+          "label": "Right → left"
+        }
+      ],
+      "help": "Where the push-in starts; the camera then travels to the other side."
+    },
+    "zoom": {
+      "type": "number",
+      "label": "Zoom",
+      "default": 2.2,
+      "min": 1.2,
+      "max": 4,
+      "step": 0.1,
+      "unit": "x"
+    },
+    "color": {
+      "style": "text",
+      "type": "color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    "accent": {
+      "style": "accent",
+      "type": "color",
+      "label": "Accent",
+      "default": "#34d399"
+    },
+    "background": {
+      "type": "color",
+      "label": "Background",
+      "default": "transparent"
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 9,
+      "min": 4,
+      "max": 18,
+      "step": 0.5,
+      "unit": "% of frame"
+    },
+    "weight": {
+      "style": "weight",
+      "type": "select",
+      "label": "Weight",
+      "default": "800",
+      "options": [
+        {
+          "value": "600",
+          "label": "Semibold"
+        },
+        {
+          "value": "800",
+          "label": "Extra bold"
+        },
+        {
+          "value": "900",
+          "label": "Black"
+        }
+      ]
+    },
+    "font": {
+      "style": "font",
+      "type": "select",
+      "label": "Font",
+      "default": "sans",
+      "options": [
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "syne",
+          "label": "Syne"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "mono",
+          "label": "Mono"
+        },
+        { "value": "archivo", "label": "Archivo Black" },
+        { "value": "caveat", "label": "Caveat" },
+        { "value": "pixel", "label": "VT323" },
+        { "value": "tech", "label": "Orbitron" },
+        { "value": "heavy", "label": "Montserrat" },
+        { "value": "retro", "label": "Bungee" }
+      ]
+    },
+    "motionBlur": {
+      "type": "boolean",
+      "label": "Motion blur",
+      "default": true
+    }
+  },
+  "examples": [
+    {
+      "name": "Hook",
+      "props": {}
+    },
+    {
+      "name": "From the right",
+      "props": {
+        "lines": [
+          "Record. Edit. *Ship.*"
+        ],
+        "enterFrom": "right",
+        "pan": "right",
+        "accent": "#f43f5e"
+      }
+    },
+    {
+      "name": "On a color",
+      "props": {
+        "lines": [
+          "Meet *Agentcut*"
+        ],
+        "background": "#111827",
+        "accent": "#60a5fa",
+        "zoom": 2.8
+      }
+    }
+  ],
+  "stillAt": 0.86
+}

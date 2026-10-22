@@ -1,0 +1,29 @@
+{
+  "id": "logo-sting",
+  "name": "Logo Sting",
+  "category": "Text & Titles",
+  "description": "A brand sting: a mark pops in, the wordmark converges out of a wide blur, a glow breathes and a shine glides across, then the tagline settles.",
+  "useWhen": "The first or last two seconds of a video: the brand or product name with its tagline, an end card before the call to action, a sponsor or partner reveal.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["logo", "brand", "sting", "intro", "outro", "end card", "wordmark", "shine", "glow"],
+  "props": {
+    "name": { "type": "text", "label": "Name", "default": "agentcut", "maxLength": 24 },
+    "tagline": { "type": "text", "label": "Tagline", "default": "Videos that sell themselves", "help": "Leave empty for none." },
+    "mark": { "type": "select", "label": "Mark", "default": "square", "options": [{ "value": "square", "label": "Rounded square" }, { "value": "dot", "label": "Dot" }, { "value": "none", "label": "None" }] },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#8b5cf6" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 11, "min": 4, "max": 22, "step": 0.5, "unit": "% of frame" },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "display", "options": [{ "value": "display", "label": "Bricolage" }, { "value": "sans", "label": "Inter" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "700", "options": [{ "value": "400", "label": "Regular" }, { "value": "500", "label": "Medium" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }] },
+    "glow": { "type": "boolean", "label": "Glow", "default": true },
+    "shine": { "type": "boolean", "label": "Shine sweep", "default": true }
+  },
+  "examples": [
+    { "name": "Glow", "props": { "background": "#07060d" } },
+    { "name": "Clean light", "props": { "name": "Northwind", "tagline": "", "mark": "dot", "color": "#0f172a", "accent": "#0ea5e9", "background": "#f8fafc", "glow": false, "font": "sans", "weight": "800" } },
+    { "name": "Serif luxe", "props": { "name": "Atelier", "tagline": "Since 2026", "mark": "none", "font": "serif", "weight": "400", "size": 15, "accent": "#d4a373", "background": "#0c0a09" } }
+  ],
+  "stillAt": 0.7
+}

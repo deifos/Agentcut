@@ -1,0 +1,9 @@
+.git
+node_modules
+**/node_modules
+.next
+packages/agentcut/dist
+packages/agentcut/.tmp
+*.tsbuildinfo
+.env*
+!.env.example

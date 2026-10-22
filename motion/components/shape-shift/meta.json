@@ -1,0 +1,31 @@
+{
+  "id": "shape-shift",
+  "name": "Shape Shift",
+  "category": "AI & Product",
+  "description": "One shape flows into the next through a continuous outline (by way of a circle), hopping, turning and squashing as it morphs, each held shape with its own caption.",
+  "useWhen": "Explainer and keynote-style storytelling where one idea turns into the next: a phone becomes a map pin becomes a heart (open the app, find a place, save it), a cloud becomes a bolt, steps of a flow, before/after. 2–5 shapes; put the payoff last, it holds to the end.",
+  "durationInFrames": 150,
+  "layer": "full",
+  "tags": ["morph", "shape", "explainer", "icon", "transform", "keynote", "steps", "story", "liquid", "geometric"],
+  "props": {
+    "shapes": { "type": "lines", "label": "Shapes", "default": ["phone", "pin", "heart", "star"], "max": 8, "help": "One per line: circle, square, triangle, star, heart, pin, phone, bubble, bolt, badge, play, cloud, blob." },
+    "captions": { "type": "lines", "label": "Captions", "default": ["Open the app", "Find a spot", "Save favourites", "Leave a review"], "max": 8, "help": "One per shape, shown under it. Leave empty for none." },
+    "colors": { "type": "lines", "label": "Colors", "default": ["#3d5bff", "#22c55e", "#f43f5e", "#f59e0b"], "max": 8, "help": "One hex color per shape (repeats if shorter); colors blend through the morph." },
+    "background": { "type": "color", "label": "Background", "default": "#0b0d14", "help": "\"transparent\" to sit over other layers." },
+    "captionColor": { "type": "color", "label": "Caption", "default": "#ffffff" },
+    "size": { "type": "number", "label": "Size", "default": 40, "min": 15, "max": 70, "step": 1, "unit": "% of frame" },
+    "morphFrames": { "type": "number", "label": "Morph length", "default": 22, "min": 8, "max": 48, "step": 1, "unit": "frames" },
+    "via": { "type": "boolean", "label": "Pass through a circle", "default": true, "help": "Complex shapes morph A → circle → B, which reads cleaner than a direct blend." },
+    "squash": { "type": "number", "label": "Squash & stretch", "default": 12, "min": 0, "max": 30, "step": 1, "unit": "%" },
+    "rotation": { "type": "boolean", "label": "Turn while morphing", "default": true },
+    "trail": { "type": "boolean", "label": "Echo outlines", "default": false },
+    "glow": { "type": "boolean", "label": "Glow", "default": true },
+    "font": { "type": "select", "label": "Caption font", "default": "display", "options": [{ "value": "display", "label": "Bricolage" }, { "value": "sans", "label": "Inter" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }] }
+  },
+  "examples": [
+    { "name": "App story", "props": {} },
+    { "name": "Weather", "props": { "shapes": ["cloud", "bolt", "circle"], "captions": ["Cloudy", "Storms", "Clear skies"], "colors": ["#94a3b8", "#facc15", "#fb923c"], "background": "#0f172a", "font": "grotesk" } },
+    { "name": "Light, flat", "props": { "shapes": ["bubble", "play", "badge"], "captions": ["Ask", "Watch", "Done"], "colors": ["#111827", "#ef4444", "#10b981"], "background": "#f5f5f4", "captionColor": "#111827", "glow": false, "trail": true, "font": "sans" } }
+  ],
+  "stillAt": 0.8
+}

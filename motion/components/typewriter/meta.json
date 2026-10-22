@@ -1,0 +1,29 @@
+{
+  "id": "typewriter",
+  "name": "Typewriter",
+  "category": "Text & Titles",
+  "description": "Text typed out letter by letter behind a blinking caret, with an optional prompt sign in front.",
+  "useWhen": "Developer and AI videos: a terminal command, a prompt being written, a question to the viewer, a slow dramatic line. Set the speed so the text finishes about a second before the clip ends. *Starred* words use the accent.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["typewriter", "typing", "terminal", "caret", "code", "prompt", "text"],
+  "props": {
+    "prefix": { "type": "text", "label": "Prefix", "default": ">", "help": "Shown before the first line in the accent color (\"$\", \">\", or empty)." },
+    "lines": { "type": "lines", "label": "Text", "default": ["make a launch video", "for my *app*"], "max": 5, "help": "One line per row. *Starred* words use the accent." },
+    "speed": { "type": "number", "label": "Speed", "default": 18, "min": 4, "max": 60, "step": 1, "unit": "chars/s" },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#e5e7eb" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#34d399" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 7, "min": 3, "max": 16, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "label": "Weight", "default": "500", "options": [{ "value": "400", "label": "Regular" }, { "value": "500", "label": "Medium" }, { "value": "700", "label": "Bold" }] },
+    "font": { "type": "select", "label": "Font", "default": "mono", "options": [{ "value": "mono", "label": "Mono" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }] },
+    "align": { "type": "select", "label": "Align", "default": "left", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }] },
+    "caret": { "type": "select", "label": "Caret", "default": "bar", "options": [{ "value": "bar", "label": "Bar" }, { "value": "block", "label": "Block" }, { "value": "none", "label": "None" }] }
+  },
+  "examples": [
+    { "name": "Prompt", "props": {} },
+    { "name": "Terminal", "props": { "prefix": "$", "lines": ["npx *agentcut*"], "caret": "block", "background": "#0b0d10", "accent": "#a3e635" } },
+    { "name": "Serif question", "props": { "prefix": "", "lines": ["What if editing", "felt like *writing*?"], "font": "serif", "weight": "400", "size": 9, "align": "center", "speed": 14, "accent": "#fbbf24" } }
+  ],
+  "stillAt": 0.8
+}

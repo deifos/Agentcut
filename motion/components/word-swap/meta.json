@@ -1,0 +1,30 @@
+{
+  "id": "word-swap",
+  "name": "Rotating Words",
+  "category": "Text & Titles",
+  "description": "A fixed phrase with one word that keeps swapping: each word blurs up and away as the next one rises in.",
+  "useWhen": "Who it's for or what it does, in one line: \"Built for designers / founders / teams\", \"Record. Edit. Share.\", a list of use cases or integrations. The words share the clip equally, so use 3–5 short words.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["rotating text", "word swap", "headline", "carousel", "use cases", "blur"],
+  "props": {
+    "prefix": { "type": "text", "label": "Before", "default": "Built for" },
+    "words": { "type": "lines", "label": "Words", "default": ["designers", "founders", "teams"], "max": 8, "help": "One per line; they swap in order." },
+    "suffix": { "type": "text", "label": "After", "default": "", "help": "Optional text after the word." },
+    "layout": { "type": "select", "label": "Layout", "default": "inline", "options": [{ "value": "inline", "label": "One line" }, { "value": "stacked", "label": "Stacked" }] },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Word color", "default": "#60a5fa" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 9, "min": 4, "max": 20, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "700", "options": [{ "value": "500", "label": "Medium" }, { "value": "600", "label": "Semibold" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "sans", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "pill": { "type": "boolean", "label": "Word in a pill", "default": false },
+    "motion": { "type": "select", "label": "Swap", "default": "rise", "options": [{ "value": "rise", "label": "Blur rise" }, { "value": "flip", "label": "Flip" }, { "value": "zoom", "label": "Zoom" }] }
+  },
+  "examples": [
+    { "name": "Built for", "props": {} },
+    { "name": "Pill, stacked", "props": { "prefix": "Your next video is", "words": ["faster", "sharper", "on brand"], "layout": "stacked", "pill": true, "accent": "#a3e635", "font": "display", "weight": "800" } },
+    { "name": "Editorial zoom", "props": { "prefix": "Made for", "words": ["launches", "tutorials", "socials"], "font": "serif", "weight": "500", "motion": "zoom", "accent": "#f9a8d4", "size": 11 } }
+  ],
+  "stillAt": 0.25
+}

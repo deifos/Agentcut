@@ -1,0 +1,786 @@
+@import "tailwindcss" source(none);
+@source "../app";
+@source "../components";
+@import "tw-animate-css";
+@import "./styles/shadcn-utilities.css";
+
+.agentcut-color-picker .react-colorful {
+  width: 100%;
+  height: 184px;
+}
+
+.agentcut-color-picker .react-colorful__saturation {
+  border-bottom-width: 10px;
+  border-radius: 10px 10px 0 0;
+}
+
+.agentcut-color-picker .react-colorful__hue {
+  height: 18px;
+  border-radius: 0 0 10px 10px;
+}
+
+.agentcut-color-picker .react-colorful__hue-pointer,
+.agentcut-color-picker .react-colorful__saturation-pointer {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+@custom-variant dark (&:is(.dark *));
+
+/* Smooth scrolling globally */
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes editor-popover-enter {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    translate: 0 14px;
+    scale: 0.97;
+  }
+  72% {
+    filter: blur(0.75px);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+.editor-popover-enter,
+.editor-popup-motion[data-state="open"] {
+  animation: editor-popover-enter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  backface-visibility: hidden;
+}
+
+.timeline-track-bed {
+  background: color-mix(in oklab, var(--background) 72%, var(--muted));
+  border-color: color-mix(in oklab, var(--border) 58%, transparent);
+}
+
+.timeline-segment-raised {
+  box-shadow:
+    var(--tw-inset-shadow, 0 0 #0000),
+    var(--tw-inset-ring-shadow, 0 0 #0000),
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    inset 0 1px 0 color-mix(in oklab, var(--card) 42%, transparent),
+    0 2px 2px oklch(0.2 0.02 210 / 24%),
+    0 5px 9px oklch(0.2 0.02 210 / 16%);
+}
+
+.camera-move-glyph__scene {
+  transform-box: view-box;
+  transform-origin: center;
+}
+
+.camera-move-glyph__scene--close-up {
+  --camera-move-from: scale(0.84);
+  --camera-move-to: scale(1.15);
+}
+
+.camera-move-glyph__scene--pan-up {
+  --camera-move-from: translateY(2.5px);
+  --camera-move-to: translateY(-2.5px);
+}
+
+.camera-move-glyph__scene--pan-down {
+  --camera-move-from: translateY(-2.5px);
+  --camera-move-to: translateY(2.5px);
+}
+
+.camera-move-glyph__scene--pan-left {
+  --camera-move-from: translateX(3px);
+  --camera-move-to: translateX(-3px);
+}
+
+.camera-move-glyph__scene--pan-right {
+  --camera-move-from: translateX(-3px);
+  --camera-move-to: translateX(3px);
+}
+
+.camera-move-glyph__scene--push-in {
+  --camera-move-from: scale(0.84);
+  --camera-move-to: scale(1.18);
+}
+
+.camera-move-glyph__scene--pull-out {
+  --camera-move-from: scale(1.18);
+  --camera-move-to: scale(0.84);
+}
+
+.camera-move-option:is(:hover, [aria-pressed="true"])
+  [data-camera-move-preview] {
+  animation: camera-move-preview 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.camera-move-glyph__close-up-frame {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.camera-move-option:is(:hover, [aria-pressed="true"])
+  .camera-move-glyph__close-up-frame {
+  animation: camera-close-up-frame 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes camera-move-preview {
+  0% {
+    opacity: 0;
+    transform: var(--camera-move-from);
+  }
+  16% {
+    opacity: 1;
+  }
+  76% {
+    opacity: 1;
+    transform: var(--camera-move-to);
+  }
+  100% {
+    opacity: 0;
+    transform: var(--camera-move-to);
+  }
+}
+
+@keyframes camera-close-up-frame {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  18% {
+    opacity: 0.75;
+  }
+  76% {
+    opacity: 0.9;
+    transform: scale(0.64);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.64);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-popover-enter,
+  .editor-popup-motion[data-state="open"] {
+    animation: none;
+    filter: none;
+    translate: none;
+    scale: 1;
+  }
+
+  .camera-move-option .camera-move-glyph__scene {
+    animation: none;
+    opacity: 1;
+  }
+
+  .camera-move-option .camera-move-glyph__close-up-frame {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ---- Theme ---- */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-noto-sans), sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --radius: 0px;
+  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --tracking-normal: var(--tracking-normal);
+  --shadow-2xl: var(--shadow-2xl);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-lg: 0 12px 24px -6px rgb(0 0 0 / 0.08), 0 4px 8px -4px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 1px -1px rgb(0 0 0 / 0.03);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-2xs: var(--shadow-2xs);
+  --spacing: var(--spacing);
+  --letter-spacing: var(--letter-spacing);
+  --shadow-offset-y: var(--shadow-offset-y);
+  --shadow-offset-x: var(--shadow-offset-x);
+  --shadow-spread: var(--shadow-spread);
+  --shadow-blur: var(--shadow-blur);
+  --shadow-opacity: var(--shadow-opacity);
+  --color-shadow-color: var(--shadow-color);
+  --color-destructive-foreground: var(--destructive-foreground);
+  /* Marketing pages: one sharp accent on warm paper. */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --font-display: var(--font-bricolage), var(--font-figtree), sans-serif;
+  /* Track colors for timeline lanes */
+  --color-track-zoom: var(--track-zoom);
+  --color-track-blur: var(--track-blur);
+  --color-track-text: var(--track-text);
+  --color-track-spotlight: var(--track-spotlight);
+  --color-track-clip: var(--track-clip);
+  --color-track-freeze: var(--track-freeze);
+  --color-track-intermission: var(--track-intermission);
+  --color-track-tap: var(--track-tap);
+  --color-track-image: var(--track-image);
+}
+
+/* Theme tokens: edit these to restyle the whole app (shadcn variables, light mode). */
+:root {
+  /* Neutral, airy palette: white panels on a soft gray canvas, near-black primary. */
+  --radius: 0.75rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.21 0.006 286);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.006 286);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.006 286);
+  --primary: oklch(0.21 0.006 286);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286);
+  --secondary-foreground: oklch(0.21 0.006 286);
+  --muted: oklch(0.955 0.0015 286);
+  --muted-foreground: oklch(0.55 0.01 286);
+  --accent: oklch(0.955 0.0015 286);
+  --accent-foreground: oklch(0.21 0.006 286);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.21 0.006 286 / 8%);
+  --input: oklch(0.21 0.006 286 / 10%);
+  --ring: oklch(0.71 0.01 286);
+  --chart-1: oklch(0.62 0.16 250);
+  --chart-2: oklch(0.7 0.14 160);
+  --chart-3: oklch(0.72 0.14 75);
+  --chart-4: oklch(0.65 0.18 330);
+  --chart-5: oklch(0.6 0.15 290);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.21 0.006 286);
+  --sidebar-primary: oklch(0.21 0.006 286);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.955 0.0015 286);
+  --sidebar-accent-foreground: oklch(0.21 0.006 286);
+  --sidebar-border: oklch(0.21 0.006 286 / 8%);
+  --sidebar-ring: oklch(0.71 0.01 286);
+  --destructive-foreground: oklch(1 0 0);
+  --brand: oklch(0.63 0.21 33);
+  --brand-foreground: oklch(0.99 0.005 60);
+  --paper: oklch(0.975 0.007 80);
+  --ink: oklch(0.19 0.01 60);
+  --font-sans: var(--font-figtree), sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --shadow-color: hsl(0 0% 0%);
+  --shadow-opacity: 0.08;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 1px;
+  --letter-spacing: 0em;
+  --spacing: 0.25rem;
+  --shadow-2xs: 0 1px rgb(0 0 0 / 0.04);
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.2);
+  --tracking-normal: 0em;
+  --track-zoom: oklch(0.62 0.16 245);
+  --track-blur: oklch(0.68 0.13 340);
+  --track-text: oklch(0.64 0.15 155);
+  --track-spotlight: oklch(0.72 0.14 75);
+  --track-clip: oklch(0.58 0.15 290);
+  --track-freeze: oklch(0.65 0.14 200);
+  --track-intermission: oklch(0.76 0.16 40);
+  --track-tap: oklch(0.66 0.18 355);
+  --track-image: oklch(0.62 0.16 125);
+  --default-font-family: var(--font-figtree), sans-serif;
+}
+
+/* Dark mode: the same tokens under .dark (toggled on <html>). */
+.dark {
+  --background: oklch(0.2 0.004 286);
+  --foreground: oklch(0.96 0 0);
+  --card: oklch(0.23 0.004 286);
+  --card-foreground: oklch(0.96 0 0);
+  --popover: oklch(0.23 0.004 286);
+  --popover-foreground: oklch(0.96 0 0);
+  --primary: oklch(0.96 0 0);
+  --primary-foreground: oklch(0.2 0.004 286);
+  --secondary: oklch(0.27 0.004 286);
+  --secondary-foreground: oklch(0.96 0 0);
+  --muted: oklch(0.155 0.003 286);
+  --muted-foreground: oklch(0.68 0.008 286);
+  --accent: oklch(0.28 0.004 286);
+  --accent-foreground: oklch(0.96 0 0);
+  --destructive: oklch(0.7 0.19 22);
+  --destructive-foreground: oklch(0.13 0 0);
+  --brand: oklch(0.7 0.19 35);
+  --brand-foreground: oklch(0.16 0.01 40);
+  --paper: oklch(0.16 0.006 60);
+  --ink: oklch(0.96 0.006 80);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.55 0.01 286);
+  --chart-1: oklch(0.7 0.14 250);
+  --chart-2: oklch(0.74 0.12 160);
+  --chart-3: oklch(0.78 0.12 75);
+  --chart-4: oklch(0.72 0.15 330);
+  --chart-5: oklch(0.68 0.13 290);
+  --sidebar: oklch(0.2 0.004 286);
+  --sidebar-foreground: oklch(0.96 0 0);
+  --sidebar-primary: oklch(0.96 0 0);
+  --sidebar-primary-foreground: oklch(0.2 0.004 286);
+  --sidebar-accent: oklch(0.28 0.004 286);
+  --sidebar-accent-foreground: oklch(0.96 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.55 0.01 286);
+  --track-zoom: oklch(0.7 0.14 245);
+  --track-blur: oklch(0.72 0.11 340);
+  --track-text: oklch(0.7 0.13 155);
+  --track-spotlight: oklch(0.76 0.12 75);
+  --track-clip: oklch(0.66 0.13 290);
+  --track-freeze: oklch(0.72 0.12 200);
+  --track-intermission: oklch(0.8 0.14 40);
+  --track-tap: oklch(0.74 0.16 355);
+  --track-image: oklch(0.7 0.14 125);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    letter-spacing: var(--tracking-normal);
+  }
+}
+
+/* Spotlight traveling-light border animation */
+@property --spotlight-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spotlight-border-spin {
+  from {
+    --spotlight-angle: 0deg;
+  }
+  to {
+    --spotlight-angle: 360deg;
+  }
+}
+
+@keyframes spotlight-neon-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes sfx-toggle-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    border-color: color-mix(in oklch, var(--primary) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 20%, transparent);
+    border-color: color-mix(in oklch, var(--primary) 70%, transparent);
+  }
+}
+
+.sfx-toggle {
+  animation: sfx-toggle-pulse 2.6s ease-in-out infinite;
+}
+.sfx-toggle:hover {
+  animation-play-state: paused;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 30%, transparent);
+}
+.sfx-toggle:disabled,
+.sfx-toggle[disabled] {
+  animation: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+/* Export progress animation for showcase */
+@keyframes export-progress {
+  0%,
+  100% {
+    width: 65%;
+  }
+  50% {
+    width: 85%;
+  }
+}
+
+/* Music equalizer bars */
+.eq-bar {
+  width: 3px;
+  background: currentColor;
+  animation: eq-bounce 0.6s ease-in-out infinite alternate;
+}
+.eq-bar:nth-child(1) {
+  height: 40%;
+  animation-delay: 0s;
+}
+.eq-bar:nth-child(2) {
+  height: 80%;
+  animation-delay: 0.15s;
+}
+.eq-bar:nth-child(3) {
+  height: 60%;
+  animation-delay: 0.3s;
+}
+.eq-bar:nth-child(4) {
+  height: 100%;
+  animation-delay: 0.45s;
+}
+
+@keyframes eq-bounce {
+  from {
+    height: 20%;
+  }
+  to {
+    height: 100%;
+  }
+}
+
+/* ===== View Transitions ===== */
+::view-transition-old(.page-enter),
+::view-transition-old(.page-exit) {
+  animation: page-fade-out 200ms ease-in both;
+}
+
+::view-transition-new(.page-enter),
+::view-transition-new(.page-exit) {
+  animation: page-fade-in 250ms ease-out 100ms both;
+}
+
+@keyframes page-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.page-enter),
+  ::view-transition-old(.page-exit),
+  ::view-transition-new(.page-enter),
+  ::view-transition-new(.page-exit) {
+    animation: none;
+  }
+}
+
+/* ===== Beam (mobile transfer page) ===== */
+
+.beam-fade-up {
+  animation: beam-fade-up 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.beam-tap-pulse {
+  animation: beam-tap-pulse 2.4s ease-in-out infinite;
+}
+
+.beam-shimmer {
+  animation: beam-shimmer 1.6s linear infinite;
+}
+
+.beam-success-pop {
+  animation: beam-success-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.beam-error-shake {
+  animation: beam-error-shake 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.beam-float {
+  animation: beam-float 3s ease-in-out infinite;
+}
+
+@keyframes beam-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes beam-tap-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.015);
+  }
+}
+
+@keyframes beam-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes beam-success-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes beam-error-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15%,
+  45%,
+  75% {
+    transform: translateX(-5px);
+  }
+  30%,
+  60%,
+  90% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes beam-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Hover-only broadcasting rings — emitted from around the icon when the
+   parent .group is hovered. Used on the landing-page Beam link to make
+   the phone icon feel like it's actively broadcasting on hover. */
+.beam-broadcast {
+  position: relative;
+  display: inline-flex;
+}
+.beam-broadcast::before,
+.beam-broadcast::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  opacity: 0;
+  pointer-events: none;
+}
+.group:hover .beam-broadcast::before {
+  animation: beam-broadcast-ring 1.4s ease-out infinite;
+}
+.group:hover .beam-broadcast::after {
+  animation: beam-broadcast-ring 1.4s ease-out infinite;
+  animation-delay: 0.7s;
+}
+
+@keyframes beam-broadcast-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beam-fade-up,
+  .beam-tap-pulse,
+  .beam-shimmer,
+  .beam-success-pop,
+  .beam-error-shake,
+  .beam-float {
+    animation: none;
+  }
+  .group:hover .beam-broadcast::before,
+  .group:hover .beam-broadcast::after {
+    animation: none;
+  }
+}
+
+@property --preview-cap {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 54vh;
+}
+
+/* Intermittent glow on the collapsed nav tab to remind users the toolbar
+   can be brought back. */
+@keyframes nav-tab-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 8px 1px color-mix(in oklch, var(--primary) 60%, transparent),
+      0 0 16px 3px color-mix(in oklch, var(--primary) 30%, transparent);
+  }
+}
+.nav-tab-attract {
+  animation: nav-tab-pulse 4.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-tab-attract {
+    animation: none;
+  }
+}
+/* Keep the centered transport clear when editor sidebars constrain the preview. */
+.playback-controls-container {
+  container: playback-controls / inline-size;
+}
+
+@container playback-controls (max-width: 1180px) {
+  .playback-controls-grid {
+    gap: 0.5rem;
+  }
+
+  .playback-controls-primary {
+    gap: 0.375rem;
+  }
+
+  .playback-action-button {
+    width: 2rem;
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .playback-action-label {
+    display: none;
+  }
+
+  .playback-controls-transport {
+    gap: 0.375rem;
+  }
+}
+
+/* Utilities the shadcn chat components use that Tailwind 4.1 doesn't ship yet. */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
+}
+@utility contain-content {
+  contain: content;
+}
+
+/* Motion Studio: thin, quiet scrollbars (the native ones look heavy on Windows). */
+.studio-app * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, currentColor 22%, transparent) transparent;
+}
+.studio-app *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.studio-app *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.studio-app *::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: color-mix(in oklab, currentColor 22%, transparent);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.studio-app *::-webkit-scrollbar-corner {
+  background: transparent;
+}

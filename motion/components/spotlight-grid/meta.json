@@ -1,0 +1,25 @@
+{
+  "id": "spotlight-grid",
+  "name": "Spotlight Grid",
+  "category": "Backgrounds",
+  "description": "A dark technical grid of lines or dots, fading toward the edges, with a colored spotlight that roams over it and lights it up.",
+  "useWhen": "A developer, AI or infrastructure backdrop behind titles, code, a prompt box or a product screenshot. Calmer than a gradient; the grid suggests precision.",
+  "durationInFrames": 300,
+  "layer": "full",
+  "tags": ["grid", "dots", "spotlight", "tech", "developer", "background", "loop", "dark"],
+  "props": {
+    "accent": { "type": "color", "label": "Light", "default": "#22d3ee" },
+    "gridColor": { "type": "color", "label": "Grid", "default": "#273244" },
+    "background": { "type": "color", "label": "Background", "default": "#05070a" },
+    "cell": { "type": "number", "label": "Cell size", "default": 64, "min": 20, "max": 200, "step": 2, "unit": "px" },
+    "pattern": { "type": "select", "label": "Pattern", "default": "lines", "options": [{ "value": "lines", "label": "Lines" }, { "value": "dots", "label": "Dots" }] },
+    "spotlight": { "type": "boolean", "label": "Spotlight", "default": true },
+    "speed": { "type": "number", "label": "Speed", "default": 1, "min": 0.1, "max": 4, "step": 0.1, "unit": "×" }
+  },
+  "examples": [
+    { "name": "Cyan grid", "props": {} },
+    { "name": "Dots, violet", "props": { "pattern": "dots", "accent": "#a78bfa", "gridColor": "#27272a", "cell": 40 } },
+    { "name": "Blueprint", "props": { "accent": "#ffffff", "gridColor": "#1e3a8a", "background": "#0b1d4d", "cell": 90, "speed": 0.5 } }
+  ],
+  "stillAt": 0.3
+}

@@ -1,0 +1,24 @@
+{
+  "id": "lower-third",
+  "name": "Lower Third",
+  "category": "Overlays",
+  "description": "A name and role card with an accent bar that slides in near the bottom of the frame.",
+  "useWhen": "Introducing a speaker, a customer quote's author, a product or feature name over footage. Keep it on screen 3–5 seconds.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["name", "speaker", "title card", "caption", "interview"],
+  "props": {
+    "name": { "type": "text", "label": "Name", "default": "Vlad Palacio" },
+    "title": { "type": "text", "label": "Role", "default": "Founder, Agentcut", "help": "Leave empty for a name-only card." },
+    "accent": { "type": "color", "style": "accent", "label": "Accent bar", "default": "#34d399" },
+    "textColor": { "type": "color", "style": "panelText", "label": "Text", "default": "#ffffff" },
+    "panel": { "type": "color", "style": "panel", "label": "Card", "default": "rgba(12,14,18,0.82)" },
+    "position": { "type": "select", "label": "Position", "default": "bottom-left", "options": [{ "value": "bottom-left", "label": "Bottom left" }, { "value": "bottom-right", "label": "Bottom right" }, { "value": "top-left", "label": "Top left" }, { "value": "top-right", "label": "Top right" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "sans", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] }
+  },
+  "examples": [
+    { "name": "Speaker", "props": {} },
+    { "name": "Light card", "props": { "panel": "#ffffff", "textColor": "#0b0d10", "accent": "#f43f5e", "name": "Maya Chen", "title": "Head of Design" } },
+    { "name": "Feature tag", "props": { "name": "Snaps workspace", "title": "Screenshots on the canvas", "position": "bottom-right", "accent": "#60a5fa" } }
+  ]
+}

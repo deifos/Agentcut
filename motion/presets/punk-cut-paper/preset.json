@@ -1,0 +1,15 @@
+{
+  "name": "Punk Cut-Paper",
+  "description": "Lyric video as a punk collage: ransom-note lyrics slapped on the beat, torn color strips, cut-paper illustrations, taped photos, xerox grain.",
+  "kind": "Music video",
+  "aspect": "wide",
+  "preview": "preview.mp4",
+  "poster": "poster.jpg",
+  "fields": [
+    { "id": "song", "label": "Song", "type": "audio", "required": true, "help": "An audio file in the project or the library." },
+    { "id": "photos", "label": "Photos", "type": "images", "help": "Photos of the person, from the project's images." },
+    { "id": "title", "label": "Title", "type": "text", "placeholder": "HAPPY BIRTHDAY SAM" },
+    { "id": "about", "label": "What it's about", "type": "longtext", "placeholder": "Who it's for, names, facts, the mood" },
+    { "id": "lyrics", "label": "Lyrics", "type": "longtext", "placeholder": "Paste the official lyrics (or leave empty to transcribe)" }
+  ]
+}

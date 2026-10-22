@@ -1,0 +1,444 @@
+"use client";
+
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { Player, type PlayerRef } from "@remotion/player";
+import {
+  AlertTriangle,
+  Loader2,
+  Pause,
+  Play,
+  Repeat,
+  SkipBack,
+  StepBack,
+  StepForward,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
+import { findClip } from "@/lib/studio/edit";
+import { formatFrameTime } from "@/lib/studio/format";
+import { useFrame, type FrameStore } from "@/lib/studio/frame-store";
+import { useAgentName } from "@/components/studio/StudioAgent";
+import type {
+  Box,
+  BundleSummary,
+  LoadedModule,
+  StudioDoc,
+} from "@/lib/studio/types";
+
+export interface StudioPreviewProps {
+  doc: StudioDoc;
+  loaded: LoadedModule | null;
+  bundle: BundleSummary | null;
+  moduleError: string | null;
+  variant: string;
+  frameStore: FrameStore;
+  playerRef: RefObject<PlayerRef | null>;
+  selection: string[];
+  playing: boolean;
+  onPlayingChange(playing: boolean): void;
+  /** The agent is changing the project: playback is held so you don't watch half-written files. */
+  editing?: boolean;
+}
+
+function useContainerRect(ref: RefObject<HTMLDivElement | null>) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() =>
+      setSize({ width: element.clientWidth, height: element.clientHeight }),
+    );
+    observer.observe(element);
+    setSize({ width: element.clientWidth, height: element.clientHeight });
+    return () => observer.disconnect();
+  }, [ref]);
+  return size;
+}
+
+function SelectionOutline({
+  box,
+  rect,
+}: {
+  box: Box;
+  rect: { left: number; top: number; width: number; height: number };
+}) {
+  return (
+    <div
+      className="pointer-events-none absolute border-2 border-dashed border-primary/90 shadow-[0_0_0_1px_rgba(0,0,0,0.6)]"
+      style={{
+        left: rect.left + box.x * rect.width,
+        top: rect.top + box.y * rect.height,
+        width: box.width * rect.width,
+        height: box.height * rect.height,
+      }}
+    />
+  );
+}
+
+function Transport({
+  frameStore,
+  fps,
+  durationInFrames,
+  playerRef,
+  playing,
+  loop,
+  setLoop,
+  muted,
+  setMuted,
+  editing,
+}: {
+  editing?: boolean;
+  frameStore: FrameStore;
+  fps: number;
+  durationInFrames: number;
+  playerRef: RefObject<PlayerRef | null>;
+  playing: boolean;
+  loop: boolean;
+  setLoop(value: boolean): void;
+  muted: boolean;
+  setMuted(value: boolean): void;
+}) {
+  const agentName = useAgentName();
+  const frame = useFrame(frameStore);
+  const seek = (next: number) => {
+    const clamped = Math.max(0, Math.min(durationInFrames - 1, next));
+    playerRef.current?.seekTo(clamped);
+    frameStore.set(clamped);
+  };
+  return (
+    <div className="flex h-11 shrink-0 items-center gap-1 border-t border-border/60 px-2">
+      <IconButton label="Go to start (Home)" onClick={() => seek(0)}>
+        <SkipBack className="size-4" />
+      </IconButton>
+      <IconButton label="Previous frame (←)" onClick={() => seek(frame - 1)}>
+        <StepBack className="size-4" />
+      </IconButton>
+      <button
+        type="button"
+        aria-label={playing ? "Pause (Space)" : "Play (Space)"}
+        title={
+          editing
+            ? `${agentName} is editing: play when it's done`
+            : playing
+              ? "Pause (Space)"
+              : "Play (Space)"
+        }
+        disabled={editing}
+        onClick={() => playerRef.current?.toggle()}
+        className="mx-1 flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {playing ? (
+          <Pause className="size-4" />
+        ) : (
+          <Play className="size-4 translate-x-px" />
+        )}
+      </button>
+      <IconButton label="Next frame (→)" onClick={() => seek(frame + 1)}>
+        <StepForward className="size-4" />
+      </IconButton>
+      <span className="ml-2 font-mono text-xs tabular-nums">
+        <span className={cn(playing && "text-primary")}>
+          {formatFrameTime(frame, fps)}
+        </span>
+        <span className="text-muted-foreground">
+          {" "}
+          / {formatFrameTime(durationInFrames, fps)}
+        </span>
+      </span>
+      <div className="ml-auto flex items-center gap-1">
+        <IconButton
+          label={loop ? "Loop on" : "Loop off"}
+          onClick={() => setLoop(!loop)}
+          active={loop}
+        >
+          <Repeat className="size-4" />
+        </IconButton>
+        <IconButton
+          label={muted ? "Unmute preview" : "Mute preview"}
+          onClick={() => setMuted(!muted)}
+        >
+          {muted ? (
+            <VolumeX className="size-4" />
+          ) : (
+            <Volume2 className="size-4" />
+          )}
+        </IconButton>
+      </div>
+    </div>
+  );
+}
+
+export function StudioPreview(props: StudioPreviewProps) {
+  const {
+    doc,
+    loaded,
+    bundle,
+    moduleError,
+    variant,
+    frameStore,
+    playerRef,
+    selection,
+    playing,
+    onPlayingChange,
+    editing,
+  } = props;
+  const agentName = useAgentName();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const container = useContainerRect(containerRef);
+  const [loop, setLoop] = useState(true);
+  const [muted, setMuted] = useState(false);
+  // Pause the moment the agent starts changing files; a reload mid-playback shows half-written scenes.
+  useEffect(() => {
+    if (editing) playerRef.current?.pause();
+  }, [editing, playerRef]);
+  const project = doc.project;
+  const layers = doc.layers;
+
+  const size = project
+    ? variantSize(project, variant)
+    : { width: 1920, height: 1080 };
+  const inputProps = useMemo(
+    () =>
+      project && layers
+        ? buildInputProps(doc.slug, project, layers, variant)
+        : null,
+    [doc.slug, project, layers, variant],
+  );
+  const ready = Boolean(
+    loaded && loaded.slug === doc.slug && project && layers && inputProps,
+  );
+  const revision = loaded?.revision ?? 0;
+
+  // Wire player events; re-run when the player remounts (new bundle or variant).
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || !ready) return;
+    const start = frameStore.get();
+    if (start > 0)
+      player.seekTo(Math.min(start, (project?.durationInFrames ?? 1) - 1));
+    const onFrame = (event: { detail: { frame: number } }) =>
+      frameStore.set(event.detail.frame);
+    const onSeeked = (event: { detail: { frame: number } }) =>
+      frameStore.set(event.detail.frame);
+    const onPlay = () => onPlayingChange(true);
+    const onPause = () => onPlayingChange(false);
+    player.addEventListener("frameupdate", onFrame);
+    player.addEventListener("seeked", onSeeked);
+    player.addEventListener("play", onPlay);
+    player.addEventListener("pause", onPause);
+    player.addEventListener("ended", onPause);
+    return () => {
+      player.removeEventListener("frameupdate", onFrame);
+      player.removeEventListener("seeked", onSeeked);
+      player.removeEventListener("play", onPlay);
+      player.removeEventListener("pause", onPause);
+      player.removeEventListener("ended", onPause);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, revision, variant, playerRef, frameStore, onPlayingChange]);
+
+  useEffect(() => {
+    if (!playerRef.current) return;
+    if (muted) playerRef.current.mute();
+    else playerRef.current.unmute();
+  }, [muted, playerRef, ready, revision]);
+
+  // Where the composition sits inside the container (Player letterboxes it).
+  const scale =
+    Math.min(container.width / size.width, container.height / size.height) || 0;
+  const rect = {
+    width: size.width * scale,
+    height: size.height * scale,
+    left: (container.width - size.width * scale) / 2,
+    top: (container.height - size.height * scale) / 2,
+  };
+
+  const selectedBox = useMemo(() => {
+    if (!layers || selection.length !== 1) return null;
+    const location = findClip(layers, selection[0]);
+    if (!location) return null;
+    const clip = {
+      ...location.clip,
+      ...((location.clip as { variants?: Record<string, object> }).variants?.[
+        variant
+      ] ?? {}),
+    };
+    if ("box" in clip && clip.box) return clip.box as Box;
+    if (location.track.kind === "text")
+      return { x: 0.05, y: 0.4, width: 0.9, height: 0.2 };
+    return null;
+  }, [layers, selection, variant]);
+
+  const errors = doc.issues.filter((issue) => issue.severity === "error");
+  const buildErrors = bundle && !bundle.ok ? bundle.errors : [];
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-muted/70 p-5 dark:bg-black/30">
+        {/* The stage: the video sits in a rounded window with breathing room around it. */}
+        <div ref={containerRef} className="relative size-full">
+          {ready && loaded && inputProps && project ? (
+            <div
+              className="absolute overflow-hidden rounded-xl bg-[repeating-conic-gradient(#151518_0%_25%,#101013_0%_50%)] bg-[length:24px_24px] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.25)] ring-1 ring-black/5 dark:ring-white/10"
+              style={{
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+              }}
+            >
+              <Player
+                key={`${loaded.revision}-${variant}`}
+                ref={playerRef}
+                component={loaded.module.StudioComposition}
+                inputProps={inputProps}
+                durationInFrames={Math.max(1, project.durationInFrames)}
+                fps={project.fps}
+                compositionWidth={size.width}
+                compositionHeight={size.height}
+                style={{ width: "100%", height: "100%" }}
+                loop={loop}
+                clickToPlay={false}
+                doubleClickToFullscreen
+                spaceKeyToPlayOrPause={false}
+                acknowledgeRemotionLicense
+                errorFallback={({ error }) => (
+                  <div className="flex h-full items-center justify-center bg-red-950/80 p-6 text-center text-sm text-red-100">
+                    <div>
+                      <AlertTriangle className="mx-auto mb-2 size-6" />
+                      <p className="font-semibold">
+                        A scene crashed while drawing this frame
+                      </p>
+                      <p className="mt-1 font-mono text-xs opacity-80">
+                        {error.message}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              {moduleError ? (
+                <div className="max-w-md rounded-lg border border-red-500/40 bg-red-950/50 p-4 text-red-100">
+                  <p className="mb-1 font-semibold">
+                    The preview couldn&apos;t load the project code
+                  </p>
+                  <p className="font-mono text-xs">{moduleError}</p>
+                </div>
+              ) : !project || !layers ? (
+                <div className="max-w-md rounded-lg border border-red-500/40 bg-red-950/50 p-4 text-red-100">
+                  <p className="mb-1 font-semibold">
+                    project.json or layers.json is invalid
+                  </p>
+                  <p className="text-xs">
+                    Ask {agentName} to fix it, or fix the files by hand.
+                  </p>
+                </div>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" /> Building the
+                  preview…
+                </span>
+              )}
+            </div>
+          )}
+          {editing && ready ? (
+            <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
+              <span className="flex items-center gap-2 rounded-full border border-white/15 bg-black/75 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur">
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+                {agentName} is editing · play when it&apos;s done
+              </span>
+            </div>
+          ) : null}
+          {selectedBox && ready ? (
+            <SelectionOutline box={selectedBox} rect={rect} />
+          ) : null}
+        </div>
+        {/* Mid-edit errors are expected (files are half-written); the agent checks the build itself. */}
+        {!editing && (buildErrors.length > 0 || errors.length > 0) ? (
+          <ScrollArea
+            className="absolute inset-x-3 bottom-3 rounded-lg border border-red-500/50 bg-black/85 text-xs text-red-100 shadow-xl"
+            viewportClassName="max-h-40"
+          >
+            <div className="p-3">
+              <p className="mb-1 flex items-center gap-1.5 font-semibold">
+                <AlertTriangle className="size-3.5" />
+                {buildErrors.length > 0
+                  ? "Build error: the preview shows the last working version"
+                  : "Project file problems"}
+              </p>
+              <ul className="space-y-1 font-mono">
+                {buildErrors.slice(0, 5).map((error, i) => (
+                  <li key={`b${i}`}>
+                    {error.file
+                      ? `${error.file.split(/[\\/]/).slice(-2).join("/")}:${error.line ?? 0} `
+                      : ""}
+                    {error.text}
+                  </li>
+                ))}
+                {errors.slice(0, 6).map((issue, i) => (
+                  <li key={`i${i}`}>
+                    {issue.file} {issue.path}: {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ScrollArea>
+        ) : null}
+      </div>
+      {project ? (
+        <Transport
+          frameStore={frameStore}
+          fps={project.fps}
+          durationInFrames={project.durationInFrames}
+          playerRef={playerRef}
+          playing={playing}
+          loop={loop}
+          setLoop={setLoop}
+          muted={muted}
+          setMuted={setMuted}
+          editing={editing}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function IconButton({
+  label,
+  onClick,
+  active,
+  children,
+}: {
+  label: string;
+  onClick(): void;
+  active?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={cn(
+        "flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
+        active && "text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}

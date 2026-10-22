@@ -1,0 +1,32 @@
+{
+  "id": "blur-in-title",
+  "name": "Blur Focus Title",
+  "category": "Text & Titles",
+  "description": "A headline that pulls into focus letter by letter: out of a heavy blur, down from a slight scale, tracking tightening as it lands.",
+  "useWhen": "Premium, Apple-style openers and reveals: a product name, a one-line promise, a chapter title over footage. Pick it when the video should feel calm and expensive rather than punchy. *Starred* words take the accent (and italic, if on).",
+  "durationInFrames": 100,
+  "layer": "overlay",
+  "tags": ["title", "blur", "focus", "apple", "premium", "letters", "intro", "reveal"],
+  "props": {
+    "kicker": { "type": "text", "label": "Kicker", "default": "", "help": "Small spaced-out line above the title (leave empty for none)." },
+    "lines": { "type": "lines", "label": "Title", "default": ["Think in *motion*"], "max": 4, "help": "One line per row. *Starred* words use the accent." },
+    "by": { "type": "select", "label": "Animate by", "default": "letter", "options": [{ "value": "letter", "label": "Letter" }, { "value": "word", "label": "Word" }, { "value": "line", "label": "Line" }] },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#c4b5fd" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 12, "min": 4, "max": 24, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "600", "options": [{ "value": "400", "label": "Regular" }, { "value": "500", "label": "Medium" }, { "value": "600", "label": "Semibold" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "sans", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "italicAccent": { "type": "boolean", "label": "Italic accent words", "default": true },
+    "align": { "type": "select", "label": "Align", "default": "center", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }] },
+    "stagger": { "type": "number", "label": "Delay between pieces", "default": 2, "min": 0.5, "max": 10, "step": 0.5, "unit": "frames" },
+    "blur": { "type": "number", "label": "Blur", "default": 1, "min": 0.2, "max": 3, "step": 0.1, "unit": "×" },
+    "tracking": { "type": "boolean", "label": "Tighten tracking", "default": true, "help": "Letter spacing closes up as the title lands." }
+  },
+  "examples": [
+    { "name": "Focus pull", "props": {} },
+    { "name": "Serif keynote", "props": { "kicker": "Introducing", "lines": ["The *quiet* editor"], "font": "serif", "weight": "400", "size": 14, "accent": "#fde68a" } },
+    { "name": "Word by word, bold", "props": { "lines": ["Record. Edit.", "*Ship* it."], "by": "word", "font": "display", "weight": "800", "stagger": 5, "accent": "#34d399", "background": "#0b0d10" } }
+  ],
+  "stillAt": 0.6
+}

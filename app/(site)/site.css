@@ -1,0 +1,153 @@
+/* Marketing pages (landing, components, templates): motion that runs once on load or as you
+   scroll. Everything here turns off under prefers-reduced-motion. */
+
+@keyframes site-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Headline words rise in one after another (stagger with --i). */
+.site-rise {
+  animation: site-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 80ms);
+}
+
+/* The "cut": a brand bar sweeps across a word, then leaves it marked. */
+@keyframes site-cut-sweep {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  45% {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+  55% {
+    transform: scaleX(1);
+    transform-origin: right;
+  }
+  100% {
+    transform: scaleX(0);
+    transform-origin: right;
+  }
+}
+
+@keyframes site-cut-mark {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.site-cut {
+  position: relative;
+  display: inline-block;
+}
+
+.site-cut::before {
+  content: "";
+  position: absolute;
+  inset: 0.08em -0.06em 0.02em;
+  background: var(--brand);
+  animation: site-cut-sweep 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.55s both;
+  z-index: 1;
+}
+
+.site-cut::after {
+  content: "";
+  position: absolute;
+  left: -0.02em;
+  right: -0.02em;
+  bottom: 0.04em;
+  height: 0.09em;
+  background: var(--brand);
+  transform-origin: left;
+  animation: site-cut-mark 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.3s both;
+}
+
+/* The prompt "types" in word by word (--i is the word index). */
+@keyframes site-word {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.site-word {
+  animation: site-word 0.12s linear both;
+  animation-delay: calc(0.9s + var(--i, 0) * 0.16s);
+}
+
+@keyframes site-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Agent steps tick in after the prompt (--i is the step index). */
+.site-step {
+  animation: site-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(2.7s + var(--i, 0) * 0.55s);
+}
+
+@keyframes site-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.site-marquee {
+  animation: site-marquee 38s linear infinite;
+}
+
+/* Sections fade up as they scroll into view, where the browser supports scroll timelines. */
+@supports (animation-timeline: view()) {
+  @keyframes site-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(48px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .site-reveal {
+    animation: site-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 28%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-rise,
+  .site-cut::before,
+  .site-cut::after,
+  .site-word,
+  .site-step,
+  .site-marquee,
+  .site-reveal {
+    animation: none !important;
+  }
+  .site-cut::before {
+    display: none;
+  }
+}

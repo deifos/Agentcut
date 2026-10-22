@@ -1,0 +1,27 @@
+{
+  "id": "stat-counter",
+  "name": "Stat Counter",
+  "category": "Charts & Stats",
+  "description": "A big number that counts up to its value with a label, optionally inside a progress ring.",
+  "useWhen": "Social proof and results: users, time saved, a percentage, revenue, a speed-up. One number per clip; put two side by side with two clips and boxes.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["number", "metric", "kpi", "counter", "percentage", "social proof"],
+  "props": {
+    "value": { "type": "number", "label": "Value", "default": 12000, "min": 0, "max": 100000000, "step": 1 },
+    "prefix": { "type": "text", "label": "Prefix", "default": "", "help": "e.g. $ or +" },
+    "suffix": { "type": "text", "label": "Suffix", "default": "+", "help": "e.g. %, x, k. With % the ring fills to the value." },
+    "decimals": { "type": "number", "label": "Decimals", "default": 0, "min": 0, "max": 2, "step": 1 },
+    "label": { "type": "text", "label": "Label", "default": "videos made this month" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#34d399" },
+    "textColor": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "background": { "type": "color", "label": "Background", "default": "transparent" },
+    "ring": { "type": "boolean", "label": "Progress ring", "default": false },
+    "countFrames": { "type": "number", "label": "Count time", "default": 45, "min": 10, "max": 120, "step": 1, "unit": "frames" }
+  },
+  "examples": [
+    { "name": "Users", "props": {} },
+    { "name": "Percent ring", "props": { "value": 87, "suffix": "%", "label": "less time editing", "ring": true, "accent": "#60a5fa" } },
+    { "name": "Revenue", "props": { "value": 2.4, "decimals": 1, "prefix": "$", "suffix": "M", "label": "saved in production costs", "background": "#0b0d10", "accent": "#f59e0b" } }
+  ]
+}

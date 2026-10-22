@@ -1,0 +1,29 @@
+{
+  "id": "bar-wipe-title",
+  "name": "Bar Wipe Title",
+  "category": "Text & Titles",
+  "description": "Each line is revealed by a solid color bar that sweeps across and pulls away, then sweeps back to take it off.",
+  "useWhen": "Bold, graphic titles with an editorial or news feel: chapter cards, big claims, a list of two or three short lines, a product name over a cut. Lines wipe on one after another.",
+  "durationInFrames": 100,
+  "layer": "overlay",
+  "tags": ["title", "wipe", "bar", "reveal", "mask", "editorial", "news"],
+  "props": {
+    "lines": { "type": "lines", "label": "Lines", "default": ["Less editing.", "More *shipping*."], "max": 4, "help": "One line per row. *Starred* words use the accent." },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#fb7185", "help": "Accent words, and every other bar." },
+    "barColor": { "type": "color", "label": "Bar", "default": "#ffffff" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 10, "min": 4, "max": 22, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "style": "weight", "label": "Weight", "default": "800", "options": [{ "value": "500", "label": "Medium" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }, { "value": "900", "label": "Black" }] },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "grotesk", "options": [{ "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "uppercase": { "type": "boolean", "label": "Uppercase", "default": false },
+    "align": { "type": "select", "label": "Align", "default": "left", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }] },
+    "stagger": { "type": "number", "label": "Line delay", "default": 6, "min": 0, "max": 20, "step": 1, "unit": "frames" }
+  },
+  "examples": [
+    { "name": "Two lines", "props": {} },
+    { "name": "Poster caps", "props": { "lines": ["Chapter *one*", "The setup"], "font": "condensed", "weight": "500", "uppercase": true, "size": 14, "barColor": "#facc15", "accent": "#facc15", "align": "center" } },
+    { "name": "On paper", "props": { "lines": ["Made for", "*small* teams"], "color": "#111111", "barColor": "#111111", "accent": "#2563eb", "background": "#f5f1e8", "font": "fraunces", "weight": "700" } }
+  ],
+  "stillAt": 0.5
+}

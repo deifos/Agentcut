@@ -1,0 +1,28 @@
+{
+  "id": "outline-fill",
+  "name": "Outline Fill",
+  "category": "Text & Titles",
+  "description": "One giant outlined word that fills up with color from the bottom, with optional echo outlines spreading above and below.",
+  "useWhen": "A poster-style moment for one word: the product or brand name, a theme (\"FAST\", \"2026\"), the title card of a reel. Keep it to one short word; it sizes itself to the frame.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["outline", "stroke", "fill", "poster", "echo", "big type", "title"],
+  "props": {
+    "text": { "type": "text", "label": "Word", "default": "MOTION", "maxLength": 14 },
+    "color": { "type": "color", "label": "Outline", "default": "#ffffff" },
+    "fillColor": { "type": "color", "label": "Fill", "default": "#ffffff" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 26, "min": 8, "max": 50, "step": 1, "unit": "% of frame", "help": "Largest size; long words shrink to fit." },
+    "font": { "type": "select", "label": "Font", "default": "wide", "options": [{ "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "syne", "label": "Syne" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "serif", "label": "Instrument Serif" }] },
+    "weight": { "type": "select", "label": "Weight", "default": "800", "options": [{ "value": "400", "label": "Regular" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }, { "value": "900", "label": "Black" }] },
+    "uppercase": { "type": "boolean", "label": "Uppercase", "default": true },
+    "stroke": { "type": "number", "label": "Outline width", "default": 3, "min": 1, "max": 10, "step": 0.5, "unit": "px" },
+    "echo": { "type": "boolean", "label": "Echo outlines", "default": true }
+  },
+  "examples": [
+    { "name": "Echo stack", "props": {} },
+    { "name": "Acid", "props": { "text": "2026", "fillColor": "#d9f99d", "color": "#d9f99d", "background": "#0b0d10", "font": "condensed", "weight": "400" } },
+    { "name": "Clean", "props": { "text": "Studio", "uppercase": false, "echo": false, "font": "fraunces", "weight": "700", "fillColor": "#fb923c", "color": "#fed7aa" } }
+  ],
+  "stillAt": 0.7
+}

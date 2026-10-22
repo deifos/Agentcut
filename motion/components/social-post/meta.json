@@ -1,0 +1,30 @@
+{
+  "id": "social-post",
+  "name": "Social Post",
+  "category": "Overlays",
+  "description": "An X/Threads-style post card that slides up, then its reply, repost, like and view counters tick up and the heart pops red.",
+  "useWhen": "Social proof and buzz: a customer's post praising the product, a launch announcement, a viral reaction, \"people are talking about it\". Stack a few staggered clips for a wall of love.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["social", "tweet", "post", "x", "twitter", "threads", "testimonial", "likes", "social proof"],
+  "props": {
+    "name": { "type": "text", "label": "Name", "default": "Maya Chen", "maxLength": 32 },
+    "handle": { "type": "text", "label": "Handle", "default": "mayabuilds", "maxLength": 24 },
+    "text": { "type": "text", "label": "Post", "default": "Just made our launch video in 20 minutes with agentcut. The agent edit alone is worth it 🤯", "multiline": true, "maxLength": 280 },
+    "time": { "type": "text", "label": "Time", "default": "2h" },
+    "replies": { "type": "number", "label": "Replies", "default": 214, "min": 0, "max": 100000000, "step": 1 },
+    "reposts": { "type": "number", "label": "Reposts", "default": 1280, "min": 0, "max": 100000000, "step": 1 },
+    "likes": { "type": "number", "label": "Likes", "default": 12400, "min": 0, "max": 100000000, "step": 1 },
+    "views": { "type": "number", "label": "Views", "default": 1800000, "min": 0, "max": 1000000000, "step": 1 },
+    "verified": { "type": "boolean", "label": "Verified badge", "default": true },
+    "accent": { "type": "color", "label": "Avatar color", "default": "#8b5cf6" },
+    "theme": { "type": "select", "label": "Theme", "default": "dark", "options": [{ "value": "dark", "label": "Dark" }, { "value": "light", "label": "Light" }] },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." }
+  },
+  "examples": [
+    { "name": "Viral post", "props": { "background": "#0b0b0f" } },
+    { "name": "Light", "props": { "name": "Sam Ortiz", "handle": "samortiz", "text": "ok this is the cleanest product demo I've seen all year", "likes": 3200, "reposts": 410, "replies": 88, "views": 240000, "theme": "light", "accent": "#0ea5e9", "background": "#e8edf2" } },
+    { "name": "Announcement", "props": { "name": "agentcut", "handle": "agentcut", "text": "Agentcut is live.\nClaude edits your video with you, frame by frame.", "time": "now", "accent": "#f97316" } }
+  ],
+  "stillAt": 0.75
+}

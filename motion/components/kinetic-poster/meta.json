@@ -1,0 +1,31 @@
+{
+  "id": "kinetic-poster",
+  "name": "Kinetic Poster",
+  "category": "Text & Titles",
+  "description": "A kinetic Bauhaus poster: primary-colored circles, triangles, bars and quarter-circles step across a strict grid one move per beat, lock into a composition, then sliding color bars uncover a Swiss-style title.",
+  "useWhen": "A bold, designed title card or chapter opener: a launch name, a manifesto line, a design or architecture topic, an event poster, anything cut to music (set bpm to the track). \"array\" turns it into a pattern field of turning tiles that clears to the title; \"minimal\" keeps a few big shapes and lots of paper.",
+  "durationInFrames": 150,
+  "layer": "full",
+  "tags": ["bauhaus", "geometric", "swiss", "grid", "poster", "kinetic", "shapes", "primary colors", "beat", "modernist"],
+  "props": {
+    "title": { "type": "lines", "label": "Title", "default": ["Form follows", "*function.*"], "max": 3, "help": "One line per row. *Starred* words print in red." },
+    "kicker": { "type": "text", "label": "Kicker", "default": "Kinetic poster Nº 01", "help": "Small caps line at the top of the type area. Leave empty for none." },
+    "layout": { "type": "select", "label": "Layout", "default": "poster", "options": [{ "value": "poster", "label": "Poster" }, { "value": "array", "label": "Tile array" }, { "value": "minimal", "label": "Minimal" }] },
+    "red": { "type": "color", "label": "Red", "default": "#e63b2e" },
+    "yellow": { "type": "color", "label": "Yellow", "default": "#f2b31b" },
+    "blue": { "type": "color", "label": "Blue", "default": "#1f4fa8" },
+    "ink": { "type": "color", "label": "Ink", "default": "#141414", "help": "Black shapes, grid and text." },
+    "paper": { "type": "color", "label": "Paper", "default": "#f1ebdd" },
+    "bpm": { "type": "number", "label": "Tempo", "default": 120, "min": 60, "max": 200, "step": 1, "unit": "bpm", "help": "One move per beat: match it to the music." },
+    "cols": { "type": "number", "label": "Grid columns", "default": 12, "min": 8, "max": 20, "step": 1, "help": "Across a wide frame (mobile uses about half)." },
+    "showGrid": { "type": "boolean", "label": "Grid lines", "default": true },
+    "font": { "type": "select", "label": "Font", "default": "grotesk", "options": [{ "value": "grotesk", "label": "Space Grotesk" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }] },
+    "seed": { "type": "number", "label": "Pattern", "default": 3, "min": 0, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Poster", "props": {} },
+    { "name": "Tile array", "props": { "layout": "array", "title": ["Order", "in *motion*"], "kicker": "Dessau · 1925", "seed": 7 } },
+    { "name": "Night minimal", "props": { "layout": "minimal", "title": ["Less, but", "*better.*"], "kicker": "Design principles", "ink": "#f1ebdd", "paper": "#141414", "showGrid": false, "font": "sans" } }
+  ],
+  "stillAt": 0.86
+}

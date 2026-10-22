@@ -1,0 +1,28 @@
+{
+  "id": "editorial-quote",
+  "name": "Editorial Quote",
+  "category": "Text & Titles",
+  "description": "A magazine-style pull quote: large serif lines drift up out of a soft blur, then the author's name draws in under a rule.",
+  "useWhen": "Testimonials, a customer or press quote, a founder's line, a manifesto sentence. Give it time to be read: about 1 second per 4 words, plus 1.5 seconds.",
+  "durationInFrames": 150,
+  "layer": "overlay",
+  "tags": ["quote", "testimonial", "serif", "editorial", "magazine", "review", "blur"],
+  "props": {
+    "quote": { "type": "lines", "label": "Quote", "default": ["The fastest way I've found", "to make a demo look *expensive*."], "max": 5, "help": "One line per row. *Starred* words use the accent." },
+    "author": { "type": "text", "label": "Author", "default": "Maya Chen" },
+    "role": { "type": "text", "label": "Role", "default": "Founder, Northwind" },
+    "color": { "type": "color", "style": "text", "label": "Text", "default": "#f5f5f4" },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#fbbf24" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 8, "min": 3, "max": 14, "step": 0.5, "unit": "% of frame" },
+    "font": { "type": "select", "style": "font", "label": "Font", "default": "serif", "options": [{ "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "archivo", "label": "Archivo Black" }, { "value": "caveat", "label": "Caveat" }, { "value": "pixel", "label": "VT323" }, { "value": "tech", "label": "Orbitron" }, { "value": "heavy", "label": "Montserrat" }, { "value": "retro", "label": "Bungee" }] },
+    "italic": { "type": "boolean", "label": "Italic", "default": false },
+    "marks": { "type": "boolean", "label": "Quote mark", "default": true }
+  },
+  "examples": [
+    { "name": "Testimonial", "props": {} },
+    { "name": "Italic on cream", "props": { "quote": ["Good design is", "as little design", "as *possible*."], "author": "Dieter Rams", "role": "", "italic": true, "color": "#1c1917", "accent": "#b91c1c", "background": "#f5f1e8", "size": 8 } },
+    { "name": "Fraunces", "props": { "font": "fraunces", "accent": "#a78bfa", "background": "#0f0a1f" } }
+  ],
+  "stillAt": 0.7
+}

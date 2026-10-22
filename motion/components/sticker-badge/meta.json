@@ -1,0 +1,220 @@
+{
+  "id": "sticker-badge",
+  "name": "Sticker Badge",
+  "category": "Talking Head",
+  "durationInFrames": 75,
+  "layer": "overlay",
+  "stillAt": 0.5,
+  "description": "A badge slapped in a corner over the speaker (a number, a price, one word) with an optional small tag.",
+  "useWhen": "A count (\"5 mods\"), a price, a stat or a one-word reaction next to the speaker's head. Pair the tag with what it refers to (\"Claude Code\").",
+  "tags": [
+    "sticker",
+    "badge",
+    "number",
+    "talking head",
+    "price"
+  ],
+  "props": {
+    "text": {
+      "type": "text",
+      "label": "Badge",
+      "default": "5",
+      "maxLength": 8
+    },
+    "label": {
+      "type": "text",
+      "label": "Tag",
+      "default": "Claude Code",
+      "help": "Small tilted label (empty for none)."
+    },
+    "position": {
+      "type": "select",
+      "label": "Position",
+      "default": "top-right",
+      "options": [
+        {
+          "value": "top-left",
+          "label": "Top left"
+        },
+        {
+          "value": "top-right",
+          "label": "Top right"
+        },
+        {
+          "value": "bottom-left",
+          "label": "Bottom left"
+        },
+        {
+          "value": "bottom-right",
+          "label": "Bottom right"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        }
+      ]
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 20,
+      "min": 8,
+      "max": 45,
+      "step": 0.5,
+      "unit": "% of frame"
+    },
+    "look": {
+      "type": "select",
+      "style": "look",
+      "label": "Look",
+      "default": "ink",
+      "options": [
+        {
+          "value": "ink",
+          "label": "Ink (bold borders)"
+        },
+        {
+          "value": "paper",
+          "label": "Cut paper"
+        },
+        {
+          "value": "notebook",
+          "label": "Notebook"
+        },
+        {
+          "value": "crt",
+          "label": "Terminal"
+        },
+        {
+          "value": "neon",
+          "label": "Neon (cyberpunk)"
+        },
+        {
+          "value": "line",
+          "label": "Line (black & white)"
+        },
+        {
+          "value": "vhs",
+          "label": "VHS (90s tape)"
+        },
+        {
+          "value": "clean",
+          "label": "Clean"
+        }
+      ],
+      "help": "The graphic language. Follows the project style."
+    },
+    "font": {
+      "type": "select",
+      "style": "font",
+      "label": "Headline font",
+      "default": "archivo",
+      "options": [
+        {
+          "value": "archivo",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "caveat",
+          "label": "Caveat"
+        },
+        {
+          "value": "pixel",
+          "label": "VT323"
+        },
+        {
+          "value": "tech",
+          "label": "Orbitron"
+        },
+        {
+          "value": "heavy",
+          "label": "Montserrat"
+        },
+        {
+          "value": "retro",
+          "label": "Bungee"
+        },
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        }
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Accent",
+      "default": "#ff3d8b"
+    },
+    "panel": {
+      "type": "color",
+      "style": "panel",
+      "label": "Card",
+      "default": "#ffffff"
+    },
+    "panelText": {
+      "type": "color",
+      "style": "panelText",
+      "label": "Card text",
+      "default": "#111111"
+    },
+    "line": {
+      "type": "color",
+      "style": "line",
+      "label": "Ink",
+      "default": "#111111",
+      "help": "Borders, hard shadows, pen strokes."
+    },
+    "backdrop": {
+      "type": "color",
+      "style": "backdrop",
+      "label": "Backdrop",
+      "default": "#ffe14d",
+      "help": "Full-frame and split backgrounds."
+    },
+    "onVideo": {
+      "type": "color",
+      "style": "text",
+      "label": "Text on video",
+      "default": "#ffffff"
+    }
+  },
+  "examples": [
+    {
+      "name": "Count",
+      "props": {}
+    },
+    {
+      "name": "Price",
+      "props": {
+        "text": "$240",
+        "label": "",
+        "position": "top-left"
+      }
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "id": "word-pop",
+  "name": "Word Pop",
+  "category": "Talking Head",
+  "durationInFrames": 75,
+  "layer": "overlay",
+  "description": "A punchy phrase over the speaker, popping in word by word, drawn in the project's look.",
+  "useWhen": "Emphasis over talking-head footage: the phrase the speaker is saying right now, a reaction, a key claim. Time the clip to the spoken words; keep it to 2–6 words. *Star* the word that carries the point.",
+  "tags": [
+    "caption",
+    "emphasis",
+    "talking head",
+    "word pop",
+    "creator"
+  ],
+  "props": {
+    "lines": {
+      "type": "lines",
+      "label": "Words",
+      "default": [
+        "new mods",
+        "you *should* install"
+      ],
+      "max": 3
+    },
+    "position": {
+      "type": "select",
+      "label": "Position",
+      "default": "lower",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "lower",
+          "label": "Lower third"
+        },
+        {
+          "value": "bottom",
+          "label": "Bottom"
+        }
+      ]
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 7.5,
+      "min": 3,
+      "max": 16,
+      "step": 0.5,
+      "unit": "% of frame"
+    },
+    "stagger": {
+      "type": "number",
+      "label": "Word delay",
+      "default": 3,
+      "min": 0,
+      "max": 12,
+      "step": 1,
+      "unit": "frames"
+    },
+    "tilt": {
+      "type": "boolean",
+      "label": "Tilt",
+      "default": true
+    },
+    "look": {
+      "type": "select",
+      "style": "look",
+      "label": "Look",
+      "default": "ink",
+      "options": [
+        {
+          "value": "ink",
+          "label": "Ink (bold borders)"
+        },
+        {
+          "value": "paper",
+          "label": "Cut paper"
+        },
+        {
+          "value": "notebook",
+          "label": "Notebook"
+        },
+        {
+          "value": "crt",
+          "label": "Terminal"
+        },
+        {
+          "value": "neon",
+          "label": "Neon (cyberpunk)"
+        },
+        {
+          "value": "line",
+          "label": "Line (black & white)"
+        },
+        {
+          "value": "vhs",
+          "label": "VHS (90s tape)"
+        },
+        {
+          "value": "clean",
+          "label": "Clean"
+        }
+      ],
+      "help": "The graphic language. Follows the project style."
+    },
+    "font": {
+      "type": "select",
+      "style": "font",
+      "label": "Headline font",
+      "default": "archivo",
+      "options": [
+        {
+          "value": "archivo",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "caveat",
+          "label": "Caveat"
+        },
+        {
+          "value": "pixel",
+          "label": "VT323"
+        },
+        {
+          "value": "tech",
+          "label": "Orbitron"
+        },
+        {
+          "value": "heavy",
+          "label": "Montserrat"
+        },
+        {
+          "value": "retro",
+          "label": "Bungee"
+        },
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        }
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Accent",
+      "default": "#ff3d8b"
+    },
+    "panel": {
+      "type": "color",
+      "style": "panel",
+      "label": "Card",
+      "default": "#ffffff"
+    },
+    "panelText": {
+      "type": "color",
+      "style": "panelText",
+      "label": "Card text",
+      "default": "#111111"
+    },
+    "line": {
+      "type": "color",
+      "style": "line",
+      "label": "Ink",
+      "default": "#111111",
+      "help": "Borders, hard shadows, pen strokes."
+    },
+    "backdrop": {
+      "type": "color",
+      "style": "backdrop",
+      "label": "Backdrop",
+      "default": "#ffe14d",
+      "help": "Full-frame and split backgrounds."
+    },
+    "onVideo": {
+      "type": "color",
+      "style": "text",
+      "label": "Text on video",
+      "default": "#ffffff"
+    }
+  },
+  "examples": [
+    {
+      "name": "Two lines",
+      "props": {}
+    },
+    {
+      "name": "One word",
+      "props": {
+        "lines": [
+          "*CHEATING*"
+        ],
+        "size": 9,
+        "position": "center"
+      }
+    },
+    {
+      "name": "Top",
+      "props": {
+        "lines": [
+          "the *same* thing"
+        ],
+        "position": "top"
+      }
+    }
+  ]
+}

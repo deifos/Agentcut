@@ -1,0 +1,762 @@
+[
+  {
+    "id": "voltrox",
+    "name": "Voltrox",
+    "description": "Attention-grabbing: yellow and magenta, ink borders, slapped stickers, punch-in cuts",
+    "look": "ink",
+    "tokens": {
+      "look": "ink",
+      "font": "archivo,condensed,wide",
+      "weight": "400",
+      "text": "#ffffff",
+      "accent": "#ff3d8b",
+      "onAccent": "#ffffff",
+      "panel": "#ffffff",
+      "panelText": "#111111",
+      "line": "#111111",
+      "theme": "light",
+      "backdrop": "#ffe14d"
+    },
+    "camera": {
+      "mode": "punch",
+      "zoom": 1.16,
+      "every": 66,
+      "shake": 0.8
+    },
+    "overlay": {
+      "kind": "vignette",
+      "amount": 0.22
+    },
+    "captions": {
+      "fontFamily": "Archivo Black",
+      "fontWeight": 400,
+      "color": "#ffffff",
+      "highlight": "#ff3d8b",
+      "preset": "pop",
+      "position": "lower",
+      "wordsPerLine": 3
+    },
+    "text": {
+      "fontFamily": "Archivo Black",
+      "fontWeight": 400,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "Fast: something changes every 2–3 s (punch-in, word pop, sticker or full-frame card). The camera already punches in every ~2 s.",
+      "Open on a centered stacked Hook Card (title on halftone, a phrase on the seam, speaker below), then cut back to full frame.",
+      "Word pops sit in the lower third, tilted, 2–4 words; a sticker in the top corner for every number.",
+      "Full-frame yellow cards for lists and prices, then straight back to the speaker."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "stack",
+          "tagline": "five mods that feel *illegal*"
+        }
+      },
+      {
+        "job": "Emphasis",
+        "component": "word-pop",
+        "props": {
+          "position": "lower"
+        }
+      },
+      {
+        "job": "A count or price",
+        "component": "sticker-badge",
+        "props": {
+          "position": "top-right"
+        }
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "full"
+        }
+      }
+    ]
+  },
+  {
+    "id": "snipwork",
+    "name": "Snipwork",
+    "description": "Paper craft: ransom-note cut-out letters, torn paper, stop-motion, xerox grain",
+    "look": "paper",
+    "tokens": {
+      "look": "paper",
+      "font": "archivo,condensed",
+      "weight": "400",
+      "text": "#f6f1e3",
+      "accent": "#e2402b",
+      "onAccent": "#ffffff",
+      "panel": "#f4ecda",
+      "panelText": "#1b1714",
+      "line": "#1b1714",
+      "theme": "light",
+      "backdrop": "#c9a878"
+    },
+    "camera": {
+      "mode": "snap",
+      "zoom": 1.12,
+      "every": 84,
+      "shake": 1
+    },
+    "overlay": {
+      "kind": "grain",
+      "amount": 0.28
+    },
+    "captions": {
+      "fontFamily": "Archivo Black",
+      "fontWeight": 400,
+      "color": "#f6f1e3",
+      "highlight": "#e2402b",
+      "preset": "pop",
+      "position": "lower",
+      "wordsPerLine": 3
+    },
+    "text": {
+      "fontFamily": "Archivo Black",
+      "fontWeight": 400,
+      "color": "#f6f1e3"
+    },
+    "guide": [
+      "Handmade: everything moves on twos (stop-motion) and slaps down; the camera steps in like a re-framed photo.",
+      "Open with the speaker as a taped photo under a ransom-note title (Hook Card collage).",
+      "Headlines are ransom notes, one letter per beat or word; keep them short (1–3 words).",
+      "Cards are torn paper with masking tape over a kraft backdrop; cut back to the speaker between them.",
+      "Captions are cut-out words on scraps; keep 2–3 words per line."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "collage",
+          "tagline": "five mods that feel *illegal*"
+        }
+      },
+      {
+        "job": "Emphasis",
+        "component": "word-pop",
+        "props": {
+          "position": "lower",
+          "stagger": 4
+        }
+      },
+      {
+        "job": "A count or price",
+        "component": "sticker-badge",
+        "props": {
+          "position": "top-left"
+        }
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "card"
+        }
+      }
+    ]
+  },
+  {
+    "id": "doodlepad",
+    "name": "Doodlepad",
+    "description": "Whiteboard: grid paper, handwriting, marker highlights, a slow drift",
+    "look": "notebook",
+    "tokens": {
+      "look": "notebook",
+      "font": "caveat,display",
+      "weight": "700",
+      "text": "#ffffff",
+      "accent": "#ffd60a",
+      "onAccent": "#1f1f1f",
+      "panel": "#fffdf6",
+      "panelText": "#1f1f1f",
+      "line": "#1f1f1f",
+      "theme": "light",
+      "backdrop": "#f3efe4"
+    },
+    "camera": {
+      "mode": "drift",
+      "zoom": 1.08,
+      "every": 120,
+      "shake": 0.5
+    },
+    "overlay": {
+      "kind": "none",
+      "amount": 0
+    },
+    "captions": {
+      "fontFamily": "Caveat",
+      "fontWeight": 700,
+      "color": "#ffffff",
+      "highlight": "#ffd60a",
+      "preset": "karaoke",
+      "position": "bottom",
+      "wordsPerLine": 4
+    },
+    "text": {
+      "fontFamily": "Caveat",
+      "fontWeight": 700,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "Explainer pace: an overlay every 4–6 s; the camera drifts in slowly on each clip.",
+      "Split Hook Card with a torn grid-paper top for the title.",
+      "Marker-highlight one word per phrase; circle numbers with a drawn sticker.",
+      "Notebook cards for lists and quotes, taped to the page."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "top",
+          "tagline": "five mods that feel *illegal*"
+        }
+      },
+      {
+        "job": "Emphasis",
+        "component": "word-pop",
+        "props": {
+          "position": "lower",
+          "tilt": false
+        }
+      },
+      {
+        "job": "A count or price",
+        "component": "sticker-badge",
+        "props": {
+          "position": "top-right",
+          "label": ""
+        }
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "full"
+        }
+      }
+    ]
+  },
+  {
+    "id": "phosphor",
+    "name": "Phosphor",
+    "description": "Terminal: green on black, typed text, scanlines, glitch cuts",
+    "look": "crt",
+    "tokens": {
+      "look": "crt",
+      "font": "pixel,mono",
+      "weight": "400",
+      "text": "#d1ffe0",
+      "accent": "#39ff88",
+      "onAccent": "#03110a",
+      "panel": "rgba(3,16,9,0.92)",
+      "panelText": "#b6ffcf",
+      "line": "#39ff88",
+      "theme": "dark",
+      "backdrop": "#03110a"
+    },
+    "camera": {
+      "mode": "glitch",
+      "zoom": 1.08,
+      "every": 96,
+      "shake": 0.7
+    },
+    "overlay": {
+      "kind": "scanlines",
+      "amount": 0.22
+    },
+    "captions": {
+      "fontFamily": "VT323",
+      "fontWeight": 400,
+      "color": "#b6ffcf",
+      "highlight": "#39ff88",
+      "preset": "pop",
+      "position": "lower",
+      "wordsPerLine": 4
+    },
+    "text": {
+      "fontFamily": "VT323",
+      "fontWeight": 400,
+      "color": "#d1ffe0"
+    },
+    "guide": [
+      "Builder pace: an overlay every 3–5 s; everything types in, the camera glitch-jumps on beats.",
+      "Open with the speaker inside a terminal window under a typed title (Hook Card window).",
+      "Terminal windows for lists, quotes and numbers; full-frame CRT cards between speaker shots.",
+      "Captions as terminal lines in the lower third, the spoken word inverted.",
+      "Keep text lowercase and short, like commands."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "window",
+          "tagline": "camera.mp4"
+        }
+      },
+      {
+        "job": "Emphasis",
+        "component": "word-pop",
+        "props": {
+          "position": "lower",
+          "tilt": false
+        }
+      },
+      {
+        "job": "A count or price",
+        "component": "sticker-badge",
+        "props": {
+          "position": "top-right"
+        }
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "full"
+        }
+      }
+    ]
+  },
+  {
+    "id": "hexwire",
+    "name": "Hexwire",
+    "description": "Cyberpunk: neon magenta and cyan, glitch type, HUD frames, a neon grid",
+    "look": "neon",
+    "tokens": {
+      "look": "neon",
+      "font": "tech,wide,condensed",
+      "weight": "800",
+      "text": "#f4f0ff",
+      "accent": "#ff2bd6",
+      "onAccent": "#ffffff",
+      "panel": "rgba(12,4,28,0.9)",
+      "panelText": "#f4f0ff",
+      "line": "#22e8ff",
+      "theme": "dark",
+      "backdrop": "#0a0418"
+    },
+    "camera": {
+      "mode": "glitch",
+      "zoom": 1.1,
+      "every": 72,
+      "shake": 1
+    },
+    "overlay": {
+      "kind": "neon",
+      "amount": 0.22
+    },
+    "captions": {
+      "fontFamily": "Geist Mono",
+      "fontWeight": 700,
+      "color": "#f4f0ff",
+      "highlight": "#ff2bd6",
+      "preset": "pop",
+      "position": "lower",
+      "wordsPerLine": 3
+    },
+    "text": {
+      "fontFamily": "Orbitron",
+      "fontWeight": 800,
+      "color": "#f4f0ff"
+    },
+    "guide": [
+      "Fast and glitchy: an overlay every 2–4 s; the camera tears sideways on beats.",
+      "Open with the speaker framed in HUD brackets under a neon title (Hook Card hud).",
+      "Neon cards on the perspective grid for lists, prices and quotes; captions in slanted neon boxes.",
+      "Accent one word per phrase in magenta; keep text short and uppercase."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "hud",
+          "tagline": "five mods that feel *illegal*"
+        }
+      },
+      {
+        "job": "Emphasis",
+        "component": "word-pop",
+        "props": {
+          "position": "lower"
+        }
+      },
+      {
+        "job": "A count or price",
+        "component": "sticker-badge",
+        "props": {
+          "position": "top-right"
+        }
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "full"
+        }
+      }
+    ]
+  },
+  {
+    "id": "visualshot",
+    "name": "Visualshot",
+    "description": "Explainer: big bold centered captions, black-and-white line diagrams, punch-in cuts",
+    "look": "line",
+    "tokens": {
+      "look": "line",
+      "font": "heavy,condensed,archivo",
+      "weight": "900",
+      "text": "#ffffff",
+      "accent": "#ffe600",
+      "onAccent": "#000000",
+      "panel": "#000000",
+      "panelText": "#ffffff",
+      "line": "#ffffff",
+      "theme": "dark",
+      "backdrop": "#000000"
+    },
+    "camera": {
+      "mode": "punch",
+      "zoom": 1.14,
+      "every": 60,
+      "shake": 0
+    },
+    "overlay": {
+      "kind": "none",
+      "amount": 0
+    },
+    "captions": {
+      "fontFamily": "Montserrat",
+      "fontWeight": 900,
+      "color": "#ffffff",
+      "highlight": "#ffe600",
+      "preset": "pop",
+      "position": "center",
+      "wordsPerLine": 2
+    },
+    "text": {
+      "fontFamily": "Montserrat",
+      "fontWeight": 900,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "Captions carry the video: huge, uppercase, centered, one or two words at a time, the key word in yellow.",
+      "Explain every idea with a black full-frame Line Diagram (venn, one to many, growth, cycle, small vs big, stairs) while it is said.",
+      "Jump-cut punch-ins every ~2 s; no texture, no color besides the yellow.",
+      "Open with the speaker in a thin white frame under a bold title (Hook Card frame)."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "frame",
+          "tagline": ""
+        }
+      },
+      {
+        "job": "Explain an idea",
+        "component": "line-diagram",
+        "props": {
+          "background": "#000000"
+        }
+      },
+      {
+        "job": "A count or price",
+        "component": "sticker-badge",
+        "props": {
+          "position": "top-right",
+          "label": ""
+        }
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "full"
+        }
+      }
+    ]
+  },
+  {
+    "id": "rewind",
+    "name": "Rewind",
+    "description": "90s home video: VHS grade and noise, a TV set, VCR blue-screen menus, closed captions",
+    "look": "vhs",
+    "tokens": {
+      "look": "vhs",
+      "font": "retro,condensed,archivo",
+      "weight": "400",
+      "text": "#ffffff",
+      "accent": "#ffd23f",
+      "onAccent": "#111111",
+      "panel": "#1626c9",
+      "panelText": "#ffffff",
+      "line": "#ffffff",
+      "theme": "dark",
+      "backdrop": "#1626c9"
+    },
+    "camera": {
+      "mode": "tape",
+      "zoom": 1.04,
+      "every": 90,
+      "shake": 1,
+      "grade": "saturate(1.3) contrast(1.08) sepia(0.2) hue-rotate(-8deg) brightness(1.05) blur(0.5px)"
+    },
+    "overlay": {
+      "kind": "vhs",
+      "amount": 0.16
+    },
+    "captions": {
+      "fontFamily": "VT323",
+      "fontWeight": 400,
+      "color": "#ffffff",
+      "highlight": "#ffd23f",
+      "preset": "plain",
+      "position": "lower",
+      "wordsPerLine": 4
+    },
+    "text": {
+      "fontFamily": "Bungee",
+      "fontWeight": 400,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "Feels like a tape from 1996: the footage is graded warm and soft, with noise, a rolling tracking band and the camcorder display.",
+      "Open with the speaker on a 90s TV set under a Bungee title (Hook Card tv).",
+      "Lists and numbers as VCR blue-screen menus; counts as a TV volume bar.",
+      "Captions as closed captions: white on black boxes, the spoken word in yellow."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "tv",
+          "tagline": "ch 03"
+        }
+      },
+      {
+        "job": "Emphasis",
+        "component": "word-pop",
+        "props": {
+          "position": "center",
+          "tilt": false
+        }
+      },
+      {
+        "job": "A count or price",
+        "component": "sticker-badge",
+        "props": {
+          "position": "center",
+          "label": ""
+        }
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "full"
+        }
+      }
+    ]
+  },
+  {
+    "id": "lumen",
+    "name": "Lumen",
+    "description": "Clean: Inter on soft dark cards, one blue accent, a slow push-in",
+    "look": "clean",
+    "tokens": {
+      "look": "clean",
+      "font": "sans",
+      "weight": "700",
+      "text": "#ffffff",
+      "accent": "#60a5fa",
+      "onAccent": "#0b1220",
+      "panel": "rgba(13,16,22,0.88)",
+      "panelText": "#ffffff",
+      "line": "#60a5fa",
+      "theme": "dark",
+      "backdrop": "#0b0d12"
+    },
+    "camera": {
+      "mode": "drift",
+      "zoom": 1.06,
+      "every": 150,
+      "shake": 0.2
+    },
+    "overlay": {
+      "kind": "vignette",
+      "amount": 0.18
+    },
+    "captions": {
+      "fontFamily": "Inter",
+      "fontWeight": 700,
+      "color": "#ffffff",
+      "highlight": "#60a5fa",
+      "preset": "karaoke",
+      "position": "bottom",
+      "wordsPerLine": 4
+    },
+    "text": {
+      "fontFamily": "Inter",
+      "fontWeight": 700,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "Calm: one overlay every 5–8 s, never two at once; the camera pushes in slowly.",
+      "Open with the speaker as a rounded inset under a centered title (Hook Card inset).",
+      "Cards float over the footage rather than covering it.",
+      "Accent one word per title at most."
+    ],
+    "shots": [
+      {
+        "job": "Hook",
+        "component": "hook-card",
+        "props": {
+          "layout": "inset",
+          "tagline": "five mods that feel *illegal*"
+        }
+      },
+      {
+        "job": "Emphasis",
+        "component": "word-pop",
+        "props": {
+          "position": "bottom",
+          "tilt": false
+        }
+      },
+      {
+        "job": "Name and role",
+        "component": "lower-third"
+      },
+      {
+        "job": "List item",
+        "component": "list-card",
+        "props": {
+          "layout": "card"
+        }
+      },
+      {
+        "job": "Before / after",
+        "component": "before-after",
+        "props": {
+          "layout": "card"
+        }
+      },
+      {
+        "job": "Proof",
+        "component": "quote-card",
+        "props": {
+          "layout": "card"
+        }
+      }
+    ]
+  }
+]

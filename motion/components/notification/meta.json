@@ -1,0 +1,27 @@
+{
+  "id": "notification",
+  "name": "Notification",
+  "category": "Overlays",
+  "description": "A phone-style notification that springs in from the top (or pops up in the middle), with optional earlier ones stacked behind it.",
+  "useWhen": "Showing an event happening: a sale, a signup, a new message, a deploy finishing, a payment, a review coming in. Stack a few in a row (staggered clips) for \"the notifications keep coming\".",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["notification", "toast", "push", "ios", "alert", "message", "sale", "phone"],
+  "props": {
+    "app": { "type": "text", "label": "App", "default": "Stripe" },
+    "icon": { "type": "text", "label": "Icon", "default": "$", "maxLength": 2, "help": "A letter or emoji on the app icon." },
+    "title": { "type": "text", "label": "Title", "default": "New payment" },
+    "message": { "type": "text", "label": "Message", "default": "You received $49.00 from a new customer.", "multiline": true, "maxLength": 120 },
+    "time": { "type": "text", "label": "Time", "default": "now" },
+    "accent": { "type": "color", "style": "accent", "label": "Icon color", "default": "#635bff" },
+    "theme": { "type": "select", "style": "theme", "label": "Theme", "default": "light", "options": [{ "value": "light", "label": "Light" }, { "value": "dark", "label": "Dark" }] },
+    "position": { "type": "select", "label": "Position", "default": "top", "options": [{ "value": "top", "label": "Top" }, { "value": "center", "label": "Center" }] },
+    "stack": { "type": "number", "label": "Stacked behind", "default": 1, "min": 0, "max": 2, "step": 1 }
+  },
+  "examples": [
+    { "name": "Payment", "props": {} },
+    { "name": "Dark, centered", "props": { "app": "GitHub", "icon": "✓", "title": "Deploy succeeded", "message": "agentcut.synteq.app is live on production.", "accent": "#22c55e", "theme": "dark", "position": "center", "stack": 0 } },
+    { "name": "Message", "props": { "app": "Messages", "icon": "💬", "title": "Sam", "message": "ok this video is insane 🔥", "accent": "#34c759", "stack": 2 } }
+  ],
+  "stillAt": 0.5
+}

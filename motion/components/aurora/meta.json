@@ -1,0 +1,28 @@
+{
+  "id": "aurora",
+  "name": "Aurora Gradient",
+  "category": "Backgrounds",
+  "description": "A drifting mesh gradient: four soft color fields swell and swap places over a base color, with film grain and a vignette.",
+  "useWhen": "The default premium backdrop for titles, product shots, quotes and end cards, especially for AI, SaaS and app videos. Match the colors to the brand; use a dark base for white text, a light one for dark text.",
+  "durationInFrames": 300,
+  "layer": "full",
+  "tags": ["gradient", "mesh", "aurora", "background", "loop", "grain", "ai", "saas", "blur"],
+  "props": {
+    "color1": { "type": "color", "label": "Color 1", "default": "#6d28d9" },
+    "color2": { "type": "color", "label": "Color 2", "default": "#2563eb" },
+    "color3": { "type": "color", "label": "Color 3", "default": "#db2777" },
+    "color4": { "type": "color", "label": "Color 4", "default": "#0891b2" },
+    "background": { "type": "color", "label": "Base", "default": "#06050c" },
+    "speed": { "type": "number", "label": "Speed", "default": 1, "min": 0.1, "max": 4, "step": 0.1, "unit": "×" },
+    "intensity": { "type": "number", "label": "Intensity", "default": 0.85, "min": 0.2, "max": 1, "step": 0.05 },
+    "grain": { "type": "boolean", "label": "Film grain", "default": true },
+    "vignette": { "type": "boolean", "label": "Vignette", "default": true },
+    "seed": { "type": "number", "label": "Pattern", "default": 2, "min": 0, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Night aurora", "props": {} },
+    { "name": "Peach", "props": { "color1": "#fb923c", "color2": "#f472b6", "color3": "#fde68a", "color4": "#fda4af", "background": "#fff7ed", "vignette": false, "seed": 7 } },
+    { "name": "Emerald", "props": { "color1": "#059669", "color2": "#0d9488", "color3": "#84cc16", "color4": "#064e3b", "background": "#020806", "seed": 21, "speed": 0.6 } }
+  ],
+  "stillAt": 0.3
+}

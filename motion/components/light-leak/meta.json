@@ -1,0 +1,74 @@
+{
+  "id": "light-leak",
+  "name": "Light Leak",
+  "category": "Transitions",
+  "description": "A warm film light leak that blooms over the frame and retracts, covering a cut at its midpoint.",
+  "useWhen": "Soft, cinematic transitions between scenes or clips, reveals, the drop of a song, a dreamy or nostalgic look. Put it on a track above both clips and center it on the cut (from = cut frame \u2212 half its length).",
+  "durationInFrames": 40,
+  "layer": "overlay",
+  "tags": [
+    "transition",
+    "light leak",
+    "film",
+    "flare",
+    "cut",
+    "cinematic"
+  ],
+  "props": {
+    "seed": {
+      "type": "number",
+      "label": "Pattern",
+      "default": 3,
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "help": "Different numbers give different leak shapes."
+    },
+    "hueShift": {
+      "type": "number",
+      "label": "Hue",
+      "default": 0,
+      "min": 0,
+      "max": 360,
+      "step": 1,
+      "unit": "\u00b0",
+      "help": "0 warm amber, 120 green, 240 blue."
+    },
+    "strength": {
+      "type": "number",
+      "label": "Strength",
+      "default": 1,
+      "min": 0.2,
+      "max": 1,
+      "step": 0.05
+    },
+    "flash": {
+      "type": "boolean",
+      "label": "Bloom at the cut",
+      "default": false,
+      "help": "A brief soft white flash at the midpoint."
+    }
+  },
+  "examples": [
+    {
+      "name": "Warm",
+      "props": {}
+    },
+    {
+      "name": "Cool blue",
+      "props": {
+        "seed": 11,
+        "hueShift": 210
+      }
+    },
+    {
+      "name": "Bloom",
+      "props": {
+        "seed": 7,
+        "hueShift": 330,
+        "flash": true
+      }
+    }
+  ],
+  "stillAt": 0.45
+}

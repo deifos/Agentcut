@@ -1,0 +1,24 @@
+{
+  "id": "chat-thread",
+  "name": "Chat Thread",
+  "category": "AI & Product",
+  "description": "A chat conversation building up bubble by bubble: replies arrive after a typing indicator, your messages pop in on the right.",
+  "useWhen": "Showing a conversation: a support chat, a customer DM, a group chat reacting, a user talking to an AI assistant, a before/after story told in messages. Start a line with > for messages from \"me\" (right side). Messages share the clip, so allow about 1 second each.",
+  "durationInFrames": 180,
+  "layer": "overlay",
+  "tags": ["chat", "messages", "imessage", "conversation", "dm", "typing", "bubbles", "assistant"],
+  "props": {
+    "messages": { "type": "lines", "label": "Messages", "default": ["Did you see the new launch video?", "> Made it in 10 minutes 😅", "No way. With what?", "> Agentcut + Claude"], "max": 12, "help": "One message per line. Start with > for your side (right)." },
+    "accent": { "type": "color", "label": "Your bubble", "default": "#0a84ff" },
+    "theme": { "type": "select", "label": "Theme", "default": "dark", "options": [{ "value": "dark", "label": "Dark" }, { "value": "light", "label": "Light" }] },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Text size", "default": 4.2, "min": 1.5, "max": 7, "step": 0.1, "unit": "% of frame" },
+    "typing": { "type": "boolean", "label": "Typing indicator", "default": true }
+  },
+  "examples": [
+    { "name": "DM", "props": {} },
+    { "name": "Light support chat", "props": { "messages": ["Hi! How can I help?", "> My export is stuck at 90%", "Fixed in the latest version 🎉", "> That was fast, thanks!"], "theme": "light", "accent": "#16a34a", "background": "#f4f4f5" } },
+    { "name": "AI assistant", "props": { "messages": ["> Make the intro punchier", "Done: I added a Kinetic Punch title on the beat.", "> Perfect. Export it."], "accent": "#8b5cf6", "background": "#0b0b12" } }
+  ],
+  "stillAt": 0.9
+}

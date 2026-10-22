@@ -1,0 +1,34 @@
+{
+  "id": "sticker-slam",
+  "name": "Sticker Slam",
+  "category": "Text & Titles",
+  "description": "Your brand as a die-cut sticker in the middle while the background hard-cuts between surfaces (laptop lid, brick wall, skate deck, street sign, cardboard box…), the sticker snapping to a new tilt on every cut.",
+  "useWhen": "A loud, social-first brand intro or outro: a logo or product name that's \"everywhere\", merch and streetwear drops, launch hype reels, the end card of a TikTok or Reel. Pass your own photos in images to cut between real places.",
+  "durationInFrames": 90,
+  "layer": "full",
+  "tags": ["sticker", "brand", "logo", "intro", "outro", "hype", "streetwear", "fast cuts", "montage", "social", "tiktok"],
+  "props": {
+    "name": { "type": "text", "label": "Name", "default": "agentcut", "maxLength": 24 },
+    "tagline": { "type": "text", "label": "Tagline", "default": "", "help": "A small line under the sticker. Leave empty for none." },
+    "mark": { "type": "select", "label": "Mark", "default": "star", "options": [{ "value": "none", "label": "None" }, { "value": "star", "label": "Star" }, { "value": "dot", "label": "Dot" }, { "value": "bolt", "label": "Bolt" }, { "value": "heart", "label": "Heart" }] },
+    "shape": { "type": "select", "label": "Shape", "default": "rounded", "options": [{ "value": "rounded", "label": "Rounded" }, { "value": "pill", "label": "Pill" }, { "value": "circle", "label": "Circle" }, { "value": "text-cut", "label": "Cut around the text" }], "help": "\"Cut around the text\" outlines the letters themselves (they take the sticker color)." },
+    "color": { "type": "color", "label": "Sticker", "default": "#111111" },
+    "textColor": { "type": "color", "label": "Text", "default": "#c6ff3d" },
+    "border": { "type": "color", "label": "Die-cut border", "default": "#ffffff" },
+    "font": { "type": "select", "label": "Font", "default": "display", "options": [{ "value": "display", "label": "Bricolage" }, { "value": "sans", "label": "Inter" }, { "value": "serif", "label": "Instrument Serif" }, { "value": "fraunces", "label": "Fraunces" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "syne", "label": "Syne" }, { "value": "wide", "label": "Unbounded" }, { "value": "condensed", "label": "Anton" }, { "value": "mono", "label": "Mono" }] },
+    "weight": { "type": "select", "label": "Weight", "default": "800", "options": [{ "value": "400", "label": "Regular" }, { "value": "500", "label": "Medium" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }] },
+    "size": { "type": "number", "label": "Size", "default": 12, "min": 5, "max": 22, "step": 0.5, "unit": "% of frame", "help": "Long names shrink to fit." },
+    "cutEvery": { "type": "number", "label": "Cut every", "default": 5, "min": 2, "max": 20, "step": 1, "unit": "frames" },
+    "tilt": { "type": "number", "label": "Tilt", "default": 10, "min": 0, "max": 14, "step": 1, "unit": "°", "help": "How far the sticker swings left and right between cuts." },
+    "peel": { "type": "boolean", "label": "Peeled corner", "default": true, "help": "Not drawn on \"Cut around the text\"." },
+    "flash": { "type": "boolean", "label": "Flash on cuts", "default": false },
+    "images": { "type": "lines", "label": "Images", "default": [], "max": 12, "help": "Image URLs to cut between instead of the drawn surfaces (must allow cross-origin loading)." },
+    "seed": { "type": "number", "label": "Shuffle", "default": 7, "min": 0, "max": 999, "step": 1, "help": "Another order of surfaces and tilts." }
+  },
+  "examples": [
+    { "name": "Slap", "props": {} },
+    { "name": "Streetwear", "props": { "name": "NO SLEEP CLUB", "tagline": "Drop 03 · Friday", "mark": "bolt", "shape": "text-cut", "color": "#ff3b30", "border": "#ffffff", "font": "condensed", "weight": "400", "size": 16, "cutEvery": 3, "tilt": 14, "flash": true, "seed": 42 } },
+    { "name": "Clean SaaS", "props": { "name": "Northwind", "tagline": "Now in beta", "mark": "dot", "shape": "pill", "color": "#ffffff", "textColor": "#0f172a", "border": "#ffffff", "font": "sans", "weight": "800", "cutEvery": 8, "tilt": 6, "peel": false, "seed": 3 } }
+  ],
+  "stillAt": 0.5
+}

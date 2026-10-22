@@ -1,0 +1,32 @@
+{
+  "id": "glitch-title",
+  "name": "Glitch Title",
+  "category": "Text & Titles",
+  "description": "A title that arrives torn into shifting slices with red and cyan copies split off it, snaps clean, then catches small glitch bursts while it holds.",
+  "useWhen": "Edgy, tech and gaming moments: a launch name, \"System online\", a hacked or broken-screen beat, a drop in a music video, a hook that should feel like a signal cutting in. Turn bursts to 0 for a single entry glitch.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["glitch", "rgb split", "chromatic", "distortion", "tech", "gaming", "cyberpunk", "vhs", "error"],
+  "props": {
+    "lines": { "type": "lines", "label": "Text", "default": ["System *online*"], "max": 2, "help": "One or two lines. *Starred* words take the accent." },
+    "color": { "type": "color", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "label": "Accent", "default": "#a3e635", "help": "Starred words and the flash bars." },
+    "splitLeft": { "type": "color", "label": "Split left", "default": "#ff2d55" },
+    "splitRight": { "type": "color", "label": "Split right", "default": "#00e5ff" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 14, "min": 4, "max": 30, "step": 0.5, "unit": "% of frame" },
+    "font": { "type": "select", "label": "Font", "default": "condensed", "options": [{ "value": "condensed", "label": "Anton" }, { "value": "wide", "label": "Unbounded" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "sans", "label": "Inter" }, { "value": "display", "label": "Bricolage" }, { "value": "syne", "label": "Syne" }, { "value": "mono", "label": "Mono" }] },
+    "weight": { "type": "select", "label": "Weight", "default": "400", "options": [{ "value": "400", "label": "Regular" }, { "value": "700", "label": "Bold" }, { "value": "800", "label": "Extra bold" }, { "value": "900", "label": "Black" }] },
+    "uppercase": { "type": "boolean", "label": "Uppercase", "default": true },
+    "intensity": { "type": "number", "label": "Intensity", "default": 70, "min": 10, "max": 100, "step": 5, "unit": "%" },
+    "bursts": { "type": "number", "label": "Bursts", "default": 0.75, "min": 0, "max": 3, "step": 0.25, "unit": "per second", "help": "Small glitches while the title holds. 0 for none." },
+    "scanlines": { "type": "boolean", "label": "Scanlines", "default": false },
+    "seed": { "type": "number", "label": "Pattern", "default": 1, "min": 0, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Signal", "props": {} },
+    { "name": "CRT broadcast", "props": { "lines": ["LIVE", "*Tonight* 9PM"], "scanlines": true, "background": "#07070a", "font": "wide", "weight": "800", "size": 11, "accent": "#f43f5e" } },
+    { "name": "Subtle", "props": { "lines": ["Something's *different*"], "intensity": 35, "bursts": 0.25, "font": "grotesk", "weight": "700", "uppercase": false, "size": 9 } }
+  ],
+  "stillAt": 0.45
+}

@@ -1,0 +1,304 @@
+{
+  "id": "hook-card",
+  "name": "Hook Card",
+  "category": "Talking Head",
+  "durationInFrames": 105,
+  "layer": "overlay",
+  "stillAt": 0.6,
+  "description": "The opening title of a talking-head video, laid out around the speaker the project style's way: split with a torn or ruled seam, a taped photo, a terminal window or a rounded inset.",
+  "useWhen": "The first 2–4 s of a talking-head or creator video, a section opener, a big promise. Layouts that frame the speaker (top, stack, collage, window, hud, frame, tv, inset) leave a hole: give the speaker's video clip this box for the hook's duration (split the clip at the hook's end). Mobile — top/stack: {x:0,y:split/100,width:1,height:1-split/100}; collage: {x:0.11,y:0.45,width:0.78,height:0.41}; window: {x:0.07,y:0.47,width:0.86,height:0.42}; hud: {x:0.06,y:0.45,width:0.88,height:0.45}; frame: {x:0.1,y:0.44,width:0.8,height:0.46}; tv: {x:0.13,y:0.45,width:0.74,height:0.34} with radius 44; inset: {x:0.08,y:0.47,width:0.84,height:0.43} with radius 36. Wide — top/stack: {x:split/100,y:0,width:1-split/100,height:1}; collage: {x:0.53,y:0.14,width:0.38,height:0.72}; window: {x:0.5,y:0.2,width:0.44,height:0.66}; hud: {x:0.5,y:0.14,width:0.44,height:0.72}; frame: {x:0.52,y:0.14,width:0.4,height:0.72}; tv: {x:0.53,y:0.16,width:0.36,height:0.56} with radius 44; inset: {x:0.52,y:0.12,width:0.4,height:0.76} with radius 36. \"full\" covers the frame; \"card\" floats over full-frame footage. Mark the accent with *stars*.",
+  "tags": [
+    "hook",
+    "title",
+    "talking head",
+    "creator",
+    "split",
+    "intro"
+  ],
+  "props": {
+    "kicker": {
+      "type": "text",
+      "label": "Kicker",
+      "default": "Claude Code just got",
+      "help": "Small line above (empty for none)."
+    },
+    "lines": {
+      "type": "lines",
+      "label": "Headline",
+      "default": [
+        "Mods"
+      ],
+      "max": 3
+    },
+    "sub": {
+      "type": "text",
+      "label": "Sub line",
+      "default": "*5* to install now",
+      "help": "*Starred* words get the accent chip."
+    },
+    "tagline": {
+      "type": "text",
+      "label": "Tagline",
+      "default": "five mods that feel *illegal*",
+      "help": "A phrase on the seam, under the photo or on the window bar (empty for none)."
+    },
+    "layout": {
+      "type": "select",
+      "label": "Layout",
+      "default": "top",
+      "options": [
+        {
+          "value": "top",
+          "label": "Split, torn/ruled seam"
+        },
+        {
+          "value": "stack",
+          "label": "Split, centered"
+        },
+        {
+          "value": "collage",
+          "label": "Taped photo"
+        },
+        {
+          "value": "window",
+          "label": "Terminal window"
+        },
+        {
+          "value": "hud",
+          "label": "HUD brackets"
+        },
+        {
+          "value": "frame",
+          "label": "Thin frame"
+        },
+        {
+          "value": "tv",
+          "label": "90s TV set"
+        },
+        {
+          "value": "inset",
+          "label": "Rounded inset"
+        },
+        {
+          "value": "full",
+          "label": "Full frame"
+        },
+        {
+          "value": "card",
+          "label": "Card over video"
+        }
+      ]
+    },
+    "split": {
+      "type": "number",
+      "label": "Split",
+      "default": 54,
+      "min": 30,
+      "max": 75,
+      "step": 1,
+      "unit": "%",
+      "help": "Where the speaker starts (top and stack)."
+    },
+    "align": {
+      "type": "select",
+      "label": "Align",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        }
+      ]
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 22,
+      "min": 6,
+      "max": 34,
+      "step": 0.5,
+      "unit": "% of frame"
+    },
+    "look": {
+      "type": "select",
+      "style": "look",
+      "label": "Look",
+      "default": "ink",
+      "options": [
+        {
+          "value": "ink",
+          "label": "Ink (bold borders)"
+        },
+        {
+          "value": "paper",
+          "label": "Cut paper"
+        },
+        {
+          "value": "notebook",
+          "label": "Notebook"
+        },
+        {
+          "value": "crt",
+          "label": "Terminal"
+        },
+        {
+          "value": "neon",
+          "label": "Neon (cyberpunk)"
+        },
+        {
+          "value": "line",
+          "label": "Line (black & white)"
+        },
+        {
+          "value": "vhs",
+          "label": "VHS (90s tape)"
+        },
+        {
+          "value": "clean",
+          "label": "Clean"
+        }
+      ],
+      "help": "The graphic language. Follows the project style."
+    },
+    "font": {
+      "type": "select",
+      "style": "font",
+      "label": "Headline font",
+      "default": "archivo",
+      "options": [
+        {
+          "value": "archivo",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "caveat",
+          "label": "Caveat"
+        },
+        {
+          "value": "pixel",
+          "label": "VT323"
+        },
+        {
+          "value": "tech",
+          "label": "Orbitron"
+        },
+        {
+          "value": "heavy",
+          "label": "Montserrat"
+        },
+        {
+          "value": "retro",
+          "label": "Bungee"
+        },
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        }
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Accent",
+      "default": "#ff3d8b"
+    },
+    "panel": {
+      "type": "color",
+      "style": "panel",
+      "label": "Card",
+      "default": "#ffffff"
+    },
+    "panelText": {
+      "type": "color",
+      "style": "panelText",
+      "label": "Card text",
+      "default": "#111111"
+    },
+    "line": {
+      "type": "color",
+      "style": "line",
+      "label": "Ink",
+      "default": "#111111",
+      "help": "Borders, hard shadows, pen strokes."
+    },
+    "backdrop": {
+      "type": "color",
+      "style": "backdrop",
+      "label": "Backdrop",
+      "default": "#ffe14d",
+      "help": "Full-frame and split backgrounds."
+    },
+    "onVideo": {
+      "type": "color",
+      "style": "text",
+      "label": "Text on video",
+      "default": "#ffffff"
+    }
+  },
+  "examples": [
+    {
+      "name": "Split hook",
+      "props": {}
+    },
+    {
+      "name": "Centered stack",
+      "props": {
+        "layout": "stack",
+        "kicker": "",
+        "lines": [
+          "Mods"
+        ],
+        "sub": "*5* to install now"
+      }
+    },
+    {
+      "name": "Terminal window",
+      "props": {
+        "layout": "window",
+        "look": "crt",
+        "font": "pixel",
+        "tagline": ""
+      }
+    },
+    {
+      "name": "Full frame",
+      "props": {
+        "layout": "full",
+        "kicker": "What it costs you",
+        "lines": [
+          "Per *month*"
+        ],
+        "sub": "",
+        "tagline": ""
+      }
+    }
+  ]
+}

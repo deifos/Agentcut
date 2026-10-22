@@ -1,0 +1,29 @@
+{
+  "id": "split-flap",
+  "name": "Split-Flap Board",
+  "category": "Text & Titles",
+  "description": "An airport departures board: each character sits in its own tile and flips through random glyphs before landing, left to right.",
+  "useWhen": "Announcements with a sense of arrival: a launch date, a destination or city, \"Now boarding\", a version number, a scoreboard or a countdown to an event. Keep lines short (under ~14 characters) so tiles stay big, especially in mobile.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["split flap", "solari", "departures", "airport", "board", "flip", "retro", "announcement", "travel"],
+  "props": {
+    "lines": { "type": "lines", "label": "Text", "default": ["NOW BOARDING", "*V2.0* GATE 12"], "max": 3, "help": "One line per row. *Starred* words land in the accent." },
+    "tileColor": { "type": "color", "label": "Tiles", "default": "#1a1a1d" },
+    "color": { "type": "color", "label": "Text", "default": "#f5f5f4" },
+    "accent": { "type": "color", "label": "Accent", "default": "#fbbf24", "help": "Starred words and the landing flash." },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 10, "min": 4, "max": 20, "step": 0.5, "unit": "% of frame", "help": "Largest tile size; long lines shrink to fit." },
+    "font": { "type": "select", "label": "Font", "default": "mono", "options": [{ "value": "mono", "label": "Mono" }, { "value": "condensed", "label": "Anton" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "sans", "label": "Inter" }] },
+    "stagger": { "type": "number", "label": "Stagger", "default": 2, "min": 0, "max": 8, "step": 0.5, "unit": "frames/tile", "help": "Shrinks to fit the clip." },
+    "flips": { "type": "number", "label": "Flips", "default": 6, "min": 1, "max": 16, "step": 1, "help": "Random glyphs each tile passes before landing (plus a few extra per tile)." },
+    "uppercase": { "type": "boolean", "label": "Uppercase", "default": true },
+    "seed": { "type": "number", "label": "Pattern", "default": 1, "min": 0, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Departures", "props": {} },
+    { "name": "Launch date", "props": { "lines": ["LAUNCH", "*OCT 28*"], "background": "#0c0c0e", "font": "condensed", "size": 14, "accent": "#34d399" } },
+    { "name": "Light board", "props": { "lines": ["PARIS  09:40", "TOKYO  *ON TIME*"], "tileColor": "#fafaf9", "color": "#18181b", "accent": "#ea580c", "background": "#e7e5e4", "size": 8 } }
+  ],
+  "stillAt": 0.8
+}

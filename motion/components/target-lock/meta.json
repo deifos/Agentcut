@@ -1,0 +1,32 @@
+{
+  "id": "target-lock",
+  "name": "Target Lock",
+  "category": "Overlays",
+  "description": "A sci-fi head-up display: neon wireframes grow in, corner brackets snap onto a target and lock, a radar sweeps, data streams scroll and readouts scramble before landing, then it powers down into a line.",
+  "useWhen": "Tech-feeling packaging over a screen recording or product shot: an AI scanning or analysing something, a feature being 'targeted', gadget and game edits, space or security explainers. Point targetX/targetY at the thing on screen; leave the background transparent to sit over the footage.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["hud", "cyberpunk", "sci-fi", "target lock", "radar", "tech", "interface", "neon", "scan", "data"],
+  "props": {
+    "title": { "type": "text", "label": "Title", "default": "TARGET ACQUIRED", "maxLength": 24 },
+    "label": { "type": "text", "label": "Lock label", "default": "OBJ-07", "maxLength": 20, "help": "Shown under the lock box." },
+    "stats": { "type": "lines", "label": "Readouts", "default": ["SIGNAL: 98.4%", "VELOCITY: 1240 KM/H", "ALTITUDE: 8,812 M", "THREAT: LOW"], "max": 6, "help": "One per line, \"LABEL: value\". Digits scramble before landing." },
+    "targetX": { "type": "number", "label": "Target X", "default": 56, "min": 0, "max": 100, "step": 1, "unit": "%" },
+    "targetY": { "type": "number", "label": "Target Y", "default": 46, "min": 0, "max": 100, "step": 1, "unit": "%" },
+    "lockSize": { "type": "number", "label": "Lock size", "default": 26, "min": 8, "max": 60, "step": 1, "unit": "% of frame" },
+    "color": { "type": "color", "label": "Primary", "default": "#45e0ff" },
+    "secondary": { "type": "color", "label": "Secondary", "default": "#ff8a1f" },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "radar": { "type": "boolean", "label": "Radar", "default": true },
+    "hexGrid": { "type": "boolean", "label": "Hex grid", "default": true },
+    "dataStream": { "type": "boolean", "label": "Data stream", "default": true },
+    "scanlines": { "type": "boolean", "label": "Scanlines", "default": true },
+    "seed": { "type": "number", "label": "Pattern", "default": 1, "min": 1, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Target lock", "props": { "background": "#05080d" } },
+    { "name": "AI product scan", "props": { "title": "ANALYSING UI", "label": "CHECKOUT FLOW", "stats": ["ELEMENTS: 142", "CONTRAST: AA PASS", "LOAD: 0.84 S", "CONFIDENCE: 97%"], "targetX": 50, "targetY": 52, "lockSize": 40, "color": "#7cf9d0", "secondary": "#c084fc", "radar": false, "background": "#070a12", "seed": 7 } },
+    { "name": "Warning", "props": { "title": "WARNING // BREACH", "label": "SECTOR 9", "stats": ["CORE TEMP: 1,204 C", "HULL: 37%", "OXYGEN: 12 MIN"], "color": "#ff8a1f", "secondary": "#ff2d55", "targetX": 40, "targetY": 50, "background": "#0d0503", "seed": 13 } }
+  ],
+  "stillAt": 0.6
+}

@@ -1,0 +1,24 @@
+{
+  "id": "prompt-box",
+  "name": "Prompt Box",
+  "category": "AI & Product",
+  "description": "An AI chat input that types a request character by character, then presses send.",
+  "useWhen": "Showing what a user asks an AI feature (\"make a launch video…\") right before the result appears; demos of chat, search or command bars.",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "tags": ["ai", "prompt", "chat", "typing", "input", "search"],
+  "props": {
+    "text": { "type": "text", "label": "Prompt", "default": "Make a 20 second launch video for my app", "multiline": true, "maxLength": 240 },
+    "placeholder": { "type": "text", "label": "Placeholder", "default": "Describe your video…" },
+    "label": { "type": "text", "label": "Label", "default": "", "help": "Optional small line above the box." },
+    "theme": { "type": "select", "style": "theme", "label": "Theme", "default": "dark", "options": [{ "value": "dark", "label": "Dark" }, { "value": "light", "label": "Light" }] },
+    "accent": { "type": "color", "style": "accent", "label": "Accent", "default": "#34d399" },
+    "speed": { "type": "number", "label": "Typing speed", "default": 28, "min": 6, "max": 80, "step": 1, "unit": "chars/s" },
+    "delay": { "type": "number", "label": "Start typing at", "default": 12, "min": 0, "max": 90, "step": 1, "unit": "frames" }
+  },
+  "examples": [
+    { "name": "Dark", "props": {} },
+    { "name": "Light search", "props": { "theme": "light", "text": "Find every clip where I mention pricing", "placeholder": "Search your recordings", "accent": "#6366f1" } },
+    { "name": "With label", "props": { "label": "Agentcut", "text": "Add a whoosh on every scene change and match the volume" } }
+  ]
+}

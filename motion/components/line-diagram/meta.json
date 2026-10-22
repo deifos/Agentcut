@@ -1,0 +1,217 @@
+{
+  "id": "line-diagram",
+  "name": "Line Diagram",
+  "category": "Charts & Stats",
+  "description": "Minimal explainer line art that draws itself on: two ideas overlapping, one reaching many, growth, a loop, small vs big, steps up.",
+  "useWhen": "Explaining an idea in one picture while the speaker says it (the Visualize Value way): a venn for two things that meet, network for one-to-many, growth for results over time, cycle for a loop, versus for small vs big, stairs for progress. Black background full frame, or transparent over footage. Keep labels to one or two words.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "stillAt": 0.7,
+  "tags": [
+    "diagram",
+    "explainer",
+    "line art",
+    "visualize value",
+    "minimal",
+    "venn",
+    "growth"
+  ],
+  "props": {
+    "kind": {
+      "type": "select",
+      "label": "Diagram",
+      "default": "venn",
+      "options": [
+        {
+          "value": "venn",
+          "label": "Venn (two meet)"
+        },
+        {
+          "value": "network",
+          "label": "One to many"
+        },
+        {
+          "value": "growth",
+          "label": "Growth curve"
+        },
+        {
+          "value": "cycle",
+          "label": "Cycle"
+        },
+        {
+          "value": "versus",
+          "label": "Small vs big"
+        },
+        {
+          "value": "stairs",
+          "label": "Stairs"
+        }
+      ]
+    },
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Where the magic happens",
+      "help": "Under the diagram (empty for none)."
+    },
+    "labels": {
+      "type": "lines",
+      "label": "Labels",
+      "default": [
+        "Skill",
+        "Taste",
+        "You"
+      ],
+      "max": 4,
+      "help": "Venn: left, right, overlap · network: center, outer · growth: x, y · cycle: one per step · versus: small, big · stairs: start, top."
+    },
+    "color": {
+      "type": "color",
+      "style": "line",
+      "label": "Lines",
+      "default": "#ffffff"
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Accent",
+      "default": "#ffe600"
+    },
+    "background": {
+      "type": "color",
+      "label": "Background",
+      "default": "#000000",
+      "help": "\"transparent\" to draw over footage."
+    },
+    "font": {
+      "type": "select",
+      "style": "font",
+      "label": "Font",
+      "default": "heavy",
+      "options": [
+        {
+          "value": "heavy",
+          "label": "Montserrat"
+        },
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "archivo",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "mono",
+          "label": "Mono"
+        },
+        {
+          "value": "caveat",
+          "label": "Caveat"
+        },
+        {
+          "value": "pixel",
+          "label": "VT323"
+        },
+        {
+          "value": "tech",
+          "label": "Orbitron"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        },
+        { "value": "retro", "label": "Bungee" }
+      ]
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 62,
+      "min": 20,
+      "max": 90,
+      "step": 1,
+      "unit": "% of frame"
+    },
+    "speed": {
+      "type": "number",
+      "label": "Draw speed",
+      "default": 16,
+      "min": 4,
+      "max": 40,
+      "step": 1,
+      "unit": "frames per stroke"
+    }
+  },
+  "examples": [
+    {
+      "name": "Venn",
+      "props": {}
+    },
+    {
+      "name": "One to many",
+      "props": {
+        "kind": "network",
+        "title": "One repo, everyone",
+        "labels": [
+          "1 repo",
+          "everyone"
+        ]
+      }
+    },
+    {
+      "name": "Growth",
+      "props": {
+        "kind": "growth",
+        "title": "Compounding",
+        "labels": [
+          "time",
+          "results"
+        ]
+      }
+    },
+    {
+      "name": "Cycle",
+      "props": {
+        "kind": "cycle",
+        "title": "The loop",
+        "labels": [
+          "Build",
+          "Share",
+          "Learn"
+        ]
+      }
+    },
+    {
+      "name": "Small vs big",
+      "props": {
+        "kind": "versus",
+        "title": "Think bigger",
+        "labels": [
+          "now",
+          "next"
+        ]
+      }
+    }
+  ]
+}

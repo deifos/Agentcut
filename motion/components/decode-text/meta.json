@@ -1,0 +1,29 @@
+{
+  "id": "decode-text",
+  "name": "Decode Text",
+  "category": "Text & Titles",
+  "description": "Text scrambles through random glyphs and locks in letter by letter, like a message being decrypted.",
+  "useWhen": "Tech, AI, security and developer moments: a model name, \"Access granted\", a reveal of a feature or a secret, a glitchy title. Monospace keeps the line steady while it scrambles.",
+  "durationInFrames": 90,
+  "layer": "overlay",
+  "tags": ["decode", "scramble", "hacker", "glitch", "terminal", "ai", "matrix", "tech"],
+  "props": {
+    "lines": { "type": "lines", "label": "Text", "default": ["Decoding the *future*"], "max": 4, "help": "One line per row. *Starred* words lock into the accent." },
+    "glyphs": { "type": "select", "label": "Glyphs", "default": "symbols", "options": [{ "value": "symbols", "label": "Symbols" }, { "value": "letters", "label": "Letters" }, { "value": "binary", "label": "Binary" }, { "value": "katakana", "label": "Katakana" }] },
+    "color": { "type": "color", "label": "Text", "default": "#ffffff" },
+    "accent": { "type": "color", "label": "Accent", "default": "#22d3ee", "help": "Scrambling glyphs and starred words." },
+    "background": { "type": "color", "label": "Background", "default": "transparent", "help": "\"transparent\" to sit over other layers." },
+    "size": { "type": "number", "label": "Size", "default": 7.5, "min": 3, "max": 18, "step": 0.5, "unit": "% of frame" },
+    "weight": { "type": "select", "label": "Weight", "default": "600", "options": [{ "value": "400", "label": "Regular" }, { "value": "600", "label": "Semibold" }, { "value": "700", "label": "Bold" }] },
+    "font": { "type": "select", "label": "Font", "default": "mono", "options": [{ "value": "mono", "label": "Mono" }, { "value": "grotesk", "label": "Space Grotesk" }, { "value": "wide", "label": "Unbounded" }, { "value": "sans", "label": "Inter" }] },
+    "align": { "type": "select", "label": "Align", "default": "center", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }] },
+    "speed": { "type": "number", "label": "Speed", "default": 30, "min": 4, "max": 120, "step": 1, "unit": "letters/s" },
+    "seed": { "type": "number", "label": "Pattern", "default": 1, "min": 0, "max": 99, "step": 1 }
+  },
+  "examples": [
+    { "name": "Decrypt", "props": {} },
+    { "name": "Access granted", "props": { "lines": ["ACCESS", "*GRANTED*"], "glyphs": "binary", "accent": "#4ade80", "background": "#050805", "size": 10 } },
+    { "name": "Neo Tokyo", "props": { "lines": ["*Hello*, operator"], "glyphs": "katakana", "accent": "#f472b6", "font": "grotesk", "weight": "700" } }
+  ],
+  "stillAt": 0.85
+}

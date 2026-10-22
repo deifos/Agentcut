@@ -1,0 +1,233 @@
+{
+  "id": "before-after",
+  "name": "Before / After",
+  "category": "Talking Head",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "description": "A number that changes: the old value is struck out, then the new one lands in the accent.",
+  "useWhen": "Savings, speed-ups, prices: \"$240 → $0\", \"3 hours → 4 minutes\". Land the after value on the word that says it.",
+  "tags": [
+    "before after",
+    "price",
+    "number",
+    "savings",
+    "card",
+    "talking head"
+  ],
+  "props": {
+    "kicker": {
+      "type": "text",
+      "label": "Kicker",
+      "default": "What it costs you"
+    },
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Per month"
+    },
+    "beforeLabel": {
+      "type": "text",
+      "label": "Before label",
+      "default": "Before"
+    },
+    "before": {
+      "type": "text",
+      "label": "Before",
+      "default": "$240"
+    },
+    "afterLabel": {
+      "type": "text",
+      "label": "After label",
+      "default": "After"
+    },
+    "after": {
+      "type": "text",
+      "label": "After",
+      "default": "$0"
+    },
+    "footer": {
+      "type": "text",
+      "label": "Footer",
+      "default": "you pay *nothing*"
+    },
+    "layout": {
+      "type": "select",
+      "label": "Layout",
+      "default": "full",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full frame"
+        },
+        {
+          "value": "card",
+          "label": "Card over video"
+        }
+      ]
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 11.5,
+      "min": 4,
+      "max": 18,
+      "step": 0.5,
+      "unit": "% of frame"
+    },
+    "look": {
+      "type": "select",
+      "style": "look",
+      "label": "Look",
+      "default": "ink",
+      "options": [
+        {
+          "value": "ink",
+          "label": "Ink (bold borders)"
+        },
+        {
+          "value": "paper",
+          "label": "Cut paper"
+        },
+        {
+          "value": "notebook",
+          "label": "Notebook"
+        },
+        {
+          "value": "crt",
+          "label": "Terminal"
+        },
+        {
+          "value": "neon",
+          "label": "Neon (cyberpunk)"
+        },
+        {
+          "value": "line",
+          "label": "Line (black & white)"
+        },
+        {
+          "value": "vhs",
+          "label": "VHS (90s tape)"
+        },
+        {
+          "value": "clean",
+          "label": "Clean"
+        }
+      ],
+      "help": "The graphic language. Follows the project style."
+    },
+    "font": {
+      "type": "select",
+      "style": "font",
+      "label": "Headline font",
+      "default": "archivo",
+      "options": [
+        {
+          "value": "archivo",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "caveat",
+          "label": "Caveat"
+        },
+        {
+          "value": "pixel",
+          "label": "VT323"
+        },
+        {
+          "value": "tech",
+          "label": "Orbitron"
+        },
+        {
+          "value": "heavy",
+          "label": "Montserrat"
+        },
+        {
+          "value": "retro",
+          "label": "Bungee"
+        },
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        }
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Accent",
+      "default": "#ff3d8b"
+    },
+    "panel": {
+      "type": "color",
+      "style": "panel",
+      "label": "Card",
+      "default": "#ffffff"
+    },
+    "panelText": {
+      "type": "color",
+      "style": "panelText",
+      "label": "Card text",
+      "default": "#111111"
+    },
+    "line": {
+      "type": "color",
+      "style": "line",
+      "label": "Ink",
+      "default": "#111111",
+      "help": "Borders, hard shadows, pen strokes."
+    },
+    "backdrop": {
+      "type": "color",
+      "style": "backdrop",
+      "label": "Backdrop",
+      "default": "#ffe14d",
+      "help": "Full-frame and split backgrounds."
+    },
+    "onVideo": {
+      "type": "color",
+      "style": "text",
+      "label": "Text on video",
+      "default": "#ffffff"
+    }
+  },
+  "examples": [
+    {
+      "name": "Price",
+      "props": {}
+    },
+    {
+      "name": "Time",
+      "props": {
+        "kicker": "Monthly report",
+        "title": "Time spent",
+        "before": "3 hours",
+        "after": "4 min",
+        "footer": ""
+      }
+    }
+  ]
+}

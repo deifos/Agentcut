@@ -1,0 +1,216 @@
+{
+  "id": "quote-card",
+  "name": "Quote Card",
+  "category": "Talking Head",
+  "durationInFrames": 120,
+  "layer": "overlay",
+  "description": "Someone else's words as proof: a quote with the name and role, on the project's card.",
+  "useWhen": "Testimonials, a review, a tweet or a line from a client that backs up what the speaker just said.",
+  "tags": [
+    "quote",
+    "testimonial",
+    "proof",
+    "card",
+    "talking head"
+  ],
+  "props": {
+    "quote": {
+      "type": "text",
+      "label": "Quote",
+      "default": "Invoicing took my whole Friday. Now it runs overnight.",
+      "multiline": true
+    },
+    "name": {
+      "type": "text",
+      "label": "Name",
+      "default": "Client name"
+    },
+    "role": {
+      "type": "text",
+      "label": "Role",
+      "default": "Founder · Their company"
+    },
+    "footer": {
+      "type": "text",
+      "label": "Footer",
+      "default": "",
+      "help": "A phrase under the card (empty for none)."
+    },
+    "layout": {
+      "type": "select",
+      "label": "Layout",
+      "default": "full",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full frame"
+        },
+        {
+          "value": "card",
+          "label": "Card over video"
+        }
+      ]
+    },
+    "size": {
+      "type": "number",
+      "label": "Size",
+      "default": 7.5,
+      "min": 3,
+      "max": 14,
+      "step": 0.5,
+      "unit": "% of frame"
+    },
+    "look": {
+      "type": "select",
+      "style": "look",
+      "label": "Look",
+      "default": "ink",
+      "options": [
+        {
+          "value": "ink",
+          "label": "Ink (bold borders)"
+        },
+        {
+          "value": "paper",
+          "label": "Cut paper"
+        },
+        {
+          "value": "notebook",
+          "label": "Notebook"
+        },
+        {
+          "value": "crt",
+          "label": "Terminal"
+        },
+        {
+          "value": "neon",
+          "label": "Neon (cyberpunk)"
+        },
+        {
+          "value": "line",
+          "label": "Line (black & white)"
+        },
+        {
+          "value": "vhs",
+          "label": "VHS (90s tape)"
+        },
+        {
+          "value": "clean",
+          "label": "Clean"
+        }
+      ],
+      "help": "The graphic language. Follows the project style."
+    },
+    "font": {
+      "type": "select",
+      "style": "font",
+      "label": "Headline font",
+      "default": "archivo",
+      "options": [
+        {
+          "value": "archivo",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "condensed",
+          "label": "Anton"
+        },
+        {
+          "value": "grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "caveat",
+          "label": "Caveat"
+        },
+        {
+          "value": "pixel",
+          "label": "VT323"
+        },
+        {
+          "value": "tech",
+          "label": "Orbitron"
+        },
+        {
+          "value": "heavy",
+          "label": "Montserrat"
+        },
+        {
+          "value": "retro",
+          "label": "Bungee"
+        },
+        {
+          "value": "sans",
+          "label": "Inter"
+        },
+        {
+          "value": "display",
+          "label": "Bricolage"
+        },
+        {
+          "value": "serif",
+          "label": "Instrument Serif"
+        },
+        {
+          "value": "fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "wide",
+          "label": "Unbounded"
+        }
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Accent",
+      "default": "#ff3d8b"
+    },
+    "panel": {
+      "type": "color",
+      "style": "panel",
+      "label": "Card",
+      "default": "#ffffff"
+    },
+    "panelText": {
+      "type": "color",
+      "style": "panelText",
+      "label": "Card text",
+      "default": "#111111"
+    },
+    "line": {
+      "type": "color",
+      "style": "line",
+      "label": "Ink",
+      "default": "#111111",
+      "help": "Borders, hard shadows, pen strokes."
+    },
+    "backdrop": {
+      "type": "color",
+      "style": "backdrop",
+      "label": "Backdrop",
+      "default": "#ffe14d",
+      "help": "Full-frame and split backgrounds."
+    },
+    "onVideo": {
+      "type": "color",
+      "style": "text",
+      "label": "Text on video",
+      "default": "#ffffff"
+    }
+  },
+  "examples": [
+    {
+      "name": "Testimonial",
+      "props": {}
+    },
+    {
+      "name": "Over video",
+      "props": {
+        "layout": "card",
+        "footer": "say the *same* thing"
+      }
+    }
+  ]
+}

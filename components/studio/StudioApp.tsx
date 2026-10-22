@@ -3,21 +3,25 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import {
-  ChevronDown,
+  ChevronsUpDown,
   Download,
   FilePlus2,
+  FolderOpen,
   Loader2,
   Mic,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Plus,
   Redo2,
   Smartphone,
   Trash2,
@@ -88,6 +92,7 @@ import type {
 } from "@/lib/studio/types";
 import { referenceFromAsset } from "@/components/studio/ChatReferences";
 import { formatFrameTime } from "@/lib/studio/format";
+import { TimelineThumbs } from "@/components/studio/timeline-thumbs";
 import {
   agentChoiceStore,
   canPickAgent,
@@ -337,6 +342,14 @@ export function StudioApp() {
     [agent?.id, agentPickable, doc, frameStore, loaded, studio, variant],
   );
 
+  // What the timeline's film strips draw with: the compiled project and the variant on screen.
+  const project = doc?.project;
+  const slug = doc?.slug;
+  const thumbSource = useMemo(
+    () => (project && slug ? { loaded, project, variant, slug } : null),
+    [loaded, project, variant, slug],
+  );
+
   const askAt = async (frame: number, text: string) => {
     seek(frame);
     await sendChat(text, { attachFrame: true });
@@ -345,7 +358,8 @@ export function StudioApp() {
   const stylesSupported = Boolean(info?.features?.includes("styles"));
   const currentStyle = getMotionStyle(doc?.project?.style);
   const useStyle = (styleId: string) => {
-    if (doc?.project) void studio.saveProject({ ...doc.project, style: styleId });
+    if (doc?.project)
+      void studio.saveProject({ ...doc.project, style: styleId });
   };
   const restyle = async (style: MotionStyle) => {
     if (!doc?.project) return;
@@ -367,12 +381,36 @@ export function StudioApp() {
     <StudioAgentContext.Provider value={agent}>
       <div className="studio-app flex h-dvh min-h-0 flex-col overflow-hidden bg-muted text-foreground">
         <header className="flex shrink-0 flex-wrap items-center gap-2 px-3 py-2">
+          <Link
+            href="/"
+            aria-label="Agentcut home"
+            className="mr-1 px-1 font-display text-lg font-extrabold tracking-[-0.04em]"
+          >
+            agent<span className="text-brand">cut</span>
+          </Link>
           <DropdownMenu
             open={projectMenuOpen}
             onOpenChange={setProjectMenuOpen}
           >
-            <DropdownMenuTrigger className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider hover:bg-background">
-              Agentcut <ChevronDown className="size-3" />
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                title={doc?.dir ?? "Switch project"}
+                className="max-w-80 gap-2 bg-background pl-3 pr-2.5 text-sm font-semibold"
+              >
+                <FolderOpen className="text-muted-foreground" />
+                <span className="truncate">
+                  {doc?.project?.name ??
+                    (studio.opening ? "Opening…" : "Choose a project")}
+                </span>
+                {studio.opening ? (
+                  <Loader2 className="animate-spin text-muted-foreground" />
+                ) : (
+                  <ChevronsUpDown className="text-muted-foreground" />
+                )}
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-72">
               <DropdownMenuItem
@@ -425,15 +463,15 @@ export function StudioApp() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <span
-            className="min-w-0 max-w-72 truncate text-sm font-semibold"
-            title={doc?.dir ?? undefined}
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setNewProjectOpen(true)}
+            disabled={status !== "connected"}
+            className="gap-1.5"
           >
-            {doc?.project?.name ?? (studio.opening ? "Opening…" : "No project")}
-          </span>
-          {studio.opening ? (
-            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-          ) : null}
+            <Plus /> New project
+          </Button>
 
           {variants.length > 1 ? (
             <div className="ml-2 flex items-center rounded-full bg-background p-0.5 shadow-sm">
@@ -703,35 +741,37 @@ export function StudioApp() {
           style={{ height: timelineHeight }}
         >
           {doc?.layers && doc.project ? (
-            <StudioTimeline
-              layers={doc.layers}
-              slug={doc.slug}
-              fps={doc.project.fps}
-              durationInFrames={doc.project.durationInFrames}
-              frameStore={frameStore}
-              selection={selection}
-              onSelect={setSelection}
-              onSeek={seek}
-              onPreview={studio.previewLayers}
-              onCommit={studio.commitLayers}
-              onSplit={split}
-              onDelete={remove}
-              onDuplicate={duplicate}
-              flashClipIds={studio.flashClipIds}
-              readOnly={readOnly}
-              askBusy={Boolean(chat.running)}
-              askDisabled={status !== "connected"}
-              pendingAsks={pendingAsks}
-              onAskAt={async (frame, text) => {
-                const fps = doc.project?.fps ?? 30;
-                // The time goes in the message itself, so it's exact even if the playhead moves on.
-                await askAt(
-                  frame,
-                  `[At ${formatFrameTime(frame, fps)} · frame ${frame}] ${text}`,
-                );
-                setPendingAsks((list) => [...list, { frame, text }]);
-              }}
-            />
+            <TimelineThumbs.Provider value={thumbSource}>
+              <StudioTimeline
+                layers={doc.layers}
+                slug={doc.slug}
+                fps={doc.project.fps}
+                durationInFrames={doc.project.durationInFrames}
+                frameStore={frameStore}
+                selection={selection}
+                onSelect={setSelection}
+                onSeek={seek}
+                onPreview={studio.previewLayers}
+                onCommit={studio.commitLayers}
+                onSplit={split}
+                onDelete={remove}
+                onDuplicate={duplicate}
+                flashClipIds={studio.flashClipIds}
+                readOnly={readOnly}
+                askBusy={Boolean(chat.running)}
+                askDisabled={status !== "connected"}
+                pendingAsks={pendingAsks}
+                onAskAt={async (frame, text) => {
+                  const fps = doc.project?.fps ?? 30;
+                  // The time goes in the message itself, so it's exact even if the playhead moves on.
+                  await askAt(
+                    frame,
+                    `[At ${formatFrameTime(frame, fps)} · frame ${frame}] ${text}`,
+                  );
+                  setPendingAsks((list) => [...list, { frame, text }]);
+                }}
+              />
+            </TimelineThumbs.Provider>
           ) : (
             <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
               The timeline appears when a project is open.

@@ -3,6 +3,7 @@
 import {
   memo,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -54,7 +55,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { studioFileUrl } from "@/lib/studio/bundle";
 import { audioPeaks, PEAKS_RATE } from "@/lib/studio/audio/peaks";
 import {
   addTrack,
@@ -73,6 +73,12 @@ import type { FrameStore } from "@/lib/studio/frame-store";
 import { useFrame } from "@/lib/studio/frame-store";
 import { formatFrameTime } from "@/lib/studio/format";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import {
+  ClipFilmstrip,
+  hasFilmstrip,
+  thumbFileUrl,
+  TimelineThumbs,
+} from "@/components/studio/timeline-thumbs";
 import type {
   AudioClip,
   StudioClip,
@@ -221,7 +227,7 @@ function Waveform({
     peaks: Float32Array;
     seconds: number;
   } | null>(null);
-  const url = studioFileUrl(slug, clip.src);
+  const url = thumbFileUrl(useContext(TimelineThumbs), slug, clip.src);
   useEffect(() => {
     let cancelled = false;
     audioPeaks(url)
@@ -246,7 +252,7 @@ function Waveform({
     ctx.clearRect(0, 0, w, height);
     // Same color as the clip label, faded.
     ctx.fillStyle = getComputedStyle(canvas).color;
-    ctx.globalAlpha = 0.35;
+    ctx.globalAlpha = 0.55;
     const trim = (clip.trimStart ?? 0) / fps;
     const rate = clip.playbackRate ?? 1;
     const durationS = clip.duration / fps;
@@ -255,13 +261,26 @@ function Waveform({
     let fileMax = 0;
     for (const value of peaks.peaks) fileMax = Math.max(fileMax, value);
     const norm = fileMax > 0 ? 1 / fileMax : 1;
-    for (let x = 0; x < w; x += 1) {
-      let t = trim + (x / w) * durationS * rate;
+    // Rounded bars with gaps, mirrored around the middle: each bar is the loudest peak in its
+    // slice of time, so it reads like the audio's shape instead of a solid block.
+    const BAR = 2;
+    const STEP = 4;
+    const peakAt = (seconds: number) => {
+      let t = seconds;
       if (loop && peaks.seconds > 0) t %= peaks.seconds;
       const index = Math.floor(t * PEAKS_RATE);
-      const value = index < peaks.peaks.length ? peaks.peaks[index] : 0;
-      const h = Math.max(1, Math.min(1, value * norm) * (height - 6));
-      ctx.fillRect(x, mid - h / 2, 1, h);
+      return index >= 0 && index < peaks.peaks.length ? peaks.peaks[index] : 0;
+    };
+    const maxBar = height - 10;
+    for (let x = 0; x + BAR <= w; x += STEP) {
+      const start = trim + (x / w) * durationS * rate;
+      const end = trim + ((x + STEP) / w) * durationS * rate;
+      let value = 0;
+      for (let s = start; s < end; s += 1 / PEAKS_RATE) value = Math.max(value, peakAt(s));
+      const h = Math.max(2, Math.min(1, value * norm) * maxBar);
+      ctx.beginPath();
+      ctx.roundRect(x, mid - h / 2, BAR, h, BAR / 2);
+      ctx.fill();
     }
   }, [peaks, width, height, clip, fps]);
   return (
@@ -306,14 +325,17 @@ const ClipView = memo(function ClipView({
   const left = clip.from * ppf;
   const width = Math.max(2, clip.duration * ppf);
   const style = TRACK_KIND_STYLE[track.kind];
-  const isAudio = track.kind === "audio" || track.kind === "video";
+  const filmstrip = hasFilmstrip(track, clip);
+  const isAudio = track.kind === "audio";
+  const Icon = style.icon;
   return (
     <div
       data-clip-id={clip.id}
       className={cn(
         "group absolute top-1 overflow-hidden rounded-lg border text-[11px] font-semibold",
         style.clip,
-        selected && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+        selected &&
+          "ring-2 ring-foreground ring-offset-1 ring-offset-background",
         flash && "animate-pulse",
         track.hidden && "opacity-40",
         locked ? "cursor-default" : "cursor-grab active:cursor-grabbing",
@@ -332,6 +354,15 @@ const ClipView = memo(function ClipView({
         onPointerDown(event, clip, track, zone);
       }}
     >
+      {filmstrip ? (
+        <ClipFilmstrip
+          track={track}
+          clip={clip}
+          fps={fps}
+          width={width}
+          height={height - 8}
+        />
+      ) : null}
       {isAudio && "src" in clip && width > 6 ? (
         <Waveform
           slug={slug}
@@ -342,9 +373,24 @@ const ClipView = memo(function ClipView({
         />
       ) : null}
       {width > 24 ? (
-        <span className="pointer-events-none relative block truncate px-2 pt-0.5 leading-4">
-          {clipLabel(track, clip)}
-        </span>
+        filmstrip ? (
+          // Over pictures, the name sits on a dark chip so it stays readable.
+          <span className="pointer-events-none absolute left-1 top-1 flex max-w-[calc(100%-8px)] items-center gap-1 truncate rounded bg-black/60 px-1.5 text-[10px] leading-4 text-white backdrop-blur-sm">
+            {clipLabel(track, clip)}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "pointer-events-none relative flex items-center gap-1 truncate leading-4",
+              isAudio
+                ? "ml-1 mt-1 w-fit max-w-[calc(100%-8px)] rounded bg-background/80 px-1.5 text-[10px]"
+                : "px-2 pt-0.5",
+            )}
+          >
+            <Icon className="size-3 shrink-0 opacity-70" />
+            <span className="truncate">{clipLabel(track, clip)}</span>
+          </span>
+        )
       ) : null}
       {!locked ? (
         <>
@@ -378,7 +424,7 @@ function PlayheadLine({
       className="pointer-events-none absolute top-0 z-[15]"
       style={{ left: frame * ppf, height }}
     >
-      <div className="absolute -left-px top-[20px] bottom-0 w-[2px] bg-foreground" />
+      <div className="absolute -left-px top-[20px] bottom-0 w-[2px] bg-brand" />
     </div>
   );
 }
@@ -406,7 +452,7 @@ function PlayheadHead({
       className="pointer-events-none absolute inset-y-0 z-30"
       style={{ left: frame * ppf }}
     >
-      <div className="absolute -left-px top-[20px] bottom-0 w-[2px] bg-foreground" />
+      <div className="absolute -left-px top-[20px] bottom-0 w-[2px] bg-brand" />
       {/* Drag the head to scrub. */}
       <div
         className="pointer-events-auto absolute -left-[9px] -top-px h-[22px] w-[18px] cursor-grab active:cursor-grabbing"
@@ -423,7 +469,7 @@ function PlayheadHead({
         >
           <path
             d="M9 21.5 C 9 21.5 1 13.2 1 8.4 A 8 7.6 0 0 1 17 8.4 C 17 13.2 9 21.5 9 21.5 Z"
-            className="fill-foreground stroke-background"
+            className="fill-brand stroke-background"
             strokeWidth="1.25"
           />
           <circle cx="9" cy="8.2" r="2.4" className="fill-background" />

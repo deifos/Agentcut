@@ -49,6 +49,8 @@ export interface StudioPreviewProps {
   onPlayingChange(playing: boolean): void;
   /** The agent is changing the project: playback is held so you don't watch half-written files. */
   editing?: boolean;
+  /** Where project files are served from; defaults to the local helper (the website's demo overrides it). */
+  assetBase?: string;
 }
 
 function useContainerRect(ref: RefObject<HTMLDivElement | null>) {
@@ -192,6 +194,7 @@ export function StudioPreview(props: StudioPreviewProps) {
     playing,
     onPlayingChange,
     editing,
+    assetBase,
   } = props;
   const agentName = useAgentName();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -208,17 +211,20 @@ export function StudioPreview(props: StudioPreviewProps) {
   const size = project
     ? variantSize(project, variant)
     : { width: 1920, height: 1080 };
-  const inputProps = useMemo(
-    () =>
-      project && layers
-        ? buildInputProps(doc.slug, project, layers, variant)
-        : null,
-    [doc.slug, project, layers, variant],
-  );
+  const inputProps = useMemo(() => {
+    if (!project || !layers) return null;
+    const props = buildInputProps(doc.slug, project, layers, variant);
+    return assetBase ? { ...props, assetBase } : props;
+  }, [doc.slug, project, layers, variant, assetBase]);
   const ready = Boolean(
     loaded && loaded.slug === doc.slug && project && layers && inputProps,
   );
   const revision = loaded?.revision ?? 0;
+  // The latest play state, read when a new player mounts (not a reason to re-wire it).
+  const playingRef = useRef(playing);
+  useEffect(() => {
+    playingRef.current = playing;
+  }, [playing]);
 
   // Wire player events; re-run when the player remounts (new bundle or variant).
   useEffect(() => {
@@ -227,6 +233,12 @@ export function StudioPreview(props: StudioPreviewProps) {
     const start = frameStore.get();
     if (start > 0)
       player.seekTo(Math.min(start, (project?.durationInFrames ?? 1) - 1));
+    // A new player (variant switch, rebuild) starts paused: carry on if we were playing, so the
+    // play button and the picture never disagree.
+    if (playingRef.current) {
+      player.play();
+      if (!player.isPlaying()) onPlayingChange(false);
+    }
     const onFrame = (event: { detail: { frame: number } }) =>
       frameStore.set(event.detail.frame);
     const onSeeked = (event: { detail: { frame: number } }) =>

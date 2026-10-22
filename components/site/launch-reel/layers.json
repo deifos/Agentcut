@@ -1,0 +1,379 @@
+{
+  "version": 1,
+  "tracks": [
+    {
+      "id": "overlays",
+      "name": "Overlays",
+      "kind": "scene",
+      "clips": [
+        {
+          "id": "outline-fill",
+          "name": "Outline Fill",
+          "from": 46,
+          "duration": 90,
+          "component": "outline-fill",
+          "props": {
+            "text": "LFG"
+          }
+        },
+        {
+          "id": "leak",
+          "name": "Light leak",
+          "from": 132,
+          "duration": 40,
+          "component": "light-leak",
+          "props": {
+            "seed": 7
+          }
+        },
+        {
+          "id": "name",
+          "name": "Lower third",
+          "from": 162,
+          "duration": 90,
+          "component": "lower-third",
+          "props": {
+            "name": "Vlad Palacio",
+            "title": "Building Agentcut in public",
+            "accent": "#ff5a36",
+            "position": "top-left"
+          }
+        },
+        {
+          "id": "badge",
+          "name": "Open source",
+          "from": 256,
+          "duration": 60,
+          "component": "sticker-badge",
+          "props": {
+            "text": "100%",
+            "label": "open source",
+            "position": "top-right",
+            "accent": "#ff5a36"
+          }
+        }
+      ]
+    },
+    {
+      "id": "captions",
+      "name": "Captions",
+      "kind": "captions",
+      "clips": [
+        {
+          "id": "subs",
+          "name": "Captions",
+          "from": 150,
+          "duration": 291,
+          "words": [
+            {
+              "text": "I'm",
+              "from": 3,
+              "to": 20
+            },
+            {
+              "text": "going",
+              "from": 21,
+              "to": 23
+            },
+            {
+              "text": "to",
+              "from": 24,
+              "to": 25
+            },
+            {
+              "text": "be",
+              "from": 26,
+              "to": 28
+            },
+            {
+              "text": "sharing",
+              "from": 29,
+              "to": 37
+            },
+            {
+              "text": "the",
+              "from": 38,
+              "to": 50
+            },
+            {
+              "text": "process",
+              "from": 51,
+              "to": 59
+            },
+            {
+              "text": "how",
+              "from": 60,
+              "to": 78
+            },
+            {
+              "text": "I'm",
+              "from": 79,
+              "to": 83
+            },
+            {
+              "text": "building",
+              "from": 84,
+              "to": 89
+            },
+            {
+              "text": "it.",
+              "from": 90,
+              "to": 98
+            },
+            {
+              "text": "It's",
+              "from": 99,
+              "to": 100
+            },
+            {
+              "text": "going",
+              "from": 101,
+              "to": 103
+            },
+            {
+              "text": "to",
+              "from": 104,
+              "to": 104
+            },
+            {
+              "text": "be",
+              "from": 105,
+              "to": 110
+            },
+            {
+              "text": "100%",
+              "from": 111,
+              "to": 132
+            },
+            {
+              "text": "open",
+              "from": 133,
+              "to": 141
+            },
+            {
+              "text": "source,",
+              "from": 142,
+              "to": 157
+            },
+            {
+              "text": "so",
+              "from": 158,
+              "to": 164
+            },
+            {
+              "text": "if",
+              "from": 165,
+              "to": 173
+            },
+            {
+              "text": "you",
+              "from": 174,
+              "to": 177
+            },
+            {
+              "text": "are",
+              "from": 178,
+              "to": 182
+            },
+            {
+              "text": "into",
+              "from": 183,
+              "to": 189
+            },
+            {
+              "text": "coding",
+              "from": 190,
+              "to": 206
+            },
+            {
+              "text": "or",
+              "from": 207,
+              "to": 216
+            },
+            {
+              "text": "vibe",
+              "from": 217,
+              "to": 235
+            },
+            {
+              "text": "coding",
+              "from": 236,
+              "to": 245
+            },
+            {
+              "text": "or",
+              "from": 246,
+              "to": 249
+            },
+            {
+              "text": "whatever,",
+              "from": 250,
+              "to": 260
+            },
+            {
+              "text": "you",
+              "from": 261,
+              "to": 261
+            },
+            {
+              "text": "can",
+              "from": 262,
+              "to": 266
+            },
+            {
+              "text": "clone",
+              "from": 267,
+              "to": 273
+            },
+            {
+              "text": "the",
+              "from": 274,
+              "to": 277
+            },
+            {
+              "text": "repo",
+              "from": 278,
+              "to": 289
+            }
+          ],
+          "style": {
+            "preset": "pop",
+            "fontFamily": "Inter",
+            "fontWeight": 900,
+            "highlight": "#ff5a36",
+            "position": "bottom",
+            "maxWordsPerLine": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "kind": "text",
+      "clips": [
+        {
+          "id": "explore",
+          "name": "Explore further",
+          "from": 15,
+          "duration": 125,
+          "text": "EXPLORE\nFURTHER.",
+          "box": {
+            "x": 0.05,
+            "y": 0.56,
+            "width": 0.6,
+            "height": 0.34
+          },
+          "style": {
+            "fontFamily": "Inter",
+            "fontSize": 150,
+            "fontWeight": 900,
+            "color": "#fff8ef",
+            "align": "left",
+            "lineHeight": 0.92
+          },
+          "enter": {
+            "preset": "slide-up",
+            "frames": 16
+          },
+          "exit": {
+            "preset": "fade",
+            "frames": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "footage",
+      "name": "Video",
+      "kind": "video",
+      "clips": [
+        {
+          "id": "talk",
+          "name": "footage.mp4",
+          "from": 150,
+          "duration": 291,
+          "src": "assets/footage.mp4",
+          "fit": "cover",
+          "box": {
+            "x": 0.34,
+            "y": 0.06,
+            "width": 0.32,
+            "height": 0.88
+          },
+          "radius": 36
+        }
+      ]
+    },
+    {
+      "id": "scenes",
+      "name": "Scenes",
+      "kind": "scene",
+      "clips": [
+        {
+          "id": "backdrop",
+          "name": "Aurora backdrop",
+          "from": 150,
+          "duration": 291,
+          "component": "aurora",
+          "props": {
+            "color1": "#ff5a36",
+            "color2": "#ffb37a",
+            "color3": "#5b2a1c",
+            "color4": "#1d1916",
+            "background": "#0b0a09",
+            "speed": 0.6,
+            "intensity": 0.7
+          }
+        },
+        {
+          "id": "end",
+          "name": "End card",
+          "from": 441,
+          "duration": 69,
+          "component": "logo-sting",
+          "props": {
+            "name": "agentcut",
+            "tagline": "Edit video with a prompt",
+            "accent": "#ff5a36",
+            "background": "#0b0a09"
+          }
+        }
+      ]
+    },
+    {
+      "id": "images",
+      "name": "Images",
+      "kind": "image",
+      "clips": [
+        {
+          "id": "mountains",
+          "name": "mountains.png",
+          "from": 0,
+          "duration": 150,
+          "src": "assets/mountains.png",
+          "fit": "cover"
+        }
+      ]
+    },
+    {
+      "id": "music",
+      "name": "Audio",
+      "kind": "audio",
+      "clips": [
+        {
+          "id": "bed",
+          "name": "music.mp3",
+          "from": 0,
+          "duration": 510,
+          "src": "assets/music.mp3",
+          "volume": 0.25,
+          "role": "music",
+          "fadeIn": 15,
+          "fadeOut": 30
+        }
+      ]
+    }
+  ],
+  "markers": []
+}

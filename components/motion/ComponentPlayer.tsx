@@ -2,7 +2,7 @@
 
 // A live preview of one library component (studio Components panel and the public gallery).
 import { useMemo } from "react";
-import { Player } from "@remotion/player";
+import { Player, Thumbnail } from "@remotion/player";
 import { AbsoluteFill } from "remotion";
 import { MOTION_COMPONENTS, resolveComponentProps } from "@/motion/components";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,40 @@ function Preview({ id, props, width, height, durationInFrames }: PreviewInput) {
         variant={height > width ? "mobile" : "wide"}
       />
     </AbsoluteFill>
+  );
+}
+
+/** A still of one component (its stillAt frame): cheaper than a Player, for grids of many. */
+export function ComponentThumb({
+  id,
+  props = {},
+  className,
+}: {
+  id: string;
+  props?: Record<string, unknown>;
+  className?: string;
+}) {
+  const entry = MOTION_COMPONENTS[id];
+  const durationInFrames = entry?.meta.durationInFrames ?? 90;
+  const inputProps = useMemo<PreviewInput>(
+    () => ({ id, props, width: 1920, height: 1080, durationInFrames }),
+    [id, props, durationInFrames],
+  );
+  if (!entry) return null;
+  return (
+    <Thumbnail
+      component={Preview}
+      inputProps={inputProps}
+      durationInFrames={durationInFrames}
+      fps={30}
+      compositionWidth={1920}
+      compositionHeight={1080}
+      frameToDisplay={Math.round(
+        durationInFrames * (entry.meta.stillAt ?? 0.55),
+      )}
+      className={cn("overflow-hidden", className)}
+      style={{ width: "100%", aspectRatio: "16 / 9" }}
+    />
   );
 }
 

@@ -375,7 +375,9 @@ function VideoClipView({
         volume={(clip.volume ?? 1) * gain}
         muted={trackMuted || clip.muted}
         playbackRate={clip.playbackRate}
-        style={{ width: "100%", height: "100%", objectFit: clip.fit ?? "cover", filter: gradeFilter(clip.grade) }}
+        // @remotion/media draws the frame itself: fit has to be its prop (CSS object-fit is ignored).
+        objectFit={clip.fit ?? "cover"}
+        style={{ width: "100%", height: "100%", filter: gradeFilter(clip.grade) }}
       />
       {clip.cursor ? <CursorOverlay cursor={clip.cursor} clip={clip} /> : null}
       </div>

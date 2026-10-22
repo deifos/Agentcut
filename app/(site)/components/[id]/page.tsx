@@ -2,23 +2,28 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ComponentDetail } from "@/components/motion/ComponentDetail";
 import { COMPONENT_METAS } from "@/motion/components/catalog";
+import { pageMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return Object.keys(COMPONENT_METAS).map((id) => ({ id }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/components/[id]">): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/components/[id]">): Promise<Metadata> {
   const { id } = await params;
   const meta = COMPONENT_METAS[id];
-  if (!meta) return {};
-  return {
-    title: `${meta.name} · Motion components`,
-    description: `${meta.description} ${meta.useWhen}`,
-    alternates: { canonical: `/components/${id}` },
-  };
+  if (!meta) notFound();
+  return pageMetadata(
+    `${meta.name} · Remotion component`,
+    meta.description,
+    `/components/${id}`,
+  );
 }
 
-export default async function ComponentPage({ params }: PageProps<"/components/[id]">) {
+export default async function ComponentPage({
+  params,
+}: PageProps<"/components/[id]">) {
   const { id } = await params;
   if (!COMPONENT_METAS[id]) notFound();
   return (

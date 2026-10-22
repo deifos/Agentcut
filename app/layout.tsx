@@ -1,8 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Bricolage_Grotesque, Figtree, Geist_Mono, Noto_Sans } from "next/font/google";
+import {
+  Bricolage_Grotesque,
+  Figtree,
+  Geist_Mono,
+  Noto_Sans,
+} from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import {
+  pageMetadata,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  SITE_URL,
+} from "@/lib/seo";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -27,29 +38,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://agentcut.synteq.app";
-const DESCRIPTION =
-  "Open-source video studio you edit with a prompt. Claude Code or Codex writes the scenes, motion graphics and music while you watch the preview and timeline update live.";
-
 export const metadata: Metadata = {
+  ...pageMetadata(SITE_TITLE, SITE_DESCRIPTION, "/"),
+  // Canonicals belong to pages, so unknown routes never point to the home page.
+  alternates: undefined,
   title: {
-    default: "Agentcut - Edit video with a prompt",
+    default: SITE_TITLE,
     template: "%s | Agentcut",
   },
-  description: DESCRIPTION,
   metadataBase: new URL(SITE_URL),
-  openGraph: {
-    type: "website",
-    url: SITE_URL,
-    siteName: "Agentcut",
-    title: "Agentcut - Edit video with a prompt",
-    description: DESCRIPTION,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Agentcut - Edit video with a prompt",
-    description: DESCRIPTION,
-  },
   applicationName: "Agentcut",
 };
 

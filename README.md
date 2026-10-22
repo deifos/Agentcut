@@ -6,6 +6,18 @@ You watch the live preview, scrub the timeline, tweak any layer by hand, and exp
 
 **Try it:** https://agentcut.synteq.app · [components](https://agentcut.synteq.app/components) · [templates](https://agentcut.synteq.app/templates)
 
+### Search and social sharing
+
+Set `NEXT_PUBLIC_APP_URL` to the production origin **before building** when hosting on another domain.
+It controls canonical links, Open Graph URLs, structured data, and the sitemap.
+`/sitemap.xml` lists the public pages and all motion components. `/robots.txt` links to it.
+The local `/studio` page has `noindex` and is excluded from the sitemap.
+
+The 1200 × 630 share image is `public/og/agentcut.jpg`. Page titles, descriptions, and share
+metadata use `lib/seo.ts`. After deployment, submit `/sitemap.xml` in Google Search Console
+and check a shared link in the social platforms you use. Search indexing and cached social
+previews are controlled by those services.
+
 ## How it works
 
 ```

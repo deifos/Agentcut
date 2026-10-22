@@ -5,23 +5,33 @@
 import { Palette } from "lucide-react";
 import type { MotionStyle } from "@/motion/components";
 
-export function StylesTab({ style, onClick }: { style: MotionStyle | null; onClick(): void }) {
+export function StylesTab({
+  style,
+  onClick,
+}: {
+  style: MotionStyle | null;
+  onClick(): void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       title={style ? `Style: ${style.name}. Browse styles` : "Browse styles"}
       aria-label="Browse styles"
-      className="group absolute top-12 -left-[5px] z-20 flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-border/70 bg-background py-2.5 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+      className="group absolute top-12 -left-[5px] z-20 flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
     >
-      <Palette className="size-3.5" />
+      <Palette className="size-3.5 text-brand" />
       <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-rl]">
         {style ? style.name : "Styles"}
       </span>
       {style ? (
         <span className="flex flex-col -space-y-1">
           {[style.tokens.backdrop, style.tokens.accent].map((color, i) => (
-            <span key={i} className="size-2.5 rounded-full border border-border" style={{ background: color }} />
+            <span
+              key={i}
+              className="size-2.5 rounded-full border border-border"
+              style={{ background: color }}
+            />
           ))}
         </span>
       ) : null}

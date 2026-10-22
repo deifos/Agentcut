@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { ComponentShowcase } from "@/components/site/ComponentShowcase";
 import { CopyCommand } from "@/components/site/CopyCommand";
-import { HeroFlow } from "@/components/site/HeroFlow";
+import { HeroReelsClient } from "@/components/site/HeroReelsClient";
 import { HeroStudio } from "@/components/site/HeroStudio";
 import { StyleShowcase } from "@/components/site/StyleShowcase";
 import { REPO_URL, STUDIO_COMMAND } from "@/lib/studio/commands";
@@ -109,7 +109,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="site-rise hidden lg:block" style={{ ["--i" as string]: 4 }}>
-              <HeroFlow />
+              <HeroReelsClient />
             </div>
           </div>
           <div className="site-rise mt-20" style={{ ["--i" as string]: 7 }}>

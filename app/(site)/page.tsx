@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { ComponentShowcase } from "@/components/site/ComponentShowcase";
 import { CopyCommand } from "@/components/site/CopyCommand";
+import { HeroLayers } from "@/components/site/HeroLayers";
 import { HeroStudio } from "@/components/site/HeroStudio";
 import { StyleShowcase } from "@/components/site/StyleShowcase";
 import { REPO_URL, STUDIO_COMMAND } from "@/lib/studio/commands";
@@ -68,39 +69,50 @@ export default function LandingPage() {
           aria-hidden
           className="pointer-events-none absolute -right-40 -top-40 size-[640px] rounded-full bg-brand/10 blur-3xl"
         />
-        <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 md:px-8 md:pt-24">
-          <p className="site-rise font-mono text-xs uppercase tracking-[0.22em] text-ink/50" style={{ ["--i" as string]: 0 }}>
-            Open source · Claude Code + Codex · Remotion
-          </p>
-          <h1 className="mt-6 font-display text-[clamp(3.4rem,10vw,9.5rem)] font-extrabold leading-[0.86] tracking-[-0.055em]">
-            <span className="site-rise inline-block" style={{ ["--i" as string]: 1 }}>
-              Cut video
-            </span>
-            <br />
-            <span className="site-rise inline-block" style={{ ["--i" as string]: 2 }}>
-              by{" "}
-            </span>{" "}
-            <span className="site-rise inline-block" style={{ ["--i" as string]: 3 }}>
-              <span className="site-cut">talking.</span>
-            </span>
-          </h1>
-          <div className="mt-10 grid gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-            <p className="site-rise max-w-xl text-lg leading-relaxed text-ink/65 md:text-xl" style={{ ["--i" as string]: 5 }}>
-              Agentcut is a video studio you edit by chatting with your coding agent. It writes the scenes,
-              places the motion graphics and syncs the music. You watch every layer land on the timeline and
-              change anything by hand.
-            </p>
-            <div className="site-rise flex flex-wrap items-center gap-3" style={{ ["--i" as string]: 6 }}>
-              <Link
-                href="/studio"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-brand px-6 text-base font-semibold text-brand-foreground shadow-[0_10px_30px_-10px_var(--brand)] transition-transform hover:-translate-y-0.5"
+        <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-14 md:px-8 md:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,11fr)_minmax(0,10fr)] lg:gap-10">
+            <div>
+              <p
+                className="site-rise font-mono text-xs uppercase tracking-[0.22em] text-ink/50"
+                style={{ ["--i" as string]: 0 }}
               >
-                Open the studio <ArrowUpRight className="size-4" />
-              </Link>
-              <CopyCommand command={STUDIO_COMMAND} />
+                Open source · Claude Code + Codex · Remotion
+              </p>
+              <h1 className="mt-6 font-display text-[clamp(3.4rem,8.4vw,8rem)] font-extrabold leading-[0.86] tracking-[-0.055em]">
+                <span className="site-rise inline-block" style={{ ["--i" as string]: 1 }}>
+                  Cut video
+                </span>
+                <br />
+                <span className="site-rise inline-block" style={{ ["--i" as string]: 2 }}>
+                  by
+                </span>{" "}
+                <span className="site-rise inline-block" style={{ ["--i" as string]: 3 }}>
+                  <span className="site-cut">talking.</span>
+                </span>
+              </h1>
+              <p
+                className="site-rise mt-8 max-w-xl text-lg leading-relaxed text-ink/65 md:text-xl"
+                style={{ ["--i" as string]: 5 }}
+              >
+                Agentcut is a video studio you edit by chatting with your coding agent. It writes the scenes,
+                places the motion graphics and syncs the music. You watch every layer land on the timeline and
+                change anything by hand.
+              </p>
+              <div className="site-rise mt-9 flex flex-wrap items-center gap-3" style={{ ["--i" as string]: 6 }}>
+                <Link
+                  href="/studio"
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-brand px-6 text-base font-semibold text-brand-foreground shadow-[0_10px_30px_-10px_var(--brand)] transition-transform hover:-translate-y-0.5"
+                >
+                  Open the studio <ArrowUpRight className="size-4" />
+                </Link>
+                <CopyCommand command={STUDIO_COMMAND} />
+              </div>
+            </div>
+            <div className="site-rise hidden lg:block" style={{ ["--i" as string]: 4 }}>
+              <HeroLayers />
             </div>
           </div>
-          <div className="site-rise mt-16" style={{ ["--i" as string]: 7 }}>
+          <div className="site-rise mt-20" style={{ ["--i" as string]: 7 }}>
             <HeroStudio />
           </div>
         </div>

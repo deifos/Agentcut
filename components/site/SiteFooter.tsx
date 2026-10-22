@@ -1,27 +1,67 @@
+import Image from "next/image";
 import Link from "next/link";
 import { REPO_URL } from "@/lib/studio/commands";
 import { Wordmark } from "@/components/site/Wordmark";
 
+const AUTHOR_URL = "https://x.com/deifosv";
+
+const LINKS = [
+  { href: "/studio", label: "Studio" },
+  { href: "/components", label: "Components" },
+  { href: "/templates", label: "Templates" },
+];
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-ink/10">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-4 px-5 py-10 text-sm text-ink/60 md:px-8">
-        <Wordmark className="text-lg" />
-        <span>Open source, MIT. Your agent, your files and your keys stay on your computer.</span>
-        <nav className="flex gap-6 sm:ml-auto">
-          <Link href="/components" className="hover:text-ink">
-            Components
-          </Link>
-          <Link href="/templates" className="hover:text-ink">
-            Templates
-          </Link>
-          <Link href="/studio" className="hover:text-ink">
-            Studio
-          </Link>
-          <a href={REPO_URL} target="_blank" rel="noreferrer" className="hover:text-ink">
-            GitHub
-          </a>
+      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 text-sm md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] md:px-8">
+        <div>
+          <Wordmark className="text-lg" />
+          <p className="mt-3 max-w-xs text-ink/60">
+            Edit video with a prompt. Open source, MIT. Your agent, your files and your keys stay on your computer.
+          </p>
+        </div>
+        <nav aria-label="Footer">
+          <p className="font-semibold">Product</p>
+          <ul className="mt-3 space-y-2 text-ink/60">
+            {LINKS.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="hover:text-ink">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <a href={REPO_URL} target="_blank" rel="noreferrer" className="hover:text-ink">
+                Open source on GitHub
+              </a>
+            </li>
+          </ul>
         </nav>
+        <div>
+          <p className="font-semibold">Built by</p>
+          <a
+            href={AUTHOR_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="group mt-3 flex items-center gap-3"
+            aria-label="Vlad on X"
+          >
+            <Image
+              src="/vlad-pfp.jpg"
+              alt=""
+              width={38}
+              height={38}
+              unoptimized
+              className="size-[38px] rounded-full ring-1 ring-ink/10"
+            />
+            <span>
+              <span className="block font-display font-extrabold tracking-tight group-hover:underline">VLAD</span>
+              <span className="block text-xs text-ink/55">Indie maker</span>
+              <span className="block text-xs text-ink/55">Building useful tools with AI.</span>
+            </span>
+          </a>
+        </div>
       </div>
     </footer>
   );

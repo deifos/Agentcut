@@ -1,6 +1,6 @@
 # Agentcut
 
-**Edit video by talking to a coding agent.** Agentcut is an open-source video studio: you chat, and
+**Edit video with a prompt.** Agentcut is an open-source video studio: you chat, and
 Claude Code or Codex builds the video on your computer as real [Remotion](https://www.remotion.dev) code.
 You watch the live preview, scrub the timeline, tweak any layer by hand, and export an MP4 from the browser.
 
@@ -31,7 +31,8 @@ the helper on `127.0.0.1`, the agent writes scenes and layers, and the page rebu
    npx -y agentcut
    ```
 
-3. Open https://agentcut.synteq.app/studio in Chrome and start chatting.
+3. Open https://agentcut.synteq.app/studio in Chrome and start chatting. When Chrome asks to let the page
+   access devices on your local network, click **Allow**: that is how the page reaches the helper.
 
 Helper options:
 

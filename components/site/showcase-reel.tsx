@@ -21,7 +21,7 @@ export const REEL_SHOTS: ReelShot[] = [
     id: "text-reveal",
     label: "Hook",
     durationInFrames: 90,
-    props: { kicker: "Agentcut", lines: ["Say it.", "It *cuts* it."], accent: ACCENT },
+    props: { kicker: "Agentcut", lines: ["Edit video", "with a *prompt*."], accent: ACCENT },
   },
   {
     id: "prompt-box",
@@ -33,7 +33,7 @@ export const REEL_SHOTS: ReelShot[] = [
     id: "kinetic-punch",
     label: "Beats",
     durationInFrames: 80,
-    props: { words: ["Write", "Render", "Ship"], accent: ACCENT, flashBackground: ACCENT, background: BACKDROP },
+    props: { words: ["Prompt", "Preview", "Export"], accent: ACCENT, flashBackground: ACCENT, background: BACKDROP },
   },
   {
     id: "stat-counter",

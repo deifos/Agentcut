@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Check,
@@ -71,6 +71,28 @@ function Step({
   );
 }
 
+/**
+ * Chrome's permission for public pages to reach this computer (the helper on 127.0.0.1).
+ * "unknown" where the browser has no such permission.
+ */
+function useLocalNetworkPermission() {
+  const [state, setState] = useState<PermissionState | "unknown">("unknown");
+  useEffect(() => {
+    let status: PermissionStatus | null = null;
+    const update = () => status && setState(status.state);
+    navigator.permissions
+      ?.query({ name: "local-network-access" as PermissionName })
+      .then((result) => {
+        status = result;
+        update();
+        result.addEventListener("change", update);
+      })
+      .catch(() => {});
+    return () => status?.removeEventListener("change", update);
+  }, []);
+  return state;
+}
+
 export function ConnectScreen({
   status,
   onReconnect,
@@ -78,6 +100,7 @@ export function ConnectScreen({
   status: StudioBridgeStatus;
   onReconnect(): void;
 }) {
+  const localNetwork = useLocalNetworkPermission();
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="flex items-center gap-2 border-b border-border px-4 py-2">
@@ -152,7 +175,17 @@ export function ConnectScreen({
               <p className="mt-2 text-xs text-muted-foreground">
                 It makes an <code>Agentcut</code> folder in your home
                 folder for your videos. Keep the terminal open while you work.
+                When Chrome asks to let this page access devices on your local
+                network, click <strong>Allow</strong>: that&apos;s how it reaches
+                the helper.
               </p>
+              {localNetwork === "denied" ? (
+                <p className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+                  Local network access is blocked for this site. Click the icon
+                  left of the address bar, allow <strong>Local network
+                  access</strong>, then reload.
+                </p>
+              ) : null}
             </Step>
             <Step n={3} title="Let the agent read your app's code" optional>
               <p className="text-xs text-muted-foreground">

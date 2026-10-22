@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { ComponentShowcase } from "@/components/site/ComponentShowcase";
 import { CopyCommand } from "@/components/site/CopyCommand";
-import { HeroLayers } from "@/components/site/HeroLayers";
+import { HeroFlow } from "@/components/site/HeroFlow";
 import { HeroStudio } from "@/components/site/HeroStudio";
 import { StyleShowcase } from "@/components/site/StyleShowcase";
 import { REPO_URL, STUDIO_COMMAND } from "@/lib/studio/commands";
@@ -44,7 +44,7 @@ const LAYERS_SNIPPET = [
   ['  "tracks": [', ""],
   ['    { "kind": "scene", "clips": [', ""],
   ['      { "component": ', '"text-reveal"', ', "from": 0, "duration": 90,'],
-  ['        "props": { "lines": [', '"Say it."', ', "It *cuts* it."] } },'],
+  ['        "props": { "lines": [', '"Edit video"', ', "with a *prompt*."] } },'],
   ['      { "component": ', '"stat-counter"', ', "from": 90, "duration": 90,'],
   ['        "props": { "value": ', "49", ', "label": "components" } }'],
   ["    ] },", ""],
@@ -80,23 +80,23 @@ export default function LandingPage() {
               </p>
               <h1 className="mt-6 font-display text-[clamp(3.4rem,8.4vw,8rem)] font-extrabold leading-[0.86] tracking-[-0.055em]">
                 <span className="site-rise inline-block" style={{ ["--i" as string]: 1 }}>
-                  Cut video
+                  Edit video
                 </span>
                 <br />
                 <span className="site-rise inline-block" style={{ ["--i" as string]: 2 }}>
-                  by
+                  with a
                 </span>{" "}
                 <span className="site-rise inline-block" style={{ ["--i" as string]: 3 }}>
-                  <span className="site-cut">talking.</span>
+                  <span className="site-cut">prompt.</span>
                 </span>
               </h1>
               <p
                 className="site-rise mt-8 max-w-xl text-lg leading-relaxed text-ink/65 md:text-xl"
                 style={{ ["--i" as string]: 5 }}
               >
-                Agentcut is a video studio you edit by chatting with your coding agent. It writes the scenes,
-                places the motion graphics and syncs the music. You watch every layer land on the timeline and
-                change anything by hand.
+                Describe the video you want. Your coding agent writes the scenes, places the motion graphics and
+                syncs the music while every layer lands on the timeline in front of you. Then tweak anything by
+                hand and export.
               </p>
               <div className="site-rise mt-9 flex flex-wrap items-center gap-3" style={{ ["--i" as string]: 6 }}>
                 <Link
@@ -109,7 +109,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="site-rise hidden lg:block" style={{ ["--i" as string]: 4 }}>
-              <HeroLayers />
+              <HeroFlow />
             </div>
           </div>
           <div className="site-rise mt-20" style={{ ["--i" as string]: 7 }}>

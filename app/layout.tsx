@@ -29,11 +29,11 @@ const geistMono = Geist_Mono({
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://agentcut.synteq.app";
 const DESCRIPTION =
-  "Open-source video studio you edit by chatting with a coding agent. Claude Code or Codex writes Remotion scenes while you watch the preview, timeline and export update live.";
+  "Open-source video studio you edit with a prompt. Claude Code or Codex writes the scenes, motion graphics and music while you watch the preview and timeline update live.";
 
 export const metadata: Metadata = {
   title: {
-    default: "Agentcut - Edit video by talking to an agent",
+    default: "Agentcut - Edit video with a prompt",
     template: "%s | Agentcut",
   },
   description: DESCRIPTION,
@@ -42,12 +42,12 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     siteName: "Agentcut",
-    title: "Agentcut - Edit video by talking to an agent",
+    title: "Agentcut - Edit video with a prompt",
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agentcut - Edit video by talking to an agent",
+    title: "Agentcut - Edit video with a prompt",
     description: DESCRIPTION,
   },
   applicationName: "Agentcut",

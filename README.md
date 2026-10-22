@@ -76,4 +76,5 @@ If you host the page on another origin, start the helper with `--origin https://
 
 ## License
 
-MIT
+MIT. The landing page background uses [Gradient ASCII](https://reactbits.dev/backgrounds/gradient-ascii)
+from React Bits by David Haz (MIT + Commons Clause), see `components/site/GradientASCII.tsx`.

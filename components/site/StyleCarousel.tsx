@@ -1,6 +1,6 @@
 "use client";
 
-// The hero's right side: one real clip, restyled by a prompt every few seconds. The center phone
+// One real clip, restyled by a prompt every few seconds. The center phone
 // plays the current style's reel; the others wait on a curved track and slide in when picked.
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
@@ -31,7 +31,7 @@ function Phone({ styleId, offset }: { styleId: string; offset: number }) {
         zIndex: 10 - distance,
       }}
     >
-      <div className="overflow-hidden rounded-[30px] border-[5px] border-ink bg-ink shadow-[0_40px_70px_-25px_rgba(40,20,10,0.6)]">
+      <div className="overflow-hidden rounded-[30px] border-[5px] border-ink bg-ink ring-1 ring-white/10 shadow-[0_40px_70px_-25px_rgba(40,20,10,0.6)]">
         <div className="overflow-hidden rounded-[24px]">
           <StyleReel styleId={styleId} playing={offset === 0} />
         </div>
@@ -40,7 +40,8 @@ function Phone({ styleId, offset }: { styleId: string; offset: number }) {
   );
 }
 
-export function HeroReels() {
+export function StyleCarousel({ tone = "light" }: { tone?: "light" | "dark" }) {
+  const dark = tone === "dark";
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -68,7 +69,10 @@ export function HeroReels() {
       {/* The prompt that restyles it. */}
       <div
         key={`prompt-${current.id}`}
-        className="absolute left-0 top-[6%] z-30 max-w-[42%] rounded-2xl rounded-bl-md bg-ink px-4 py-3 text-sm font-medium text-paper shadow-xl"
+        className={cn(
+          "absolute left-0 top-[6%] z-30 max-w-[42%] rounded-2xl rounded-bl-md px-4 py-3 text-sm font-medium shadow-xl",
+          dark ? "bg-paper text-ink" : "bg-ink text-paper",
+        )}
       >
         {words.map((word, i) => (
           <span key={i} className="site-word" style={{ ["--i" as string]: i, animationDelay: `${0.1 + i * 0.09}s` }}>
@@ -80,7 +84,7 @@ export function HeroReels() {
       {/* What the agent changed. */}
       <div
         key={`done-${current.id}`}
-        className="site-step absolute bottom-[16%] right-0 z-30 flex items-center gap-2 rounded-full border border-ink/10 bg-background/95 px-3.5 py-2 text-[12px] font-semibold shadow-lg backdrop-blur"
+        className="site-step absolute bottom-[16%] right-0 z-30 flex items-center gap-2 rounded-full border border-ink/10 bg-paper px-3.5 py-2 text-[12px] font-semibold text-ink shadow-lg"
         style={{ animationDelay: "0.9s" }}
       >
         <span className="flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
@@ -101,8 +105,12 @@ export function HeroReels() {
             className={cn(
               "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors",
               i === index
-                ? "border-ink bg-ink text-paper"
-                : "border-ink/10 bg-background/80 text-ink/60 hover:border-ink/30 hover:text-ink",
+                ? dark
+                  ? "border-paper bg-paper text-ink"
+                  : "border-ink bg-ink text-paper"
+                : dark
+                  ? "border-paper/15 text-paper/65 hover:border-paper/40 hover:text-paper"
+                  : "border-ink/10 bg-background/80 text-ink/60 hover:border-ink/30 hover:text-ink",
             )}
           >
             <span

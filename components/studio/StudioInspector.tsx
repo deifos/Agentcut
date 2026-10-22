@@ -41,7 +41,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AssetPreview, MediaPlayer } from "@/components/studio/AssetPreview";
 import { StyleSection } from "@/components/studio/StyleSection";
-import { NewBadge } from "@/components/NewBadge";
 import {
   COMPONENT_COUNT,
   ComponentsSection,
@@ -2216,10 +2215,7 @@ function ProjectInspector({
     onSaveProject({ ...project, ...fields });
   return (
     <div>
-      <Section
-        title="Style"
-        right={<NewBadge feature="studio-styles" />}
-      >
+      <Section title="Style">
         <StyleSection
           project={project}
           layers={doc.layers}

@@ -3,9 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { NewBadge } from "@/components/NewBadge";
 import { ComponentPlayer } from "@/components/motion/ComponentPlayer";
-import { NEW_COMPONENT_IDS } from "@/components/motion/new-components";
 import { cn } from "@/lib/utils";
 import { COMPONENT_CATEGORIES, MOTION_COMPONENTS } from "@/motion/components";
 
@@ -39,9 +37,6 @@ export function ComponentTile({ id, autoPlay = false }: { id: string; autoPlay?:
       <div className="flex flex-1 flex-col gap-1.5 p-5">
         <div className="flex items-center gap-2">
           <h3 className="font-display text-lg font-extrabold tracking-tight">{meta.name}</h3>
-          {NEW_COMPONENT_IDS.has(id) ? (
-            <NewBadge feature="motion-components-pack-2026-10" />
-          ) : null}
           <ArrowUpRight className="ml-auto size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand" />
         </div>
         <p className="line-clamp-2 text-[15px] leading-snug text-muted-foreground">

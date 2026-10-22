@@ -60,14 +60,14 @@ const STEPS = [
   { icon: FileText, text: "Edited layers.json" },
 ];
 
-const COMPONENTS: [string, string, boolean?][] = [
+const COMPONENTS: [string, string][] = [
   ["Text Reveal", "Text & Titles"],
-  ["Kinetic Punch", "Text & Titles", true],
+  ["Kinetic Punch", "Text & Titles"],
   ["Lower Third", "Overlays"],
   ["Stat Counter", "Charts & Stats"],
   ["Prompt Box", "AI & Product"],
-  ["Word Swap", "Text & Titles", true],
-  ["Logo Sting", "Text & Titles", true],
+  ["Word Swap", "Text & Titles"],
+  ["Logo Sting", "Text & Titles"],
   ["Light Leak", "Transitions"],
 ];
 
@@ -177,7 +177,6 @@ function Chat() {
         <span className="text-xs font-bold">Claude</span>
         <span className="text-[11px] text-muted-foreground">2.1</span>
         <ChevronDown className="size-3 text-muted-foreground" />
-        <span className="rounded-sm bg-primary px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-white">NEW</span>
         <RotateCcw className="ml-auto size-3.5 text-muted-foreground" />
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-3 py-3 text-[13px] leading-relaxed">
@@ -312,16 +311,11 @@ function Inspector() {
         </div>
         <p className="pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Motion components</p>
         <div className="space-y-0.5">
-          {COMPONENTS.map(([name, category, isNew]) => (
+          {COMPONENTS.map(([name, category]) => (
             <div key={name} className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-[12px]">
               <Shapes className="size-3.5 text-violet-500" />
               {name}
-              {isNew ? (
-                <span className="ml-auto rounded-sm bg-primary px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-white">
-                  NEW
-                </span>
-              ) : null}
-              <span className={cn("text-[11px] text-muted-foreground", !isNew && "ml-auto")}>{category}</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">{category}</span>
             </div>
           ))}
         </div>

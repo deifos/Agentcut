@@ -12,8 +12,6 @@ import {
 } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import { NewBadge } from "@/components/NewBadge";
-import { NEW_COMPONENT_IDS } from "@/components/motion/new-components";
 import { useAgentName } from "@/components/studio/StudioAgent";
 import { ComponentPlayer } from "@/components/motion/ComponentPlayer";
 import { cn } from "@/lib/utils";
@@ -139,9 +137,6 @@ function ComponentItem({
           <span className="min-w-0 flex-1 truncate text-[12px]">
             {meta.name}
           </span>
-          {NEW_COMPONENT_IDS.has(meta.id) ? (
-            <NewBadge feature="motion-components-pack-2026-10" />
-          ) : null}
           <span className="shrink-0 text-[10px] text-muted-foreground">
             {meta.category}
           </span>

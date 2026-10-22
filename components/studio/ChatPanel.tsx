@@ -57,7 +57,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NewBadge } from "@/components/NewBadge";
 import { useAgentName } from "@/components/studio/StudioAgent";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -693,14 +692,11 @@ export function ChatPanel({
         <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/60 px-3">
           <Bot className="size-4" />
           {agents.length > 1 ? (
-            <>
-              <AgentPicker
-                agent={agent}
-                agents={agents}
-                onChange={onAgentChange}
-              />
-              <NewBadge feature="studio-codex" />
-            </>
+            <AgentPicker
+              agent={agent}
+              agents={agents}
+              onChange={onAgentChange}
+            />
           ) : (
             <>
               <span className="text-xs font-bold">{agentName}</span>

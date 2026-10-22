@@ -11,7 +11,6 @@ export interface MusicTrack {
   filename: string;
   category: MusicCategory;
   durationSeconds: number;
-  isNew?: boolean;
   isCustom?: boolean;
   sourceUrl?: string;
 }
@@ -463,7 +462,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "App Launch Spark.mp3",
     category: "energetic",
     durationSeconds: 66,
-    isNew: true,
   },
   {
     id: "cold-boot-surge",
@@ -471,7 +469,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Cold Boot Surge.mp3",
     category: "energetic",
     durationSeconds: 98,
-    isNew: true,
   },
   {
     id: "cathedral-kickdown",
@@ -479,7 +476,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Cathedral Kickdown.mp3",
     category: "energetic",
     durationSeconds: 160,
-    isNew: true,
   },
   {
     id: "skybound-chorus",
@@ -487,7 +483,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Skybound Chorus.mp3",
     category: "energetic",
     durationSeconds: 193,
-    isNew: true,
   },
   {
     id: "forward-line",
@@ -495,7 +490,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Forward Line.mp3",
     category: "energetic",
     durationSeconds: 167,
-    isNew: true,
   },
   {
     id: "onepath-rally",
@@ -503,7 +497,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Onepath Rally.mp3",
     category: "energetic",
     durationSeconds: 160,
-    isNew: true,
   },
   {
     id: "exit-velocity",
@@ -511,7 +504,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Exit Velocity.mp3",
     category: "energetic",
     durationSeconds: 182,
-    isNew: true,
   },
   {
     id: "northbound-drive",
@@ -519,7 +511,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Northbound Drive.mp3",
     category: "energetic",
     durationSeconds: 183,
-    isNew: true,
   },
   {
     id: "headlight-march",
@@ -527,7 +518,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Headlight March.mp3",
     category: "energetic",
     durationSeconds: 172,
-    isNew: true,
   },
   {
     id: "steel-current",
@@ -535,7 +525,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Steel Current.mp3",
     category: "energetic",
     durationSeconds: 174,
-    isNew: true,
   },
   {
     id: "departure-prime",
@@ -543,7 +532,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Departure Prime.mp3",
     category: "energetic",
     durationSeconds: 201,
-    isNew: true,
   },
   {
     id: "pulse-launch",
@@ -551,7 +539,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Pulse Launch.mp3",
     category: "energetic",
     durationSeconds: 169,
-    isNew: true,
   },
   {
     id: "rua-em-chamas",
@@ -559,7 +546,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Rua em Chamas.mp3",
     category: "energetic",
     durationSeconds: 89,
-    isNew: true,
   },
   {
     id: "faisca-noturna",
@@ -567,7 +553,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Faísca Noturna.mp3",
     category: "energetic",
     durationSeconds: 35,
-    isNew: true,
   },
   {
     id: "runway-spark",
@@ -575,7 +560,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Runway Spark.mp3",
     category: "energetic",
     durationSeconds: 31,
-    isNew: true,
   },
   {
     id: "steppe-cipher",
@@ -583,7 +567,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Steppe Cipher.mp3",
     category: "energetic",
     durationSeconds: 112,
-    isNew: true,
   },
   {
     id: "obsidian-ciphershard",
@@ -591,7 +574,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Obsidian Ciphershard.mp3",
     category: "energetic",
     durationSeconds: 96,
-    isNew: true,
   },
   {
     id: "steppe-war-cry",
@@ -599,7 +581,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Steppe War Cry.mp3",
     category: "energetic",
     durationSeconds: 194,
-    isNew: true,
   },
   {
     id: "beat-drums",
@@ -607,7 +588,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Beat Drums.mp3",
     category: "energetic",
     durationSeconds: 73,
-    isNew: true,
   },
   {
     id: "boots-beat",
@@ -615,7 +595,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Boots Beat.mp3",
     category: "energetic",
     durationSeconds: 51,
-    isNew: true,
   },
   {
     id: "boots-on-break",
@@ -623,7 +602,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Boots On Break.mp3",
     category: "energetic",
     durationSeconds: 54,
-    isNew: true,
   },
   {
     id: "boots-on-concrete",
@@ -631,7 +609,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Boots On Concrete.mp3",
     category: "energetic",
     durationSeconds: 56,
-    isNew: true,
   },
   {
     id: "boots-on-the-line",
@@ -639,7 +616,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Boots On The Line.mp3",
     category: "energetic",
     durationSeconds: 88,
-    isNew: true,
   },
   {
     id: "dont-stop",
@@ -647,7 +623,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Dont Stop.mp3",
     category: "energetic",
     durationSeconds: 105,
-    isNew: true,
   },
   {
     id: "drum-circuit",
@@ -655,7 +630,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Drum Circuit.mp3",
     category: "energetic",
     durationSeconds: 62,
-    isNew: true,
   },
   {
     id: "explosive-glass",
@@ -663,7 +637,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Explosive Glass.mp3",
     category: "energetic",
     durationSeconds: 63,
-    isNew: true,
   },
   {
     id: "flamline-takeoff",
@@ -671,7 +644,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Flamline Takeoff.mp3",
     category: "energetic",
     durationSeconds: 146,
-    isNew: true,
   },
   {
     id: "focus-drum-circuit",
@@ -679,7 +651,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Focus Drum Circuit.mp3",
     category: "energetic",
     durationSeconds: 126,
-    isNew: true,
   },
   {
     id: "im-back",
@@ -687,7 +658,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Im Back.mp3",
     category: "energetic",
     durationSeconds: 81,
-    isNew: true,
   },
   {
     id: "let-go-up",
@@ -695,7 +665,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Let Go Up.mp3",
     category: "energetic",
     durationSeconds: 65,
-    isNew: true,
   },
   {
     id: "lets-go-surge",
@@ -703,7 +672,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Lets Go Surge.mp3",
     category: "energetic",
     durationSeconds: 186,
-    isNew: true,
   },
   {
     id: "no-slow",
@@ -711,7 +679,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "No Slow.mp3",
     category: "energetic",
     durationSeconds: 173,
-    isNew: true,
   },
   {
     id: "one-shot",
@@ -719,7 +686,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "One Shot.mp3",
     category: "energetic",
     durationSeconds: 61,
-    isNew: true,
   },
   {
     id: "beat-it",
@@ -727,7 +693,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Beat It.mp3",
     category: "energetic",
     durationSeconds: 67,
-    isNew: true,
   },
   {
     id: "deep-flow-march",
@@ -735,7 +700,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Deep Flow March.mp3",
     category: "energetic",
     durationSeconds: 108,
-    isNew: true,
   },
 
   // ── Electronic ──
@@ -1095,7 +1059,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Chrome Tokyo Drift.mp3",
     category: "electronic",
     durationSeconds: 169,
-    isNew: true,
   },
   {
     id: "mare-de-neon",
@@ -1103,7 +1066,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Maré de Neon.mp3",
     category: "electronic",
     durationSeconds: 145,
-    isNew: true,
   },
   {
     id: "maree-cobalto",
@@ -1111,7 +1073,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Marée Cobalto.mp3",
     category: "electronic",
     durationSeconds: 193,
-    isNew: true,
   },
   {
     id: "neon-bazaar-pulse",
@@ -1119,7 +1080,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Neon Bazaar Pulse.mp3",
     category: "electronic",
     durationSeconds: 159,
-    isNew: true,
   },
   {
     id: "midnight-bazaar",
@@ -1127,7 +1087,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Midnight Bazaar.mp3",
     category: "electronic",
     durationSeconds: 198,
-    isNew: true,
   },
   {
     id: "steppe-circuit",
@@ -1135,7 +1094,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Steppe Circuit.mp3",
     category: "electronic",
     durationSeconds: 141,
-    isNew: true,
   },
   {
     id: "wireframe-steppe",
@@ -1143,7 +1101,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Wireframe Steppe.mp3",
     category: "electronic",
     durationSeconds: 139,
-    isNew: true,
   },
   {
     id: "cobalt-relay",
@@ -1151,7 +1108,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Cobalt Relay.mp3",
     category: "electronic",
     durationSeconds: 151,
-    isNew: true,
   },
   {
     id: "laser-focus",
@@ -1159,7 +1115,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Laser Focus.mp3",
     category: "electronic",
     durationSeconds: 73,
-    isNew: true,
   },
   {
     id: "laser-focus-clap",
@@ -1167,7 +1122,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Laser Focus Clap.mp3",
     category: "electronic",
     durationSeconds: 58,
-    isNew: true,
   },
 
   // ── Cinematic ──
@@ -1310,7 +1264,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Apex Lift.mp3",
     category: "cinematic",
     durationSeconds: 139,
-    isNew: true,
   },
   {
     id: "vector-bloom",
@@ -1318,7 +1271,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Vector Bloom.mp3",
     category: "cinematic",
     durationSeconds: 162,
-    isNew: true,
   },
   {
     id: "patch-to-sky",
@@ -1326,7 +1278,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Patch to Sky.mp3",
     category: "cinematic",
     durationSeconds: 205,
-    isNew: true,
   },
   {
     id: "cirrus-patch",
@@ -1334,7 +1285,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Cirrus Patch.mp3",
     category: "cinematic",
     durationSeconds: 192,
-    isNew: true,
   },
   {
     id: "brass-focus",
@@ -1342,7 +1292,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Brass Focus.mp3",
     category: "cinematic",
     durationSeconds: 22,
-    isNew: true,
   },
   {
     id: "march-of-glory",
@@ -1350,7 +1299,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "March of Glory.mp3",
     category: "cinematic",
     durationSeconds: 82,
-    isNew: true,
   },
   {
     id: "march-of-the-horns",
@@ -1358,7 +1306,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "March of the Horns.mp3",
     category: "cinematic",
     durationSeconds: 107,
-    isNew: true,
   },
   {
     id: "marching-down",
@@ -1366,7 +1313,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Marching Down.mp3",
     category: "cinematic",
     durationSeconds: 43,
-    isNew: true,
   },
   {
     id: "marching-glass",
@@ -1374,7 +1320,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Marching Glass.mp3",
     category: "cinematic",
     durationSeconds: 128,
-    isNew: true,
   },
   {
     id: "strings",
@@ -1382,7 +1327,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Strings.mp3",
     category: "cinematic",
     durationSeconds: 54,
-    isNew: true,
   },
 
   // ── Chill ──
@@ -1567,7 +1511,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Demo App Glow.mp3",
     category: "chill",
     durationSeconds: 44,
-    isNew: true,
   },
   {
     id: "morning-chord",
@@ -1575,7 +1518,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Morning Chord.mp3",
     category: "chill",
     durationSeconds: 71,
-    isNew: true,
   },
   {
     id: "launch-day-strum",
@@ -1583,7 +1525,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Launch Day Strum.mp3",
     category: "chill",
     durationSeconds: 47,
-    isNew: true,
   },
   {
     id: "deep-deep-flow",
@@ -1591,7 +1532,6 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     filename: "Deep Deep Flow.mp3",
     category: "chill",
     durationSeconds: 119,
-    isNew: true,
   },
 
   // ── Ambient ──

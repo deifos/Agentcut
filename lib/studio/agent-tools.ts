@@ -467,7 +467,6 @@ export async function runStudioTool(
           name: t.name,
           category: t.category,
           seconds: t.durationSeconds,
-          ...(t.isNew ? { new: true } : {}),
         })),
         note: "Names and categories only say so much: add 3–6 candidates with studio_add_catalog_music, then rank them by ear with the listen tools.",
       };

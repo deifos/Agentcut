@@ -191,6 +191,13 @@ export class ChatEngine {
         message.status = "cancelled";
         stale = true;
       }
+      // Likewise a turn that was running when the helper stopped: its agent went with it.
+      if (message.role === "assistant" && message.status === "running" && this.turns.get(slug)?.message.id !== message.id) {
+        message.status = "error";
+        message.error = "Stopped: the helper restarted while this was running. Send the message again to continue.";
+        this.finishRunningTools(message, "error");
+        stale = true;
+      }
     }
     if (stale) this.save(slug, file);
     return {
@@ -322,6 +329,11 @@ export class ChatEngine {
     const images = attachments.map((attachment) => join(dir, attachment));
     for (const image of images) {
       lines.push(`Attached image (${agent.imageHint}): ${image}`);
+    }
+    // The pencil: the strokes drawn on the preview, described by the page (the frame with the drawing is attached).
+    if (typeof page.drawing === "string" && page.drawing.trim()) {
+      lines.push(page.drawing.slice(0, 6000));
+      lines.push(`"Here", "this" and "there" refer to the drawing. Coordinates are composition pixels of the variant on screen.`);
     }
     const references = (Array.isArray(context.references) ? context.references : [])
       .map((value) => asRecord(value))

@@ -391,10 +391,12 @@ export class StudioHost implements BridgeExtension {
       case "studio.local.create_project":
         return (async () => {
           const created = createProject(this.paths, p as unknown as CreateProjectInput);
-          // The chat that asked for it follows the new project.
+          // The chat that asked for it follows the new project. The page follows too, but only if it
+          // shows that chat's project (`from`): elsewhere the user is busy with their own work.
+          const from = this.chat.runningSlug();
           this.chat.moveRunningTurn(created.slug);
           this.emit("studio.projects", { projects: listProjects(this.paths) });
-          this.emit("studio.open", { slug: created.slug });
+          this.emit("studio.open", { slug: created.slug, from });
           this.watchProject(created.slug);
           return { ...created, dir: projectDir(this.paths, created.slug) };
         })();
@@ -701,8 +703,9 @@ export class StudioHost implements BridgeExtension {
       allowBash: this.options.allowBash,
       projects: listProjects(this.paths),
       bridgePort: this.options.port,
-      // What the page may rely on beyond the basics ("styles": project.json accepts a style).
-      features: ["styles"],
+      // What the page may rely on beyond the basics ("styles": project.json accepts a style;
+      // "drawing": chat context takes the pencil's strokes).
+      features: ["styles", "drawing"],
     };
   }
 

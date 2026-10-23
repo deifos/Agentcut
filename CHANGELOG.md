@@ -13,6 +13,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **Pencil**: click the pencil under the preview, draw on the video ("a circle here, a line from it to the
+  middle") and say what you want. The agent gets that frame with your drawing on it, strokes numbered in
+  the order you drew them, and each stroke's path in video pixels, so it can place things exactly and
+  move them along the line you drew. Esc closes it, ⌘Z takes back a stroke. Older helpers still get the
+  drawing, in the message text.
+
+### Fixed
+
+- A reply that was running when the helper stopped no longer stays stuck on its last step (e.g.
+  "transcribing") forever: it shows as stopped, so you can send the message again.
+- The studio no longer jumps to another project while you work. When an agent busy with another
+  project needs to see it (capture frames, export…), a bar above the preview asks you to **Open** it
+  (or **Not now**) instead of switching for you, and a project an agent creates from another chat is
+  offered with a toast. A slow project load can no longer replace the project you switched to.
+- Local renders that crashed partway through (often seen as "delayRender() … was called but not
+  cleared" on an image or video) now retry with full Chrome, and later renders use full Chrome right away.
+
 ## [0.2.0] - 2026-10-22
 
 Needs helper 0.2.0: stop the helper and run `npx -y agentcut@latest`.

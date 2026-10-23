@@ -50,6 +50,17 @@ export type { LoadedModule, StudioDoc } from "@/lib/studio/types";
 
 export type ExportJob = StudioExportJobUpdate;
 
+// How long an agent tool waits for the user to open its project. Under the helper's shortest
+// timeout for page tools (1 minute), so the agent gets this explanation rather than a timeout.
+const PREVIEW_WAIT_MS = 50_000;
+
+interface PreviewWait {
+  slug: string;
+  resolve(): void;
+  reject(error: Error): void;
+  timer: ReturnType<typeof setTimeout>;
+}
+
 function readLastProject() {
   try {
     return window.localStorage.getItem(LAST_PROJECT_KEY);
@@ -230,6 +241,11 @@ export function useStudioController() {
   const durationsRef = useRef(new WeakMap<StudioLayers, number>());
   const writeChain = useRef<Promise<void>>(Promise.resolve());
   const writing = useRef(false);
+  /** Bumped by each openProject call, so a slower earlier open can't overwrite a later one. */
+  const openSeq = useRef(0);
+  /** Agent tools waiting for the user to open their project (see waitForProject). */
+  const previewWaits = useRef<PreviewWait[]>([]);
+  const [previewRequest, setPreviewRequest] = useState<string | null>(null);
   const writeRef = useRef<{
     timer: ReturnType<typeof setTimeout> | null;
     layers: StudioLayers | null;
@@ -365,12 +381,30 @@ export function useStudioController() {
     return task;
   }, []);
 
+  /** Let agent tools waiting for `slug` go on (error = null) or fail. */
+  const settlePreviewWaits = useCallback(
+    (slug: string, error: Error | null) => {
+      const settled = previewWaits.current.filter((w) => w.slug === slug);
+      if (settled.length === 0) return;
+      previewWaits.current = previewWaits.current.filter((w) => w.slug !== slug);
+      setPreviewRequest(previewWaits.current[0]?.slug ?? null);
+      for (const wait of settled) {
+        clearTimeout(wait.timer);
+        if (error) wait.reject(error);
+        else wait.resolve();
+      }
+    },
+    [],
+  );
+
   const openProject = useCallback(
     async (slug: string) => {
       const bridge = bridgeRef.current;
       if (!bridge) return;
+      // Opening waits for the project's build; only the latest open may land.
+      const seq = ++openSeq.current;
       await flushWrite();
-      if (writeRef.current.layers) return;
+      if (writeRef.current.layers || seq !== openSeq.current) return;
       setOpening(true);
       try {
         const result = await bridge.request<OpenProjectResult>(
@@ -378,6 +412,7 @@ export function useStudioController() {
           { slug },
           120_000,
         );
+        if (seq !== openSeq.current) return;
         const isNewProject = latest.current.doc?.slug !== slug;
         setDoc((previous) => mergePayload(previous, result));
         setBundle(result.bundle);
@@ -394,6 +429,7 @@ export function useStudioController() {
         writeLastProject(slug);
         latest.current.doc = mergePayload(latest.current.doc, result);
         await loadBundle(slug, result.bundle);
+        if (seq === openSeq.current) settlePreviewWaits(slug, null);
         void bridge
           .request<{ assets: AssetEntry[]; library: AssetEntry[] }>(
             "studio.assets.list",
@@ -406,23 +442,70 @@ export function useStudioController() {
           `Couldn't open the project: ${error instanceof Error ? error.message : String(error)}`,
         );
       } finally {
-        setOpening(false);
+        if (seq === openSeq.current) setOpening(false);
       }
     },
-    [flushWrite, frameStore, loadBundle, resetHistory],
+    [flushWrite, frameStore, loadBundle, resetHistory, settlePreviewWaits],
   );
+
+  /**
+   * An agent tool needs `slug` on screen. Ask the user (banner) instead of switching away
+   * from what they're doing; resolves once they open it.
+   */
+  const waitForProject = useCallback(
+    (slug: string) => {
+      if (latest.current.doc?.slug === slug) return Promise.resolve();
+      return new Promise<void>((resolve, reject) => {
+        const wait: PreviewWait = {
+          slug,
+          resolve,
+          reject,
+          timer: setTimeout(() => {
+            previewWaits.current = previewWaits.current.filter((w) => w !== wait);
+            setPreviewRequest(previewWaits.current[0]?.slug ?? null);
+            reject(
+              new Error(
+                `The user is working on another project and didn't open "${slug}" (they were asked). ` +
+                  "Keep working on the files, and ask them to open the project when you need to see it.",
+              ),
+            );
+          }, PREVIEW_WAIT_MS),
+        };
+        previewWaits.current = [...previewWaits.current, wait];
+        setPreviewRequest(previewWaits.current[0].slug);
+      });
+    },
+    [],
+  );
+
+  /** "Not now" on the banner. */
+  const declinePreviewRequest = useCallback(() => {
+    const slug = previewWaits.current[0]?.slug;
+    if (slug)
+      settlePreviewWaits(
+        slug,
+        new Error(
+          `The user chose to stay on the project they're working on instead of opening "${slug}". ` +
+            "Keep working on the files, and ask them to open the project when you need to see it.",
+        ),
+      );
+  }, [settlePreviewWaits]);
 
   /** Re-read the open project from disk (waits for the helper's current build). */
   const syncProject = useCallback(async () => {
     const bridge = bridgeRef.current;
     const current = latest.current.doc;
     if (!bridge || !current) return;
+    const seq = openSeq.current;
     await flushWrite();
     const result = await bridge.request<OpenProjectResult>(
       "studio.project.open",
       { slug: current.slug },
       120_000,
     );
+    // The user opened another project while this one was building: don't switch back.
+    if (seq !== openSeq.current || latest.current.doc?.slug !== current.slug)
+      return;
     const next = mergePayload(latest.current.doc, result);
     latest.current.doc = next;
     setDoc(next);
@@ -637,6 +720,8 @@ export function useStudioController() {
         references?: ChatReference[];
         /** The agent to answer (left out for helpers that can't switch). */
         agent?: string;
+        /** The pencil's strokes, described (helpers with the "drawing" feature). */
+        drawing?: string;
       } = {},
     ) => {
       const bridge = bridgeRef.current;
@@ -655,6 +740,7 @@ export function useStudioController() {
             selectedClipIds: latest.current.selection,
             attachments: extra.attachments ?? [],
             references: extra.references ?? [],
+            ...(extra.drawing ? { drawing: extra.drawing } : {}),
           },
         });
       } catch (error) {
@@ -732,11 +818,12 @@ export function useStudioController() {
       setSelection,
       setVariant: setVariantChoice,
       openProject,
+      waitForProject,
       syncProject,
       setExportJob,
       bridge: () => bridgeRef.current,
     };
-  }, [frameStore, openProject, syncProject]);
+  }, [frameStore, openProject, syncProject, waitForProject]);
 
   // ---------------------------------------------------------------------------
   // Connection
@@ -835,8 +922,18 @@ export function useStudioController() {
       }),
       bridge.on("studio.library", () => void refreshAssets()),
       bridge.on("studio.open", (data) => {
-        const slug = (data as { slug?: string })?.slug;
-        if (slug) void openProject(slug);
+        // An agent created a project. Follow it from the project its chat was in; anywhere else the
+        // user is working on something of their own, so offer it instead of switching.
+        const { slug, from } = data as { slug?: string; from?: string | null };
+        if (!slug) return;
+        const current = latest.current.doc?.slug;
+        if (!current || !from || current === from) {
+          void openProject(slug);
+          return;
+        }
+        toast.message(`The agent created the project "${slug}".`, {
+          action: { label: "Open", onClick: () => void openProject(slug) },
+        });
       }),
       bridge.on("studio.chat", (data) => {
         const record = data as Record<string, unknown>;
@@ -968,6 +1065,8 @@ export function useStudioController() {
     toolContext,
     openProject,
     syncProject,
+    previewRequest,
+    declinePreviewRequest,
     createProject,
     deleteProject,
     refreshAssets,

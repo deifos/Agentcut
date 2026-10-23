@@ -23,6 +23,12 @@ let running: Promise<unknown> | null = null;
 /** The process the current local render is waiting on (npm install or remotion render). */
 let child: ChildProcess | null = null;
 let cancelled = false;
+/** Set once the headless shell has crashed: later renders go straight to full Chrome. */
+let fullChrome = false;
+
+// How a headless-shell crash shows up: the tab dies outright, or (when another tab's crash takes the
+// asset server down) a frame times out waiting on an image or video that never arrives.
+const BROWSER_CRASH = /Page crashed|Target closed|Fatal error in|got no response|delayRender\(\).*not cleared/i;
 
 /** Stop the running local render, if any. Returns whether there was one. */
 export function cancelLocalRender() {
@@ -182,14 +188,16 @@ export async function runLocalRender(options: LocalRenderOptions) {
         }
       });
     };
-    let result = await render([]);
-    // The lightweight headless shell can hit a V8 crash on some projects ("Page crashed!"); the full
-    // Chrome for Testing build renders them. Downloaded by Remotion on first use.
-    if (!cancelled && result.code !== 0 && /Page crashed|Target closed|Fatal error in/i.test(result.tail)) {
+    // The lightweight headless shell can crash partway through some projects (seen with @remotion/media
+    // videos); the full Chrome for Testing build renders them. Downloaded by Remotion on first use.
+    const FULL_CHROME = ["--chrome-mode=chrome-for-testing"];
+    let result = await render(fullChrome ? FULL_CHROME : []);
+    if (!cancelled && !fullChrome && result.code !== 0 && BROWSER_CRASH.test(result.tail)) {
       debugLog(`local render crashed in headless shell; retrying with chrome-for-testing`);
+      fullChrome = true;
       rmSync(outPath, { force: true });
       options.onProgress({ stage: "preparing", message: "The renderer crashed; retrying with full Chrome…" });
-      result = await render(["--chrome-mode=chrome-for-testing"]);
+      result = await render(FULL_CHROME);
     }
     if (cancelled) throw new StudioError("Render cancelled.", "cancelled");
     if (result.code !== 0 || !existsSync(outPath)) {

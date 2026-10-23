@@ -42,6 +42,8 @@ export interface StudioToolContext {
   setSelection(ids: string[]): void;
   setVariant(variant: string | null): void;
   openProject(slug: string): Promise<void>;
+  /** Wait for the user to open `slug` (the page asks them); never switches on its own. */
+  waitForProject(slug: string): Promise<void>;
   syncProject(): Promise<void>;
   setExportJob(job: StudioExportJobUpdate | null): void;
   bridge(): StudioBridge | null;
@@ -73,7 +75,8 @@ async function ready(
 ) {
   const wanted = typeof params.project === "string" ? params.project : null;
   const current = context.getDoc();
-  if (wanted && wanted !== current?.slug) await context.openProject(wanted);
+  // The user may be working on another project: ask them instead of switching under them.
+  if (wanted && wanted !== current?.slug) await context.waitForProject(wanted);
   else await context.syncProject();
   const doc = context.getDoc();
   if (!doc)
@@ -151,7 +154,8 @@ export async function runStudioTool(
     case "studio_open_project": {
       const slug = String(params.project ?? params.slug ?? "");
       if (!slug) throw new Error("project is required.");
-      await context.openProject(slug);
+      if (!context.getDoc()) await context.openProject(slug);
+      else if (context.getDoc()?.slug !== slug) await context.waitForProject(slug);
       const doc = context.getDoc();
       return { opened: doc?.slug === slug, project: doc?.slug ?? null };
     }

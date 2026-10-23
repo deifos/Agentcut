@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Loader2,
   Pause,
+  Pencil,
   Play,
   Repeat,
   SkipBack,
@@ -28,7 +29,9 @@ import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
 import { findClip } from "@/lib/studio/edit";
 import { formatFrameTime } from "@/lib/studio/format";
 import { useFrame, type FrameStore } from "@/lib/studio/frame-store";
+import { DrawAsk } from "@/components/studio/DrawAsk";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import type { DrawStroke } from "@/lib/studio/drawing";
 import type {
   Box,
   BundleSummary,
@@ -51,6 +54,12 @@ export interface StudioPreviewProps {
   editing?: boolean;
   /** Where project files are served from; defaults to the local helper (the website's demo overrides it). */
   assetBase?: string;
+  /** The pencil: draw on the video and send the drawing with a prompt (left out where there's no agent). */
+  draw?: {
+    busy: boolean;
+    disabled: boolean;
+    onSend(strokes: DrawStroke[], text: string): Promise<void>;
+  };
 }
 
 function useContainerRect(ref: RefObject<HTMLDivElement | null>) {
@@ -99,8 +108,13 @@ function Transport({
   muted,
   setMuted,
   editing,
+  drawing,
+  onDraw,
 }: {
   editing?: boolean;
+  /** Shown only when the pencil is available. */
+  drawing?: boolean;
+  onDraw?(): void;
   frameStore: FrameStore;
   fps: number;
   durationInFrames: number;
@@ -159,6 +173,19 @@ function Transport({
         </span>
       </span>
       <div className="ml-auto flex items-center gap-1">
+        {onDraw ? (
+          <IconButton
+            label={
+              drawing
+                ? "Close the pencil (Esc)"
+                : `Draw on the video and tell ${agentName} what to do`
+            }
+            onClick={onDraw}
+            active={drawing}
+          >
+            <Pencil className="size-4" />
+          </IconButton>
+        ) : null}
         <IconButton
           label={loop ? "Loop on" : "Loop off"}
           onClick={() => setLoop(!loop)}
@@ -195,12 +222,19 @@ export function StudioPreview(props: StudioPreviewProps) {
     onPlayingChange,
     editing,
     assetBase,
+    draw,
   } = props;
   const agentName = useAgentName();
   const containerRef = useRef<HTMLDivElement>(null);
   const container = useContainerRect(containerRef);
   const [loop, setLoop] = useState(true);
   const [muted, setMuted] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const toggleDrawing = () => {
+    // The drawing is about one frame: hold the picture still under the pen.
+    if (!drawing) playerRef.current?.pause();
+    setDrawing(!drawing);
+  };
   // Pause the moment the agent starts changing files; a reload mid-playback shows half-written scenes.
   useEffect(() => {
     if (editing) playerRef.current?.pause();
@@ -377,6 +411,17 @@ export function StudioPreview(props: StudioPreviewProps) {
           {selectedBox && ready ? (
             <SelectionOutline box={selectedBox} rect={rect} />
           ) : null}
+          {draw && drawing && ready ? (
+            <DrawAsk
+              key={doc.slug}
+              rect={rect}
+              size={size}
+              busy={draw.busy}
+              disabled={draw.disabled}
+              onSend={draw.onSend}
+              onClose={() => setDrawing(false)}
+            />
+          ) : null}
         </div>
         {/* Mid-edit errors are expected (files are half-written); the agent checks the build itself. */}
         {!editing && (buildErrors.length > 0 || errors.length > 0) ? (
@@ -422,6 +467,8 @@ export function StudioPreview(props: StudioPreviewProps) {
           muted={muted}
           setMuted={setMuted}
           editing={editing}
+          drawing={drawing}
+          onDraw={draw ? toggleDrawing : undefined}
         />
       ) : null}
     </div>

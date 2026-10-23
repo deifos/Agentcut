@@ -88,6 +88,12 @@ import { StudioPreview } from "@/components/studio/StudioPreview";
 import { StudioTimeline } from "@/components/studio/StudioTimeline";
 import { useStudioController } from "@/components/studio/useStudioController";
 import { captureFrame } from "@/lib/studio/capture";
+import { variantSize } from "@/lib/studio/composition-props";
+import {
+  burnStrokes,
+  describeStrokes,
+  type DrawStroke,
+} from "@/lib/studio/drawing";
 import {
   addClip,
   clipEnd,
@@ -445,6 +451,42 @@ export function StudioApp() {
     await sendChat(text, { attachFrame: true });
   };
 
+  /** The pencil: the frame goes with the drawing burned in, and the strokes as coordinates. */
+  const drawingSupported = Boolean(info?.features?.includes("drawing"));
+  const askWithDrawing = async (strokes: DrawStroke[], text: string) => {
+    if (!doc?.project || !loaded) return;
+    const frame = frameStore.get();
+    const fps = doc.project.fps;
+    const size = variantSize(doc.project, variant);
+    const description = describeStrokes(strokes, size);
+    const attachments: string[] = [];
+    try {
+      const still = await captureFrame({ doc, loaded, variant, frame, scale: 0.5 });
+      attachments.push(
+        await uploadToProject(
+          doc.slug,
+          `.studio/attachments/drawing-${frame}-${Date.now()}.png`,
+          await burnStrokes(still, strokes, size.width),
+        ),
+      );
+    } catch (error) {
+      toast.error(
+        `Couldn't attach the frame: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    const message = `[Drawing at ${formatFrameTime(frame, fps)} · frame ${frame}] ${text}`;
+    // Older helpers drop unknown context: the strokes ride in the message instead.
+    await studio.sendChat(
+      drawingSupported ? message : `${message}\n\n${description}`,
+      {
+        attachments,
+        agent: agentPickable ? agent?.id : undefined,
+        drawing: drawingSupported ? description : undefined,
+      },
+    );
+    setPendingAsks((list) => [...list, { frame, text }]);
+  };
+
   const stylesSupported = Boolean(info?.features?.includes("styles"));
   const currentStyle = getMotionStyle(doc?.project?.style);
   const useStyle = (styleId: string) => {
@@ -748,6 +790,16 @@ export function StudioApp() {
                 )}
               </HeaderButton>
             </div>
+            {studio.previewRequest ? (
+              <PreviewRequestBar
+                name={
+                  studio.projects.find((p) => p.slug === studio.previewRequest)
+                    ?.name ?? studio.previewRequest
+                }
+                onOpen={() => void studio.openProject(studio.previewRequest!)}
+                onDecline={studio.declinePreviewRequest}
+              />
+            ) : null}
             <div className="min-h-0 flex-1">
               {doc ? (
                 <StudioPreview
@@ -762,6 +814,15 @@ export function StudioApp() {
                   playing={playing}
                   onPlayingChange={setPlaying}
                   editing={Boolean(chat.running)}
+                  draw={
+                    readOnly
+                      ? undefined
+                      : {
+                          busy: Boolean(chat.running),
+                          disabled: status !== "connected",
+                          onSend: askWithDrawing,
+                        }
+                  }
                 />
               ) : (
                 <EmptyState
@@ -1085,6 +1146,32 @@ function ConnectionBadge({
             : "Reconnecting…"}
       </span>
     </button>
+  );
+}
+
+/** An agent working on another project needs the preview; it waits until the user opens it. */
+function PreviewRequestBar({
+  name,
+  onOpen,
+  onDecline,
+}: {
+  name: string;
+  onOpen(): void;
+  onDecline(): void;
+}) {
+  const agentName = useAgentName();
+  return (
+    <div className="flex items-center gap-2 border-b bg-muted/60 px-3 py-1.5 text-xs">
+      <span className="min-w-0 flex-1 truncate">
+        {agentName} is working on <strong>{name}</strong> and needs to see it.
+      </span>
+      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onDecline}>
+        Not now
+      </Button>
+      <Button size="sm" className="h-6 px-2 text-xs" onClick={onOpen}>
+        Open
+      </Button>
+    </div>
   );
 }
 

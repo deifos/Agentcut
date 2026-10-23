@@ -339,7 +339,7 @@ export interface StudioInfo {
   allowBash: boolean;
   projects: ProjectSummary[];
   bridgePort: number;
-  /** What this helper supports beyond the basics ("styles": project.json may have a style). */
+  /** What this helper supports beyond the basics ("styles": project.json may have a style; "drawing": chat context takes the pencil's strokes). */
   features?: string[];
 }
 

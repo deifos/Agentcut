@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-23
+
+Works with helper 0.2.0; update to 0.2.1 (`npx -y agentcut@latest`) for the render and project fixes.
+
 ### Added
 
 - **Pencil**: click the pencil under the preview, draw on the video ("a circle here, a line from it to the
@@ -72,6 +76,7 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/deifos/Agentcut/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/deifos/Agentcut/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/deifos/Agentcut/releases/tag/v0.1.0

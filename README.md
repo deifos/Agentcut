@@ -4,7 +4,14 @@
 Claude Code or Codex builds the video on your computer as real [Remotion](https://www.remotion.dev) code.
 You watch the live preview, scrub the timeline, tweak any layer by hand, and export an MP4 from the browser.
 
-**Try it:** https://agentcut.synteq.app · [components](https://agentcut.synteq.app/components) · [templates](https://agentcut.synteq.app/templates)
+**Try it:** https://agentcut.synteq.app · [components](https://agentcut.synteq.app/components) · [templates](https://agentcut.synteq.app/templates) · [changelog](CHANGELOG.md)
+
+- **Chat to edit**: describe the change; the agent writes the scenes, layers, captions and sound.
+- **Style Spy**: paste an Instagram, TikTok or YouTube link (or drop a video) and copy its editing style:
+  layouts and split screens, cut rhythm, captions, motion graphics, transitions and color.
+- **Record**: record talking-head takes from your camera right in the studio, then tell the agent what to do.
+- **Edit by hand**: timeline, inspector, components, templates and video styles; export an MP4 in the
+  browser or locally with Remotion.
 
 ### Search and social sharing
 
@@ -35,8 +42,9 @@ the helper on `127.0.0.1`, the agent writes scenes and layers, and the page rebu
 
 ## Quick start
 
-1. Install [Claude Code](https://claude.com/claude-code) or [Codex](https://developers.openai.com/codex/cli)
-   and sign in once. You need Node.js 20 or newer.
+1. Install [Node.js LTS](https://nodejs.org/en/download) (20.10 or newer), then
+   [Claude Code](https://claude.com/claude-code) or [Codex](https://developers.openai.com/codex/cli),
+   and sign in once.
 2. Start the helper:
 
    ```bash
@@ -58,6 +66,19 @@ npx -y agentcut --no-bash                    # no shell commands for the agent
 Voice-over (ElevenLabs, Gemini, OpenAI, xAI) and music generation (Gemini Lyria) use your own keys,
 entered in the studio and kept in your user folder.
 
+Style Spy downloads references with [yt-dlp](https://github.com/yt-dlp/yt-dlp) and
+[ffmpeg](https://ffmpeg.org): the helper fetches both on first use into `~/.agentcut/tools` (checksums
+verified, nothing installed system-wide) and keeps yt-dlp up to date. Only public videos are downloaded,
+unless you click **Retry with my browser login**, which uses that browser's login once for that video.
+Record needs camera and microphone access in the browser.
+
+## Versions
+
+The studio shows its version next to the logo (hover for the helper's). The editor and the helper are
+released together with the same version number; [CHANGELOG.md](CHANGELOG.md) lists what changed. When the
+page needs a newer helper, the connection badge says **Update helper**: stop it and run
+`npx -y agentcut@latest`.
+
 ## Develop
 
 ```bash
@@ -71,6 +92,14 @@ npm run dev            # http://localhost:3000 (landing), /studio, /components, 
 - Studio UI: `components/studio`, logic in `lib/studio`.
 - Motion component library: `motion/components` (see its README). After changing it or `skills/agentcut`,
   run `npm run sync:skill` so the helper ships the new copy.
+
+### Releasing
+
+1. Add the changes under **Unreleased** in `CHANGELOG.md`, then move them to a new version heading.
+2. Bump `version` in `package.json` (editor) and `packages/agentcut/package.json` (helper) to the same
+   number. If the page now needs the new helper, raise `MIN_HELPER_VERSION` in `lib/version.ts`.
+3. Commit, tag `vX.Y.Z`, push, and publish the helper: `cd packages/agentcut && npm publish`
+   (it syncs the skill and builds first). Publish the helper before the site deploys when the page needs it.
 
 ## Deploy
 

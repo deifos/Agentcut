@@ -15,6 +15,9 @@ Follow React and Next.js best practices (https://react.dev/learn/you-might-not-n
   agent adapters (Claude Code, Codex), the `agentcut` MCP server. Its `template/skill`, `template/components` and
   `template/presets` are generated copies: run `npm run sync:skill` after changing the originals.
 
+Record user-facing changes under **Unreleased** in `CHANGELOG.md`. Editor and helper share a version
+(root `package.json` and `packages/agentcut/package.json`); see README › Releasing.
+
 Keep `lib/studio/types.ts` in sync with `packages/agentcut/template/runtime/types.ts` and
 `packages/agentcut/src/studio/schema.ts`, and `lib/studio/modules.ts` with `packages/agentcut/src/studio/bundler.ts`.
 

@@ -61,6 +61,13 @@ import { ChatPanel } from "@/components/studio/ChatPanel";
 import { StylesGallery } from "@/components/studio/styles/StylesGallery";
 import { StyleSpy, StyleSpyTab } from "@/components/studio/StyleSpy";
 import { Recorder } from "@/components/studio/Recorder";
+import {
+  APP_VERSION,
+  CHANGELOG_URL,
+  isOlderVersion,
+  MIN_HELPER_VERSION,
+} from "@/lib/version";
+import { STUDIO_COMMAND } from "@/lib/studio/commands";
 import { StylesTab } from "@/components/studio/styles/StylesTab";
 import { getMotionStyle, type MotionStyle } from "@/motion/components";
 import {
@@ -471,6 +478,15 @@ export function StudioApp() {
           >
             agent<span className="text-brand">cut</span>
           </Link>
+          <a
+            href={CHANGELOG_URL}
+            target="_blank"
+            rel="noreferrer"
+            title={`Editor ${APP_VERSION}${info?.version ? ` · helper ${info.version}` : ""}. See what's new.`}
+            className="-ml-1 mr-1 text-[10px] font-semibold text-muted-foreground tabular-nums hover:text-foreground"
+          >
+            v{APP_VERSION}
+          </a>
           <DropdownMenu
             open={projectMenuOpen}
             onOpenChange={setProjectMenuOpen}
@@ -618,6 +634,7 @@ export function StudioApp() {
               placeholderClassName="size-9"
             />
             <ConnectionBadge
+              helperVersion={info?.version ?? null}
               status={status}
               working={Boolean(chat.running)}
               onReconnect={studio.reconnect}
@@ -1004,16 +1021,33 @@ function HeaderButton({
 }
 
 function ConnectionBadge({
+  helperVersion,
   status,
   working,
   onReconnect,
 }: {
+  helperVersion: string | null;
   status: string;
   working: boolean;
   onReconnect(): void;
 }) {
   const agentName = useAgentName();
   const connected = status === "connected";
+  const outdated =
+    connected &&
+    helperVersion !== null &&
+    isOlderVersion(helperVersion, MIN_HELPER_VERSION);
+  if (outdated) {
+    return (
+      <span
+        className="flex h-9 items-center gap-2 rounded-md border border-amber-500/50 px-3 text-xs font-semibold"
+        title={`Your helper is ${helperVersion}; this editor needs ${MIN_HELPER_VERSION} or newer. Stop it (Ctrl+C) and run: ${STUDIO_COMMAND}@latest`}
+      >
+        <span className="relative inline-flex size-2.5 rounded-full bg-amber-500" />
+        <span className="hidden sm:inline">Update helper</span>
+      </span>
+    );
+  }
   return (
     <button
       type="button"
@@ -1026,7 +1060,7 @@ function ConnectionBadge({
       )}
       title={
         connected
-          ? "Connected to the studio helper on this computer"
+          ? `Connected to the studio helper on this computer${helperVersion ? ` (${helperVersion})` : ""}`
           : "Click to reconnect"
       }
     >

@@ -171,15 +171,26 @@ export async function runLocalRender(options: LocalRenderOptions) {
       "--audio-codec=aac",
     ];
     if (process.platform === "win32") args.push("--gl=angle");
-    options.onProgress({ stage: "rendering", progress: 0 });
-    const result = await run("npx", args, root, (line) => {
-      const match = /Rendered\s+(\d+)\/(\d+)/i.exec(line) ?? /(\d+)\/(\d+)\s+frames/i.exec(line);
-      if (match) {
-        options.onProgress({ stage: "rendering", progress: Number(match[1]) / Math.max(1, Number(match[2])) });
-      } else if (/Encoded|Stitch/i.test(line)) {
-        options.onProgress({ stage: "encoding", message: line.slice(0, 200) });
-      }
-    });
+    const render = (extra: string[]) => {
+      options.onProgress({ stage: "rendering", progress: 0 });
+      return run("npx", [...args, ...extra], root, (line) => {
+        const match = /Rendered\s+(\d+)\/(\d+)/i.exec(line) ?? /(\d+)\/(\d+)\s+frames/i.exec(line);
+        if (match) {
+          options.onProgress({ stage: "rendering", progress: Number(match[1]) / Math.max(1, Number(match[2])) });
+        } else if (/Encoded|Stitch/i.test(line)) {
+          options.onProgress({ stage: "encoding", message: line.slice(0, 200) });
+        }
+      });
+    };
+    let result = await render([]);
+    // The lightweight headless shell can hit a V8 crash on some projects ("Page crashed!"); the full
+    // Chrome for Testing build renders them. Downloaded by Remotion on first use.
+    if (!cancelled && result.code !== 0 && /Page crashed|Target closed|Fatal error in/i.test(result.tail)) {
+      debugLog(`local render crashed in headless shell; retrying with chrome-for-testing`);
+      rmSync(outPath, { force: true });
+      options.onProgress({ stage: "preparing", message: "The renderer crashed; retrying with full Chrome…" });
+      result = await render(["--chrome-mode=chrome-for-testing"]);
+    }
     if (cancelled) throw new StudioError("Render cancelled.", "cancelled");
     if (result.code !== 0 || !existsSync(outPath)) {
       debugLog(`local render failed ${result.tail}`);

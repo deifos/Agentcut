@@ -146,7 +146,18 @@ export function ConnectScreen({
           </div>
         ) : (
           <ol className="space-y-5 text-sm">
-            <Step n={1} title="Install Claude Code or Codex and sign in once">
+            <Step n={1} title="Install Node.js first">
+              <p className="text-muted-foreground">
+                Download and install{" "}
+                <a className="underline" href="https://nodejs.org/en/download" target="_blank" rel="noreferrer">
+                  Node.js LTS
+                </a>{" "}
+                (20.10 or newer). It includes npm and npx, which download and run
+                Agentcut. After installing, close and reopen your terminal.
+                Already installed? You can skip this step.
+              </p>
+            </Step>
+            <Step n={2} title="Install Claude Code or Codex and sign in once">
               <p className="text-muted-foreground">
                 <a
                   className="underline"
@@ -166,11 +177,14 @@ export function ConnectScreen({
                   Codex
                 </a>{" "}
                 (run <code className="rounded bg-muted px-1">codex</code>) in a
-                terminal and sign in. Have both? Switch in the chat. You also
-                need Node.js 20 or newer.
+                terminal and sign in. Have both? Switch in the chat.
               </p>
             </Step>
-            <Step n={2} title="Start the helper in a terminal">
+            <Step n={3} title="Download and start Agentcut">
+              <p className="mb-2 text-muted-foreground">
+                Run this in your terminal. It downloads the Agentcut package
+                automatically and starts the local helper.
+              </p>
               <CopyCommand command={STUDIO_COMMAND} />
               <p className="mt-2 text-xs text-muted-foreground">
                 It makes an <code>Agentcut</code> folder in your home
@@ -187,7 +201,7 @@ export function ConnectScreen({
                 </p>
               ) : null}
             </Step>
-            <Step n={3} title="Let the agent read your app's code" optional>
+            <Step n={4} title="Let the agent read your app's code" optional>
               <p className="text-xs text-muted-foreground">
                 Making a video about your own app? Point the helper at its
                 folder once and the agent rebuilds your real screens, colors and

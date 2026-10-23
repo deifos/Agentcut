@@ -18,7 +18,7 @@ export function StylesTab({
       onClick={onClick}
       title={style ? `Style: ${style.name}. Browse styles` : "Browse styles"}
       aria-label="Browse styles"
-      className="group absolute top-12 -left-[5px] z-20 flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+      className="group flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
     >
       <Palette className="size-3.5 text-brand" />
       <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-rl]">

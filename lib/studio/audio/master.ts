@@ -54,7 +54,7 @@ const RELEASE_S = 0.08;
 const LIBAV_AAC_PRIMING = 1024;
 
 let aacReady: Promise<"native" | "libav"> | null = null;
-function ensureAac() {
+export function ensureAac() {
   aacReady ??= (async () => {
     if (await canEncodeAudio("aac")) return "native" as const;
     const { registerAacEncoder } = await import("@mediabunny/aac-encoder");

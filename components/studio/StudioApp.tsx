@@ -27,6 +27,7 @@ import {
   Trash2,
   Undo2,
   Monitor,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,8 @@ import {
 import ThemeToggle from "@/components/ThemeToggle";
 import { ChatPanel } from "@/components/studio/ChatPanel";
 import { StylesGallery } from "@/components/studio/styles/StylesGallery";
+import { StyleSpy, StyleSpyTab } from "@/components/studio/StyleSpy";
+import { Recorder } from "@/components/studio/Recorder";
 import { StylesTab } from "@/components/studio/styles/StylesTab";
 import { getMotionStyle, type MotionStyle } from "@/motion/components";
 import {
@@ -79,11 +82,16 @@ import { StudioTimeline } from "@/components/studio/StudioTimeline";
 import { useStudioController } from "@/components/studio/useStudioController";
 import { captureFrame } from "@/lib/studio/capture";
 import {
+  addClip,
+  clipEnd,
   deleteClips,
   duplicateClip,
   findClip,
   splitClip,
+  uniqueClipId,
 } from "@/lib/studio/edit";
+import { studioFileUrl } from "@/lib/studio/bundle";
+import type { StudioClip } from "@/lib/studio/types";
 import { uploadToProject } from "@/lib/studio/export";
 import type {
   ChatReference,
@@ -148,8 +156,27 @@ export function StudioApp() {
   const agentPickable = canPickAgent(info);
   const [playing, setPlaying] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
-  const [chatReferences, setChatReferences] = useState<ChatReference[]>([]);
+  // Files attached to the next chat message, per project.
+  const [referencesBySlug, setReferencesBySlug] = useState<
+    Record<string, ChatReference[]>
+  >({});
+  const chatSlug = doc?.slug ?? "";
+  const chatReferences = referencesBySlug[chatSlug] ?? [];
+  const setChatReferences = useCallback(
+    (
+      update:
+        | ChatReference[]
+        | ((current: ChatReference[]) => ChatReference[]),
+    ) =>
+      setReferencesBySlug((all) => ({
+        ...all,
+        [chatSlug]:
+          typeof update === "function" ? update(all[chatSlug] ?? []) : update,
+      })),
+    [chatSlug],
+  );
   const [voicesOpen, setVoicesOpen] = useState(false);
+  const [recordOpen, setRecordOpen] = useState(false);
   const [pendingAsks, setPendingAsks] = useState<
     { frame: number; text: string }[]
   >([]);
@@ -164,6 +191,7 @@ export function StudioApp() {
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
   const [stylesOpen, setStylesOpen] = useState(false);
+  const [styleSpyOpen, setStyleSpyOpen] = useState(false);
   // An export in progress (browser or this computer) stays visible on the Export button and the
   // tab title after the dialog closes, like the editor's export.
   const exportJob = studio.exportJob;
@@ -342,6 +370,61 @@ export function StudioApp() {
     [agent?.id, agentPickable, doc, frameStore, loaded, studio, variant],
   );
 
+  /** A camera take goes at the end of the Footage track (made when missing). */
+  const addTake = async (
+    path: string,
+    take: { seconds: number; startSeconds: number },
+  ) => {
+    if (!doc?.layers || !doc.project) return;
+    const { fps } = doc.project;
+    // The file starts with the countdown (encoder warm-up): the clip skips it.
+    const trimStart = Math.round(take.startSeconds * fps);
+    let total = Math.round(take.seconds * fps);
+    try {
+      const { mediaInfo } = await import("@/lib/studio/audio/media-info");
+      const info = (await mediaInfo(studioFileUrl(doc.slug, path), path, fps)) as {
+        frames?: number;
+      };
+      if (info.frames && Number.isFinite(info.frames)) total = info.frames;
+    } catch {}
+    const duration = Math.max(1, total - trimStart);
+    const footage =
+      doc.layers.tracks.find(
+        (track) => track.kind === "video" && /footage/i.test(track.name ?? ""),
+      ) ?? doc.layers.tracks.find((track) => track.kind === "video");
+    const from = footage
+      ? Math.max(0, ...(footage.clips as StudioClip[]).map(clipEnd))
+      : 0;
+    const id = uniqueClipId(doc.layers, "take");
+    const clip = {
+      id,
+      name: path.split("/").pop(),
+      from,
+      duration,
+      src: path,
+      trimStart,
+      fit: "cover",
+    } as StudioClip;
+    const result = addClip(doc.layers, "video", clip, {
+      trackId: footage?.id,
+      trackName: "Footage",
+    });
+    studio.commitLayers(
+      result.layers,
+      doc.layers,
+      Math.max(doc.project.durationInFrames, from + duration),
+    );
+    setSelection([id]);
+    // Nothing runs yet: the take waits on the chat composer for the user to say what they want.
+    setChatOpen(true);
+    setChatReferences((current) =>
+      current.some((r) => r.path === path)
+        ? current
+        : [...current, { path, kind: "video" }],
+    );
+    toast.success("Take added. Tell the agent what you'd like to do with it.");
+  };
+
   // What the timeline's film strips draw with: the compiled project and the variant on screen.
   const project = doc?.project;
   const slug = doc?.slug;
@@ -513,6 +596,16 @@ export function StudioApp() {
             <Button
               type="button"
               variant="ghost"
+              onClick={() => setRecordOpen(true)}
+              disabled={readOnly || !doc?.project}
+              title="Record a talking-head take with your camera"
+              className="text-xs text-muted-foreground"
+            >
+              <Video /> Record
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => setVoicesOpen(true)}
               disabled={status !== "connected"}
               title="Voice-over providers (ElevenLabs, Gemini, OpenAI, Grok)"
@@ -571,6 +664,8 @@ export function StudioApp() {
               )}
             >
               <ChatPanel
+                // Each project keeps its own draft.
+                key={chatSlug}
                 slug={doc?.slug ?? null}
                 chat={chat}
                 agent={agent}
@@ -594,10 +689,13 @@ export function StudioApp() {
           {doc?.project ? (
             // Zero-width slot on the seam: the tab hangs off the chat panel over the preview's edge.
             <div className="relative -mx-1 w-0 shrink-0">
-              <StylesTab
-                style={currentStyle}
-                onClick={() => setStylesOpen(true)}
-              />
+              <div className="absolute top-12 -left-[5px] z-20 flex flex-col gap-2">
+                <StylesTab
+                  style={currentStyle}
+                  onClick={() => setStylesOpen(true)}
+                />
+                <StyleSpyTab onClick={() => setStyleSpyOpen(true)} />
+              </div>
             </div>
           ) : null}
           <main className={cn(PANEL, "flex min-w-0 flex-1 flex-col")}>
@@ -780,6 +878,39 @@ export function StudioApp() {
         </div>
 
         {doc?.project ? (
+          <Recorder
+            key={`record-${doc.slug}`}
+            open={recordOpen}
+            onOpenChange={setRecordOpen}
+            slug={doc.slug}
+            frame={
+              doc.project.variants[variant] ??
+              doc.project.variants[doc.project.defaultVariant] ?? {
+                width: 1920,
+                height: 1080,
+              }
+            }
+            disabled={readOnly}
+            onAdd={addTake}
+          />
+        ) : null}
+        {doc?.project ? (
+          <StyleSpy
+            key={`style-spy-${doc.slug}`}
+            open={styleSpyOpen}
+            onOpenChange={setStyleSpyOpen}
+            slug={doc.slug}
+            assets={studio.assets}
+            disabled={readOnly || status !== "connected"}
+            running={!chatIdle}
+            getBridge={studio.getBridge}
+            onSend={async (text) => {
+              setChatOpen(true);
+              await sendChat(text, { attachFrame: false });
+            }}
+          />
+        ) : null}
+        {doc?.project ? (
           <StylesGallery
             open={stylesOpen}
             onOpenChange={setStylesOpen}
@@ -800,7 +931,7 @@ export function StudioApp() {
         ) : null}
         {doc?.project ? (
           <ExportDialog
-            key={doc.slug}
+            key={`export-${doc.slug}`}
             open={exportOpen}
             onOpenChange={setExportOpen}
             doc={doc}

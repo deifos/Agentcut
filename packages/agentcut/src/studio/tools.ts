@@ -133,6 +133,21 @@ export function registerStudioTools(server: McpServer) {
 
   defineTool(
     server,
+    "agentcut_import_reference",
+    "Style Spy: bring a reference video into the project for style analysis. With `url` (a public Instagram, TikTok or YouTube link) the helper downloads it; with `path` (a video already in assets/references/<id>/, e.g. an upload) it only prepares it. Either way it saves video.mp4, reference.json (cuts, shots), a frame per shot with an overview sheet, and motion strips (hook, every cut, captions) under assets/references/<id>/ and shows the video in Style Spy. Returns the paths. If a link needs a login, the user retries from Style Spy with their browser login: never ask for passwords or cookies.",
+    {
+      url: z.string().url().optional(),
+      path: z.string().regex(/^assets\/references\/[a-zA-Z0-9_-]+\/[^/]+$/).optional(),
+      project,
+    },
+    async ({ project: slug, url, path }) => {
+      if (!url === !path) throw new Error("Pass either url or path.");
+      return callEditor("studio.local.import_reference", { slug, url, path }, { timeoutMs: 10 * MINUTE });
+    },
+  );
+
+  defineTool(
+    server,
     "agentcut_media_info",
     "Duration (seconds and frames at the project fps), size, sample rate and channels of project media files. Use it to set clip durations exactly. For screen recordings with a <video>.cursor.json (ScreenSlick Companion), also returns a cursor summary: click count, the busiest stretches (where to zoom), idle stretches (cut candidates) and typing (speed-up candidates).",
     { paths: z.array(projectPath).min(1).max(40), project },

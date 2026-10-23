@@ -638,6 +638,9 @@ export interface ChatPanelProps {
   slug: string | null;
 }
 
+/** Unsent text per project, kept while switching projects. */
+const drafts = new Map<string, string>();
+
 export function ChatPanel({
   chat,
   agent,
@@ -658,7 +661,11 @@ export function ChatPanel({
   slug,
 }: ChatPanelProps) {
   const [dropping, setDropping] = useState(false);
-  const [text, setText] = useState("");
+  const [text, setTextState] = useState(() => drafts.get(slug ?? "") ?? "");
+  const setText = (value: string) => {
+    drafts.set(slug ?? "", value);
+    setTextState(value);
+  };
   const [attachFrame, setAttachFrame] = useState(false);
   const [sending, setSending] = useState(false);
   const running = Boolean(chat.running);

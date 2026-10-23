@@ -112,6 +112,12 @@ scrolls). Check `agentcut_media_info` on the video for its summary and read
 `references/cursor.md`: zoom on the busiest clicks, cut idle stretches, speed up typing, and keep the
 clip's `cursor` field on every piece you cut.
 
+## Style Spy
+
+When a user supplies a reference video URL or asks to adapt its style, hook, captions, or pacing,
+read `references/style-spy.md`. The helper imports references (`agentcut_import_reference`) and
+samples their frames; the studio shows them automatically.
+
 ## Working with the user
 
 The user edits the same timeline by hand while you work, and points at things instead of describing
@@ -135,6 +141,7 @@ scripts from the project folder (e.g. composing music or fetching CC0 sounds, se
 | `agentcut_contact_sheet` | stills sheet of the whole video before export |
 | `agentcut_media_info` | exact durations (frames) for clips |
 | `agentcut_transcribe` | word timings for voice / lyrics |
+| `agentcut_import_reference` | Style Spy: a reference video plus sampled frames (see `references/style-spy.md`) |
 | `agentcut_voice_options` / `_generate_voice` | voice-overs with the user's own provider (see `references/sound.md`) |
 | `agentcut_components` | the component library: search, then `id` for props and a ready clip |
 | `agentcut_music_catalog` / `_add_catalog_music` | the Agentcut music library (200+ hosted songs) |

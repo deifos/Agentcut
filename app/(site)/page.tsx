@@ -162,6 +162,14 @@ export default function LandingPage() {
               </Link>
               <CopyCommand command={STUDIO_COMMAND} />
             </div>
+            <p className="mt-3 text-sm text-ink/60">
+              First, install{" "}
+              <a className="underline" href="https://nodejs.org/en/download" target="_blank" rel="noreferrer">
+                Node.js LTS
+              </a>{" "}
+              (20.10 or newer) and reopen your terminal. The command downloads
+              and starts Agentcut automatically.
+            </p>
             <ul
               className="site-rise hero-features"
               style={{ ["--i" as string]: 6 }}
@@ -272,7 +280,17 @@ export default function LandingPage() {
                   </h3>
                   <p className="mt-2 max-w-lg text-ink/60">{step.body}</p>
                   {"command" in step ? (
-                    <CopyCommand command={STUDIO_COMMAND} className="mt-5" />
+                    <>
+                      <p className="mt-3 text-sm text-ink/60">
+                        Install{" "}
+                        <a className="underline" href="https://nodejs.org/en/download" target="_blank" rel="noreferrer">
+                          Node.js LTS
+                        </a>{" "}
+                        (20.10 or newer) first, then reopen your terminal.
+                        This command downloads and starts Agentcut automatically.
+                      </p>
+                      <CopyCommand command={STUDIO_COMMAND} className="mt-5" />
+                    </>
                   ) : null}
                 </div>
               </li>

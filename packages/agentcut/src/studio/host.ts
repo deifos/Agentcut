@@ -23,6 +23,7 @@ import {
   writeProjectFile,
   type CreateProjectInput,
 } from "./projects.js";
+import { installedBrowsers, ReferenceImports } from "./references.js";
 import { cancelLocalRender, runLocalRender } from "./render.js";
 import { openFile, projectFile, revealFile } from "./reveal.js";
 import {
@@ -76,6 +77,7 @@ export class StudioHost implements BridgeExtension {
   private agents: Promise<AgentInfo[]> | null = null;
   private pageSession: PageSession | null = null;
   readonly chat: ChatEngine;
+  readonly references: ReferenceImports;
 
   constructor(options: StudioHostOptions) {
     this.options = options;
@@ -90,6 +92,11 @@ export class StudioHost implements BridgeExtension {
       getPageContext: () => this.pageSession,
       addDirs: options.addDirs ?? [],
     });
+    this.references = new ReferenceImports(
+      this.paths,
+      (job) => this.emit("studio.reference", job),
+      (slug) => this.emit("studio.assets", { slug }),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -342,6 +349,15 @@ export class StudioHost implements BridgeExtension {
       case "studio.file.open":
         openFile(projectFile(this.paths, assertSlug(p.slug), String(p.path ?? "")));
         return { ok: true };
+      // Style Spy: the helper downloads the reference and samples its frames.
+      case "studio.reference.import":
+        return this.references.importUrl(p.slug, p.url, { id: p.id, browser: p.browser });
+      case "studio.reference.prepare":
+        return this.references.prepare(p.slug, p.path);
+      case "studio.reference.cancel":
+        return this.references.cancel(String(p.id ?? ""));
+      case "studio.reference.jobs":
+        return { jobs: this.references.list(assertSlug(p.slug)), browsers: installedBrowsers() };
       case "studio.render.local":
         return this.renderLocal(assertSlug(p.slug), String(p.variant ?? ""), p);
       // Voice providers: the page sends a key once; it never comes back.
@@ -407,6 +423,26 @@ export class StudioHost implements BridgeExtension {
           this.emit("studio.assets", { slug });
           return result;
         })();
+      case "studio.local.import_reference":
+        return (async () => {
+          const slug = assertSlug(p.slug ?? this.pageSession?.activeProject);
+          // The agent never passes a browser login: that's the user's choice, in Style Spy.
+          const started = p.path ? this.references.prepare(slug, p.path) : this.references.importUrl(slug, p.url);
+          const job = await this.references.wait(started.id);
+          if (job?.stage !== "ready") {
+            const login = job?.error?.code === "login_required";
+            throw new StudioError(
+              `${job?.error?.message ?? "Import failed."}${login ? " Ask the user to open Style Spy and click \"Retry with my browser login\", or upload the video there." : ""}`,
+            );
+          }
+          return {
+            video: job.path,
+            reference: `${job.dir}/reference.json`,
+            sheet: job.sheet,
+            frameCount: job.frames?.length ?? 0,
+            next: "Read reference.json (cuts, shots, frames, strips), open the sheet, the frames of each distinct look and the motion strips, and transcribe the video before describing its style (see references/style-spy.md).",
+          };
+        })();
       case "studio.local.project_state":
         return (async () => {
           const slug = assertSlug(p.slug);
@@ -443,6 +479,7 @@ export class StudioHost implements BridgeExtension {
     this.watcher?.close();
     this.libraryWatcher?.close();
     this.chat.cancelAll();
+    this.references.cancelAll();
   }
 
   emit(event: string, data: unknown) {

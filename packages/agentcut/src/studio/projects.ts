@@ -411,7 +411,8 @@ export function listAssets(paths: WorkspacePaths, slug: string): AssetEntry[] {
   const out: AssetEntry[] = [];
   walk(dir, join(dir, "assets"), out, 2000);
   walk(dir, join(dir, "renders"), out, 2500);
-  return out;
+  // Style Spy's frames, metadata and recipe are for the agent, not the asset panel.
+  return out.filter((entry) => !/^assets\/references\/[^/]+\/(frames\/|motion\/|reference\.json$|recipe\.md$)/.test(entry.path));
 }
 
 export function listLibrary(paths: WorkspacePaths): AssetEntry[] {

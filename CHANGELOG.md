@@ -13,6 +13,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-24
+
+Works with helper 0.2.0; update to 0.2.3 (`npx -y agentcut@latest`) so your agent follows the new Style Spy
+steps for empty projects.
+
 ### Changed
 
 - **Style Spy** on an empty project asks what your video is about, then builds a new video in the

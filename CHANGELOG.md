@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-24
+
+Works with helper 0.2.0; update to 0.2.2 (`npx -y agentcut@latest`) for X links in Style Spy.
+
 ### Added
 
 - **Style Spy** takes X (Twitter) links too: paste an `x.com` or `twitter.com` post with a video.

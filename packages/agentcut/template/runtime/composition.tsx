@@ -769,6 +769,11 @@ function AudioClipView({ clip, trackMuted, gain }: { clip: AudioClip; trackMuted
 
 const PREMOUNT_SECONDS = 1;
 
+/** Keep in sync with `clipClass` in lib/studio/preview-perf.ts. */
+function clipClass(id: string) {
+  return `ac-clip--${id.replace(/\s+/g, "_")}`;
+}
+
 function TrackView({
   track,
   scenes,
@@ -842,6 +847,8 @@ function TrackView({
             premountFor={premountFor}
             name={name}
             layout={visual ? "absolute-fill" : "none"}
+            // Lets the studio count what each clip draws (lib/studio/preview-perf.ts). No style.
+            className={visual ? clipClass(clip.id) : undefined}
           >
             {body}
           </Sequence>

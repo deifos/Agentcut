@@ -809,6 +809,7 @@ export function StudioApp() {
                   moduleError={studio.moduleError}
                   variant={variant}
                   frameStore={frameStore}
+                  previewPerf={studio.previewPerf}
                   playerRef={playerRef}
                   selection={selection}
                   playing={playing}

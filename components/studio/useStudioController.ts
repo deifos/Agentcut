@@ -18,6 +18,7 @@ import {
 import { forgetDecodedAudio } from "@/lib/studio/audio/decode";
 import { evaluateStudioBundle, fetchStudioBundle } from "@/lib/studio/bundle";
 import { createFrameStore } from "@/lib/studio/frame-store";
+import { createPreviewPerfStore } from "@/lib/studio/preview-perf";
 import { formatBytes } from "@/lib/studio/format";
 import {
   runStudioTool,
@@ -196,6 +197,7 @@ function applyChatEvent(
 
 export function useStudioController() {
   const [frameStore] = useState(() => createFrameStore());
+  const [previewPerf] = useState(() => createPreviewPerfStore());
   const playerRef = useRef<PlayerRef | null>(null);
   const bridgeRef = useRef<StudioBridge | null>(null);
 
@@ -814,6 +816,7 @@ export function useStudioController() {
       getVariant: () => latest.current.variant,
       getSelection: () => latest.current.selection,
       frameStore,
+      previewPerf,
       getPlayer: () => playerRef.current,
       setSelection,
       setVariant: setVariantChoice,
@@ -823,7 +826,7 @@ export function useStudioController() {
       setExportJob,
       bridge: () => bridgeRef.current,
     };
-  }, [frameStore, openProject, syncProject, waitForProject]);
+  }, [frameStore, previewPerf, openProject, syncProject, waitForProject]);
 
   // ---------------------------------------------------------------------------
   // Connection
@@ -1063,6 +1066,7 @@ export function useStudioController() {
     agentActivity,
     flashClipIds,
     toolContext,
+    previewPerf,
     openProject,
     syncProject,
     previewRequest,

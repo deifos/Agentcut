@@ -13,6 +13,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **Smoother previews, measured.** The studio records how smoothly the preview plays, per clip: dropped
+  frames, loading stalls and freezes. A clip that can't keep up shows "Preview drops frames in …" under the
+  video. Your agent sees the same numbers in `agentcut_status` and can run `agentcut_preview_check` to play a
+  range muted and measure it (your playhead, play state and sound come back afterwards), then make heavy
+  scenes lighter with new skill rules that keep every rendered frame identical. Exports always render every
+  frame at full quality; this only concerns the live preview.
+- `agentcut_capture_frames` takes `region` and `scale` up to 2, for a sharp crop of one part of a frame.
+
 ## [0.2.3] - 2026-10-24
 
 Works with helper 0.2.0; update to 0.2.3 (`npx -y agentcut@latest`) so your agent follows the new Style Spy

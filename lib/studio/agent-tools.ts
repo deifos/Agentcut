@@ -7,6 +7,12 @@ import type { StudioBridge } from "@/lib/studio/bridge";
 import { studioFileUrl } from "@/lib/studio/bundle";
 import { blobToDataUrl, variantSize } from "@/lib/studio/composition-props";
 import type { FrameStore } from "@/lib/studio/frame-store";
+import {
+  PreviewPerfRecorder,
+  slowClips,
+  type PreviewPerfReport,
+  type PreviewPerfStore,
+} from "@/lib/studio/preview-perf";
 import { findClip } from "@/lib/studio/edit";
 import type { StudioCursorTrack } from "@/lib/studio/cursor-track";
 import type { LoadedModule, StudioDoc } from "@/lib/studio/types";
@@ -38,6 +44,7 @@ export interface StudioToolContext {
   getVariant(): string;
   getSelection(): string[];
   frameStore: FrameStore;
+  previewPerf: PreviewPerfStore;
   getPlayer(): PlayerRef | null;
   setSelection(ids: string[]): void;
   setVariant(variant: string | null): void;
@@ -117,6 +124,193 @@ function pickVariant(
   return variant;
 }
 
+const PREVIEW_ONLY =
+  "Preview only: exports render every frame at full quality. Never lower what the render shows to fix this; see the skill's Preview performance rules.";
+
+/** What the agent needs from a smoothness report: totals and the clips that don't keep up. */
+function summarizePerf(report: PreviewPerfReport, currentRevision: number | null) {
+  return {
+    source: report.source,
+    variant: report.variant,
+    bundleRevision: report.revision,
+    current: report.revision === currentRevision,
+    measuredAt: new Date(report.at).toISOString(),
+    framesPlayed: report.framesPlayed,
+    framesDropped: report.framesDropped,
+    dropRate: report.dropRate,
+    stalls: report.stalls,
+    stallMs: report.stallMs,
+    longestFreezeMs: report.longestFreezeMs,
+    longestFreezeFrame: report.longestFreezeFrame,
+    maxElements: report.maxElements,
+    ...(report.tabHidden ? { tabHidden: "The tab was hidden for part of it; those frames aren't counted." } : {}),
+    slowClips: slowClips(report).map((c) => ({
+      id: c.id,
+      label: c.label,
+      kind: c.kind,
+      from: c.from,
+      to: c.to,
+      verdict: c.verdict,
+      dropRate: c.dropRate,
+      stallMs: c.stallMs,
+      longestFreezeMs: c.longestFreezeMs,
+      maxElements: c.maxElements,
+      ...(c.cause ? {} : { sharesDropsOnly: "Another slow clip on screen at the same time draws more: fix that one first." }),
+      ...(c.slowToMount
+        ? { slowToMount: `Drops ${c.mountDropped} of ${c.mountFrames} frames in the second before it starts, while it mounts early (setup work in render).` }
+        : {}),
+      ...(c.overlaps.length ? { overlaps: c.overlaps } : {}),
+    })),
+    clips: report.clips.map((c) => ({
+      id: c.id,
+      label: c.label,
+      verdict: c.verdict,
+      dropRate: c.dropRate,
+      maxElements: c.maxElements,
+      ...(c.droppedWhileOthersMount ? { droppedWhileOthersMount: c.droppedWhileOthersMount } : {}),
+    })),
+    note: PREVIEW_ONLY,
+  };
+}
+
+// A hidden tab doesn't paint: never wait on it for more than a moment.
+const nextPaint = () =>
+  new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, 250);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        clearTimeout(timer);
+        resolve();
+      }),
+    );
+  });
+
+const BACKGROUND_TAB =
+  "The Agentcut tab is in the background, where the browser slows it down on purpose, so a check would be meaningless. Ask the user to bring the Agentcut tab to the front, then run it again.";
+
+/**
+ * Play `from`..`to` muted in the user's preview and record how smoothly it draws. The page keeps its
+ * play button, playhead and mute state on the user's side while `checking` (StudioPreview), so a
+ * player that remounts mid-check comes back where the user left it.
+ */
+async function checkPreview(
+  context: StudioToolContext,
+  doc: StudioDoc,
+  revision: number,
+  variant: string,
+  from: number,
+  to: number,
+) {
+  const player = context.getPlayer();
+  if (!player) throw new Error("The preview isn't on screen; ask the user to open the project.");
+  if (context.previewPerf.get().checking)
+    throw new Error("A preview check is already playing. Wait for it to finish; run checks one at a time.");
+  const fps = doc.project!.fps;
+  const frame0 = player.getCurrentFrame();
+  const wasPlaying = player.isPlaying();
+  const wasMuted = player.isMuted();
+  // Paused before `checking`, so the page shows the user's playback as paused for the check.
+  player.pause();
+  context.previewPerf.setChecking(true);
+  player.mute();
+  const recorder = new PreviewPerfRecorder(
+    { slug: doc.slug, variant, revision, fps, layers: doc.layers!, source: "check", lastFrame: to },
+    () => player.getContainerNode(),
+  );
+  let timedOut = false;
+  const cleanups: (() => void)[] = [];
+  try {
+    player.seekTo(from);
+    await nextPaint();
+    await new Promise<void>((resolve, reject) => {
+      let previous = -1;
+      const done = () => {
+        recorder.finish(to);
+        resolve();
+      };
+      const onFrame = (event: { detail: { frame: number } }) => {
+        const frame = event.detail.frame;
+        // Past the end, or looped back to the start (it can skip `to` itself): done.
+        if (frame > to || frame < from || frame < previous) return done();
+        previous = frame;
+        recorder.frame(frame);
+        if (frame === to) done();
+      };
+      const onWaiting = () => recorder.waiting(player.getCurrentFrame());
+      const onResume = () => recorder.resume();
+      // The player pauses itself just before `ended` (end of the video, loop off).
+      let ended = false;
+      const onEnded = () => {
+        ended = true;
+        done();
+      };
+      const tookOver = () =>
+        reject(new Error("The user paused or moved the preview during the check, so it stopped. Run it again when they're done."));
+      const onPause = () => setTimeout(() => !ended && tookOver(), 0);
+      player.addEventListener("frameupdate", onFrame);
+      player.addEventListener("waiting", onWaiting);
+      player.addEventListener("resume", onResume);
+      player.addEventListener("ended", onEnded);
+      player.addEventListener("pause", onPause);
+      player.addEventListener("seeked", tookOver);
+      cleanups.push(() => {
+        player.removeEventListener("frameupdate", onFrame);
+        player.removeEventListener("waiting", onWaiting);
+        player.removeEventListener("resume", onResume);
+        player.removeEventListener("ended", onEnded);
+        player.removeEventListener("pause", onPause);
+        player.removeEventListener("seeked", tookOver);
+      });
+      const limit = ((to - from + 1) / fps) * 4000 + 10_000;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        resolve();
+      }, limit);
+      // A rebuild or variant switch replaces the player mid-check: the numbers would mix two versions.
+      // A hidden tab barely plays: the numbers would be meaningless.
+      const watch = setInterval(() => {
+        if (context.getPlayer() !== player)
+          reject(new Error("The preview reloaded during the check (a rebuild or variant switch). Run it again."));
+        else if (document.visibilityState !== "visible") reject(new Error(BACKGROUND_TAB));
+      }, 250);
+      cleanups.push(() => {
+        clearTimeout(timer);
+        clearInterval(watch);
+      });
+      player.play();
+    });
+  } finally {
+    for (const cleanup of cleanups) cleanup();
+    recorder.resume();
+    const current = context.getPlayer();
+    if (current === player) {
+      player.pause();
+      player.seekTo(frame0);
+      if (!wasMuted) player.unmute();
+    }
+    // StudioPreview puts the user's mute choice back once `checking` ends (also on a new player).
+    context.previewPerf.setChecking(false);
+    if (wasPlaying) current?.play();
+  }
+  const report = recorder.report();
+  context.previewPerf.setReport(report);
+  return { report, timedOut };
+}
+
+/** A capture region in composition pixels, clamped to the frame (null: the whole frame). */
+function captureRegion(value: unknown, size: { width: number; height: number }) {
+  if (!value || typeof value !== "object") return null;
+  const r = value as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v) : NaN);
+  const x = Math.max(0, num(r.x));
+  const y = Math.max(0, num(r.y));
+  const width = Math.min(size.width - x, num(r.width));
+  const height = Math.min(size.height - y, num(r.height));
+  if (![x, y, width, height].every(Number.isFinite) || width < 1 || height < 1)
+    throw new Error(`region must be {x, y, width, height} in pixels inside the ${size.width}x${size.height} frame.`);
+  return { x, y, width, height };
+}
+
 function assertProjectPath(path: string) {
   if (
     /^[a-z]:[\\/]/i.test(path) ||
@@ -148,6 +342,49 @@ export async function runStudioTool(
         loadedBundleRevision:
           loaded?.slug === doc?.slug ? (loaded?.revision ?? null) : null,
         issues: doc?.issues ?? [],
+        ...(() => {
+          const { check, playback } = context.previewPerf.get();
+          if (!doc) return {};
+          const revision = loaded?.slug === doc.slug ? loaded.revision : null;
+          const mine = (report: PreviewPerfReport | null) => (report?.slug === doc.slug ? report : null);
+          const lastCheck = mine(check);
+          const userPlayback = mine(playback);
+          if (!lastCheck && !userPlayback) return {};
+          return {
+            previewPerformance: {
+              ...(lastCheck ? { lastCheck: summarizePerf(lastCheck, revision) } : {}),
+              ...(userPlayback ? { playback: summarizePerf(userPlayback, revision) } : {}),
+            },
+          };
+        })(),
+      };
+    }
+
+    case "studio_preview_check": {
+      const doc = await ready(context, params);
+      const loaded = requireModule(context, doc);
+      const variant = pickVariant(context, doc, params.variant);
+      if (variant !== context.getVariant())
+        throw new Error(
+          `The preview shows "${context.getVariant()}". Check that variant, or ask the user to switch to "${variant}" first.`,
+        );
+      if (typeof document !== "undefined" && document.visibilityState !== "visible")
+        throw new Error(BACKGROUND_TAB);
+      const total = doc.project!.durationInFrames;
+      const fps = doc.project!.fps;
+      const from = Math.max(0, Math.min(total - 1, Math.round(typeof params.from === "number" ? params.from : 0)));
+      let to = Math.max(from, Math.min(total - 1, Math.round(typeof params.to === "number" ? params.to : total - 1)));
+      const cap = from + fps * 60 - 1;
+      const capped = to > cap;
+      if (capped) to = cap;
+      const { report, timedOut } = await checkPreview(context, doc, loaded.revision, variant, from, to);
+      return {
+        project: doc.slug,
+        from,
+        to,
+        ...(capped ? { capped: "Checked the first 60 seconds of the range; check the rest separately." } : {}),
+        ...(timedOut ? { timedOut: "Playback didn't reach the end of the range in time; the numbers cover what played." } : {}),
+        ...summarizePerf(report, loaded.revision),
       };
     }
 
@@ -203,14 +440,15 @@ export async function runStudioTool(
       const size = variantSize(doc.project!, variant);
       const scale =
         typeof params.scale === "number"
-          ? Math.max(0.1, Math.min(1, params.scale))
+          ? Math.max(0.1, Math.min(2, params.scale))
           : size.width > 1920
             ? 0.5
             : 1;
-      const { captureFrame } = await import("@/lib/studio/capture");
+      const region = captureRegion(params.region, size);
+      const { captureFrame, cropToRegion } = await import("@/lib/studio/capture");
       const out = [];
       for (const frame of frames) {
-        const blob = await captureFrame({
+        let blob = await captureFrame({
           doc,
           loaded,
           variant,
@@ -218,12 +456,14 @@ export async function runStudioTool(
           scale,
           format: "png",
         });
+        if (region) blob = await cropToRegion(blob, region, scale);
         out.push({
           frame,
           seconds: Number((frame / doc.project!.fps).toFixed(3)),
           variant,
-          width: Math.round(size.width * scale),
-          height: Math.round(size.height * scale),
+          ...(region ? { region } : {}),
+          width: Math.round((region?.width ?? size.width) * scale),
+          height: Math.round((region?.height ?? size.height) * scale),
           mimeType: "image/png",
           dataUrl: await blobToDataUrl(blob),
         });

@@ -33,6 +33,13 @@ async function page(method: string, params: unknown, timeoutMs: number) {
   try {
     return persistAgentFrameResult(await callEditor(method, params, { timeoutMs }));
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // An Agentcut tab opened before an update doesn't know the newer page tools.
+    if (message.includes(`"${method}" isn't an Agentcut tool`)) {
+      throw new Error(
+        `The open Agentcut tab is older than this helper and doesn't have ${method}. Ask the user to reload the Agentcut tab, then try again.`,
+      );
+    }
     if (pageMissing(error)) {
       throw new Error(
         `${error instanceof Error ? error.message : String(error)}\nThe studio page must be open: ask the user to open Agentcut in their browser and keep \`npx -y agentcut\` running.`,
@@ -61,7 +68,7 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_status",
-    "Agentcut status: workspace folder, which project the user has open, playhead and selection, the project's tracks, build errors (esbuild) and project.json/layers.json validation issues. Call it first, and after every edit to scenes or layers.json to confirm the build and files are valid.",
+    "Agentcut status: workspace folder, which project the user has open, playhead and selection, the project's tracks, build errors (esbuild) and project.json/layers.json validation issues, and how smoothly the preview plays (page.previewPerformance: lastCheck and the user's playback, with the clips that drop frames). Call it first, and after every edit to scenes or layers.json to confirm the build and files are valid.",
     { project },
     async ({ project: slug }) => {
       const workspace = (await callEditor("studio.local.workspace", {}, { timeoutMs: 15_000 })) as Record<string, unknown>;
@@ -109,7 +116,11 @@ export function registerStudioTools(server: McpServer) {
     {
       frames: z.array(z.number().int().min(0)).min(1).max(24),
       variant,
-      scale: z.number().min(0.1).max(1).optional().describe("Output scale, default 1 (0.5 for 4K variants)."),
+      scale: z.number().min(0.1).max(2).optional().describe("Output scale, default 1 (0.5 for 4K variants); 2 for a sharp crop to reuse as an image."),
+      region: z
+        .object({ x: z.number(), y: z.number(), width: z.number().positive(), height: z.number().positive() })
+        .optional()
+        .describe("Only this part of the frame, in composition pixels (e.g. one card to draw as an <Img>)."),
       project,
     },
     async (args) => page("studio_capture_frames", args, 5 * MINUTE),
@@ -129,6 +140,19 @@ export function registerStudioTools(server: McpServer) {
       project,
     },
     async (args) => page("studio_contact_sheet", args, 10 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_preview_check",
+    "Check that the live preview plays smoothly: plays from/to (frames, default the whole video, max 60 s per call) muted in the user's preview at real speed and returns, per visual clip, frames played and dropped (the preview skips frames it can't draw in time), loading stalls and the most DOM elements the clip drew, with a verdict (smooth, choppy, heavy) and slowClips likeliest cause first. Takes as long as the range plays; one check at a time. Stops if the user pauses or seeks. Run it after building or changing a heavy scene (walls, grids, many elements, image sequences, big blurs) and before you say you're done; fix choppy or heavy clips with the skill's Preview performance rules, which never lower render quality. Preview only: exports render every frame at full quality. agentcut_status also reports the user's own playback.",
+    {
+      from: z.number().int().min(0).optional(),
+      to: z.number().int().min(0).optional(),
+      variant,
+      project,
+    },
+    async (args) => page("studio_preview_check", args, 5 * MINUTE),
   );
 
   defineTool(

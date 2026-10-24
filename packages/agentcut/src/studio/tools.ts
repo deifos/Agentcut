@@ -61,7 +61,7 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_status",
-    "Agentcut status: workspace folder, which project the user has open, playhead and selection, the project's tracks, build errors (esbuild) and project.json/layers.json validation issues. Call it first, and after every edit to scenes or layers.json to confirm the build and files are valid.",
+    "Agentcut status: workspace folder, which project the user has open, playhead and selection, the project's tracks, build errors (esbuild) and project.json/layers.json validation issues, and how smoothly the preview played (page.previewPerformance: clips that drop frames). Call it first, and after every edit to scenes or layers.json to confirm the build and files are valid.",
     { project },
     async ({ project: slug }) => {
       const workspace = (await callEditor("studio.local.workspace", {}, { timeoutMs: 15_000 })) as Record<string, unknown>;
@@ -129,6 +129,19 @@ export function registerStudioTools(server: McpServer) {
       project,
     },
     async (args) => page("studio_contact_sheet", args, 10 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_preview_check",
+    "Check that the live preview plays smoothly: plays from/to (frames, default the whole video, max 60 s per call) muted in the user's preview at real speed and returns, per visual clip, frames played and dropped (the preview skips frames it can't draw in time), loading stalls and the most DOM elements seen, with a verdict (smooth, choppy, heavy). Takes as long as the range plays. Run it after building or changing a heavy scene (walls, grids, many elements, image sequences, big blurs) and before you say you're done; fix choppy or heavy clips with the skill's Preview performance rules, which never lower render quality. Preview only: exports render every frame at full quality. agentcut_status also reports the user's own playback.",
+    {
+      from: z.number().int().min(0).optional(),
+      to: z.number().int().min(0).optional(),
+      variant,
+      project,
+    },
+    async (args) => page("studio_preview_check", args, 5 * MINUTE),
   );
 
   defineTool(

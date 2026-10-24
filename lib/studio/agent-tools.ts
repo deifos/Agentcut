@@ -7,6 +7,12 @@ import type { StudioBridge } from "@/lib/studio/bridge";
 import { studioFileUrl } from "@/lib/studio/bundle";
 import { blobToDataUrl, variantSize } from "@/lib/studio/composition-props";
 import type { FrameStore } from "@/lib/studio/frame-store";
+import {
+  PreviewPerfRecorder,
+  slowClips,
+  type PreviewPerfReport,
+  type PreviewPerfStore,
+} from "@/lib/studio/preview-perf";
 import { findClip } from "@/lib/studio/edit";
 import type { StudioCursorTrack } from "@/lib/studio/cursor-track";
 import type { LoadedModule, StudioDoc } from "@/lib/studio/types";
@@ -38,6 +44,7 @@ export interface StudioToolContext {
   getVariant(): string;
   getSelection(): string[];
   frameStore: FrameStore;
+  previewPerf: PreviewPerfStore;
   getPlayer(): PlayerRef | null;
   setSelection(ids: string[]): void;
   setVariant(variant: string | null): void;
@@ -117,6 +124,142 @@ function pickVariant(
   return variant;
 }
 
+const PREVIEW_ONLY =
+  "Preview only: exports render every frame at full quality. Never lower what the render shows to fix this; see the skill's Preview performance rules.";
+
+/** What the agent needs from a smoothness report: totals and the clips that don't keep up. */
+function summarizePerf(report: PreviewPerfReport, currentRevision: number | null) {
+  return {
+    source: report.source,
+    variant: report.variant,
+    bundleRevision: report.revision,
+    current: report.revision === currentRevision,
+    framesPlayed: report.framesPlayed,
+    framesDropped: report.framesDropped,
+    dropRate: report.dropRate,
+    stalls: report.stalls,
+    stallMs: report.stallMs,
+    longestFreezeMs: report.longestFreezeMs,
+    longestFreezeFrame: report.longestFreezeFrame,
+    maxElements: report.maxElements,
+    ...(report.tabHidden ? { tabHidden: true } : {}),
+    slowClips: slowClips(report).map((c) => ({
+      id: c.id,
+      label: c.label,
+      from: c.from,
+      to: c.to,
+      verdict: c.verdict,
+      dropRate: c.dropRate,
+      stallMs: c.stallMs,
+      longestFreezeMs: c.longestFreezeMs,
+      maxElements: c.maxElements,
+    })),
+    clips: report.clips.map((c) => ({
+      id: c.id,
+      label: c.label,
+      verdict: c.verdict,
+      dropRate: c.dropRate,
+      maxElements: c.maxElements,
+    })),
+    note: PREVIEW_ONLY,
+  };
+}
+
+// A hidden tab doesn't paint: never wait on it for more than a moment.
+const nextPaint = () =>
+  new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, 250);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        clearTimeout(timer);
+        resolve();
+      }),
+    );
+  });
+
+const BACKGROUND_TAB =
+  "The Agentcut tab is in the background, where the browser slows it down on purpose, so a check would be meaningless. Ask the user to bring the Agentcut tab to the front, then run it again.";
+
+/** Play `from`..`to` muted in the user's preview and record how smoothly it draws. */
+async function checkPreview(
+  context: StudioToolContext,
+  doc: StudioDoc,
+  revision: number,
+  variant: string,
+  from: number,
+  to: number,
+) {
+  const player = context.getPlayer();
+  if (!player) throw new Error("The preview isn't on screen; ask the user to open the project.");
+  const fps = doc.project!.fps;
+  const frame0 = player.getCurrentFrame();
+  const wasMuted = player.isMuted();
+  player.pause();
+  player.mute();
+  context.previewPerf.setChecking(true);
+  const recorder = new PreviewPerfRecorder(
+    { slug: doc.slug, variant, revision, fps, layers: doc.layers!, source: "check" },
+    () => player.getContainerNode(),
+  );
+  let timedOut = false;
+  const cleanups: (() => void)[] = [];
+  try {
+    player.seekTo(from);
+    await nextPaint();
+    await new Promise<void>((resolve, reject) => {
+      const onFrame = (event: { detail: { frame: number } }) => {
+        const frame = event.detail.frame;
+        // Past the end (or looped back to the start): done.
+        if (frame > to || frame < from) return resolve();
+        recorder.frame(frame);
+        if (frame === to) resolve();
+      };
+      const onWaiting = () => recorder.waiting(player.getCurrentFrame());
+      const onResume = () => recorder.resume();
+      const onEnded = () => resolve();
+      player.addEventListener("frameupdate", onFrame);
+      player.addEventListener("waiting", onWaiting);
+      player.addEventListener("resume", onResume);
+      player.addEventListener("ended", onEnded);
+      cleanups.push(() => {
+        player.removeEventListener("frameupdate", onFrame);
+        player.removeEventListener("waiting", onWaiting);
+        player.removeEventListener("resume", onResume);
+        player.removeEventListener("ended", onEnded);
+      });
+      const limit = ((to - from + 1) / fps) * 4000 + 10_000;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        resolve();
+      }, limit);
+      // A rebuild or variant switch replaces the player mid-check: the numbers would mix two versions.
+      // A hidden tab barely plays: the numbers would be meaningless.
+      const watch = setInterval(() => {
+        if (context.getPlayer() !== player)
+          reject(new Error("The preview reloaded during the check (a rebuild or variant switch). Run it again."));
+        else if (document.visibilityState !== "visible") reject(new Error(BACKGROUND_TAB));
+      }, 250);
+      cleanups.push(() => {
+        clearTimeout(timer);
+        clearInterval(watch);
+      });
+      player.play();
+    });
+  } finally {
+    for (const cleanup of cleanups) cleanup();
+    recorder.resume();
+    if (context.getPlayer() === player) {
+      player.pause();
+      player.seekTo(frame0);
+      if (!wasMuted) player.unmute();
+    }
+    context.previewPerf.setChecking(false);
+  }
+  const report = recorder.report();
+  context.previewPerf.setReport(report);
+  return { report, timedOut };
+}
+
 function assertProjectPath(path: string) {
   if (
     /^[a-z]:[\\/]/i.test(path) ||
@@ -148,6 +291,40 @@ export async function runStudioTool(
         loadedBundleRevision:
           loaded?.slug === doc?.slug ? (loaded?.revision ?? null) : null,
         issues: doc?.issues ?? [],
+        ...(() => {
+          const report = context.previewPerf.get().report;
+          if (!doc || report?.slug !== doc.slug) return {};
+          const revision = loaded?.slug === doc.slug ? loaded.revision : null;
+          return { previewPerformance: summarizePerf(report, revision) };
+        })(),
+      };
+    }
+
+    case "studio_preview_check": {
+      const doc = await ready(context, params);
+      const loaded = requireModule(context, doc);
+      const variant = pickVariant(context, doc, params.variant);
+      if (variant !== context.getVariant())
+        throw new Error(
+          `The preview shows "${context.getVariant()}". Check that variant, or ask the user to switch to "${variant}" first.`,
+        );
+      if (typeof document !== "undefined" && document.visibilityState !== "visible")
+        throw new Error(BACKGROUND_TAB);
+      const total = doc.project!.durationInFrames;
+      const fps = doc.project!.fps;
+      const from = Math.max(0, Math.min(total - 1, Math.round(typeof params.from === "number" ? params.from : 0)));
+      let to = Math.max(from, Math.min(total - 1, Math.round(typeof params.to === "number" ? params.to : total - 1)));
+      const cap = from + fps * 60 - 1;
+      const capped = to > cap;
+      if (capped) to = cap;
+      const { report, timedOut } = await checkPreview(context, doc, loaded.revision, variant, from, to);
+      return {
+        project: doc.slug,
+        from,
+        to,
+        ...(capped ? { capped: "Checked the first 60 seconds of the range; check the rest separately." } : {}),
+        ...(timedOut ? { timedOut: "Playback didn't reach the end of the range in time; the numbers cover what played." } : {}),
+        ...summarizePerf(report, loaded.revision),
       };
     }
 

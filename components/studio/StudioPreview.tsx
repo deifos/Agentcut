@@ -29,6 +29,13 @@ import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
 import { findClip } from "@/lib/studio/edit";
 import { formatFrameTime } from "@/lib/studio/format";
 import { useFrame, type FrameStore } from "@/lib/studio/frame-store";
+import {
+  createPreviewPerfStore,
+  PreviewPerfRecorder,
+  slowClips,
+  usePreviewPerf,
+  type PreviewPerfStore,
+} from "@/lib/studio/preview-perf";
 import { DrawAsk } from "@/components/studio/DrawAsk";
 import { useAgentName } from "@/components/studio/StudioAgent";
 import type { DrawStroke } from "@/lib/studio/drawing";
@@ -46,6 +53,8 @@ export interface StudioPreviewProps {
   moduleError: string | null;
   variant: string;
   frameStore: FrameStore;
+  /** Where playback smoothness is recorded for the agent (left out on the website's demo). */
+  previewPerf?: PreviewPerfStore;
   playerRef: RefObject<PlayerRef | null>;
   selection: string[];
   playing: boolean;
@@ -61,6 +70,8 @@ export interface StudioPreviewProps {
     onSend(strokes: DrawStroke[], text: string): Promise<void>;
   };
 }
+
+const NO_PREVIEW_PERF = createPreviewPerfStore();
 
 function useContainerRect(ref: RefObject<HTMLDivElement | null>) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -110,8 +121,11 @@ function Transport({
   editing,
   drawing,
   onDraw,
+  slow,
 }: {
   editing?: boolean;
+  /** Clips the preview can't play at full speed (playback only: exports are unaffected). */
+  slow?: string;
   /** Shown only when the pencil is available. */
   drawing?: boolean;
   onDraw?(): void;
@@ -173,6 +187,15 @@ function Transport({
         </span>
       </span>
       <div className="ml-auto flex items-center gap-1">
+        {slow ? (
+          <span
+            title={`The preview can't draw ${slow} fast enough in this browser, so playback skips frames there. Exports render every frame at full quality. Ask ${agentName} to make the scene lighter to play (agentcut_preview_check).`}
+            className="mr-1 flex max-w-56 items-center gap-1 truncate rounded-md bg-amber-500/15 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300"
+          >
+            <AlertTriangle className="size-3 shrink-0" />
+            <span className="truncate">Preview drops frames in {slow}</span>
+          </span>
+        ) : null}
         {onDraw ? (
           <IconButton
             label={
@@ -216,6 +239,7 @@ export function StudioPreview(props: StudioPreviewProps) {
     moduleError,
     variant,
     frameStore,
+    previewPerf,
     playerRef,
     selection,
     playing,
@@ -225,6 +249,7 @@ export function StudioPreview(props: StudioPreviewProps) {
     draw,
   } = props;
   const agentName = useAgentName();
+  const perf = usePreviewPerf(previewPerf ?? NO_PREVIEW_PERF);
   const containerRef = useRef<HTMLDivElement>(null);
   const container = useContainerRect(containerRef);
   const [loop, setLoop] = useState(true);
@@ -294,6 +319,61 @@ export function StudioPreview(props: StudioPreviewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, revision, variant, playerRef, frameStore, onPlayingChange]);
 
+  // How smoothly the user's own playback runs, per clip (agentcut_preview_check records its own).
+  // A new recorder for every bundle, variant and timeline: the numbers describe what's on screen.
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || !ready || !previewPerf || !project || !layers) return;
+    const recorder = new PreviewPerfRecorder(
+      {
+        slug: doc.slug,
+        variant,
+        revision,
+        fps: project.fps,
+        layers,
+        source: "playback",
+      },
+      () => player.getContainerNode(),
+    );
+    // Only with new frames: a pause or seek alone (e.g. from agentcut_preview_check) mustn't put
+    // older numbers back over the check's.
+    let published = 0;
+    const publish = () => {
+      if (recorder.framesPlayed === published) return;
+      published = recorder.framesPlayed;
+      previewPerf.setReport(recorder.report());
+    };
+    const recording = () => player.isPlaying() && !previewPerf.get().checking;
+    const onFrame = (event: { detail: { frame: number } }) => {
+      if (!recording()) return;
+      recorder.frame(event.detail.frame);
+      if (recorder.framesPlayed % 30 === 0) publish();
+    };
+    const onStop = () => {
+      recorder.reset();
+      publish();
+    };
+    const onWaiting = () => {
+      if (recording()) recorder.waiting(player.getCurrentFrame());
+    };
+    const onResume = () => recorder.resume();
+    player.addEventListener("frameupdate", onFrame);
+    player.addEventListener("seeked", onStop);
+    player.addEventListener("pause", onStop);
+    player.addEventListener("ended", onStop);
+    player.addEventListener("waiting", onWaiting);
+    player.addEventListener("resume", onResume);
+    return () => {
+      publish();
+      player.removeEventListener("frameupdate", onFrame);
+      player.removeEventListener("seeked", onStop);
+      player.removeEventListener("pause", onStop);
+      player.removeEventListener("ended", onStop);
+      player.removeEventListener("waiting", onWaiting);
+      player.removeEventListener("resume", onResume);
+    };
+  }, [ready, revision, variant, layers, project, doc.slug, playerRef, previewPerf]);
+
   useEffect(() => {
     if (!playerRef.current) return;
     if (muted) playerRef.current.mute();
@@ -327,6 +407,13 @@ export function StudioPreview(props: StudioPreviewProps) {
   }, [layers, selection, variant]);
 
   const errors = doc.issues.filter((issue) => issue.severity === "error");
+  const slow =
+    perf.report &&
+    perf.report.slug === doc.slug &&
+    perf.report.revision === revision &&
+    perf.report.variant === variant
+      ? [...new Set(slowClips(perf.report).map((clip) => clip.label))]
+      : [];
   const buildErrors = bundle && !bundle.ok ? bundle.errors : [];
 
   return (
@@ -400,11 +487,13 @@ export function StudioPreview(props: StudioPreviewProps) {
               )}
             </div>
           )}
-          {editing && ready ? (
+          {(editing || perf.checking) && ready ? (
             <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
               <span className="flex items-center gap-2 rounded-full border border-white/15 bg-black/75 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur">
                 <Loader2 className="size-3.5 animate-spin text-primary" />
-                {agentName} is editing · play when it&apos;s done
+                {perf.checking
+                  ? `${agentName} is checking how smoothly this plays`
+                  : `${agentName} is editing · play when it's done`}
               </span>
             </div>
           ) : null}
@@ -469,6 +558,7 @@ export function StudioPreview(props: StudioPreviewProps) {
           editing={editing}
           drawing={drawing}
           onDraw={draw ? toggleDrawing : undefined}
+          slow={slow.length ? slow.slice(0, 2).join(", ") : undefined}
         />
       ) : null}
     </div>

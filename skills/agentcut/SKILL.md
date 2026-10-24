@@ -64,7 +64,8 @@ projects/<slug>/
 5. **Sound** (`references/sound.md`): voice and music first, then SFX on picture cues. You cannot hear;
    never say a sound fits without `agentcut_listen_*` numbers, and write them in notes.md.
 6. **Review**: `agentcut_contact_sheet` across the whole video for each variant, and
-   `agentcut_listen_critique` for the mix. Fix what they show.
+   `agentcut_listen_critique` for the mix. Fix what they show. `agentcut_preview_check` every heavy scene
+   so the preview plays smoothly (`references/performance.md`); never at the cost of render quality.
 7. **Hand off** in a few lines: what's where, what's easy to tweak by hand. Export only when the user
    asks (`agentcut_export`); report the paths and measured loudness.
 
@@ -141,6 +142,7 @@ scripts from the project folder (e.g. composing music or fetching CC0 sounds, se
 | `agentcut_contact_sheet` | stills sheet of the whole video before export |
 | `agentcut_media_info` | exact durations (frames) for clips |
 | `agentcut_transcribe` | word timings for voice / lyrics |
+| `agentcut_preview_check` | does the live preview keep up? dropped frames per clip (see `references/performance.md`) |
 | `agentcut_import_reference` | Style Spy: a reference video plus sampled frames (see `references/style-spy.md`) |
 | `agentcut_voice_options` / `_generate_voice` | voice-overs with the user's own provider (see `references/sound.md`) |
 | `agentcut_components` | the component library: search, then `id` for props and a ready clip |

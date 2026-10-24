@@ -138,7 +138,7 @@ scripts from the project folder (e.g. composing music or fetching CC0 sounds, se
 |---|---|
 | `agentcut_status` | first, and after every edit (build + validation) |
 | `agentcut_create_project` / `_open_project` | new video / switch project |
-| `agentcut_capture_frames` | look at specific frames (same renderer as export) |
+| `agentcut_capture_frames` | look at specific frames (same renderer as export); `region` + `scale: 2` for a sharp crop |
 | `agentcut_contact_sheet` | stills sheet of the whole video before export |
 | `agentcut_media_info` | exact durations (frames) for clips |
 | `agentcut_transcribe` | word timings for voice / lyrics |

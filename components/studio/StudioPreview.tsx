@@ -31,9 +31,11 @@ import { formatFrameTime } from "@/lib/studio/format";
 import { useFrame, type FrameStore } from "@/lib/studio/frame-store";
 import {
   createPreviewPerfStore,
+  currentReport,
   PreviewPerfRecorder,
   slowClips,
   usePreviewPerf,
+  type PreviewPerfState,
   type PreviewPerfStore,
 } from "@/lib/studio/preview-perf";
 import { DrawAsk } from "@/components/studio/DrawAsk";
@@ -72,6 +74,35 @@ export interface StudioPreviewProps {
 }
 
 const NO_PREVIEW_PERF = createPreviewPerfStore();
+
+/**
+ * The scenes to name in "Preview drops frames in …": likely causes in the latest report for what's on
+ * screen, and only clips the timeline still has where they were (an edit since makes them stale).
+ */
+function slowLabel(
+  state: PreviewPerfState,
+  slug: string,
+  revision: number,
+  variant: string,
+  layers: StudioDoc["layers"],
+) {
+  if (!layers) return "";
+  const report = currentReport(state, slug, revision, variant);
+  if (!report) return "";
+  const labels = slowClips(report)
+    .filter((clip) => {
+      if (!clip.cause) return false;
+      const location = findClip(layers, clip.id);
+      return (
+        !!location &&
+        !location.track.hidden &&
+        location.clip.from === clip.from &&
+        location.clip.from + location.clip.duration === clip.to
+      );
+    })
+    .map((clip) => clip.label);
+  return [...new Set(labels)].slice(0, 2).join(", ");
+}
 
 function useContainerRect(ref: RefObject<HTMLDivElement | null>) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -249,7 +280,8 @@ export function StudioPreview(props: StudioPreviewProps) {
     draw,
   } = props;
   const agentName = useAgentName();
-  const perf = usePreviewPerf(previewPerf ?? NO_PREVIEW_PERF);
+  const perfStore = previewPerf ?? NO_PREVIEW_PERF;
+  const checking = usePreviewPerf(perfStore, (state) => state.checking);
   const containerRef = useRef<HTMLDivElement>(null);
   const container = useContainerRect(containerRef);
   const [loop, setLoop] = useState(true);
@@ -298,12 +330,21 @@ export function StudioPreview(props: StudioPreviewProps) {
       player.play();
       if (!player.isPlaying()) onPlayingChange(false);
     }
-    const onFrame = (event: { detail: { frame: number } }) =>
-      frameStore.set(event.detail.frame);
-    const onSeeked = (event: { detail: { frame: number } }) =>
-      frameStore.set(event.detail.frame);
-    const onPlay = () => onPlayingChange(true);
-    const onPause = () => onPlayingChange(false);
+    // agentcut_preview_check plays the player itself: the play button and playhead stay on the
+    // user's side, so a player that remounts mid-check comes back where the user left it.
+    const isChecking = () => previewPerf?.get().checking ?? false;
+    const onFrame = (event: { detail: { frame: number } }) => {
+      if (!isChecking()) frameStore.set(event.detail.frame);
+    };
+    const onSeeked = (event: { detail: { frame: number } }) => {
+      if (!isChecking()) frameStore.set(event.detail.frame);
+    };
+    const onPlay = () => {
+      if (!isChecking()) onPlayingChange(true);
+    };
+    const onPause = () => {
+      if (!isChecking()) onPlayingChange(false);
+    };
     player.addEventListener("frameupdate", onFrame);
     player.addEventListener("seeked", onSeeked);
     player.addEventListener("play", onPlay);
@@ -317,7 +358,7 @@ export function StudioPreview(props: StudioPreviewProps) {
       player.removeEventListener("ended", onPause);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, revision, variant, playerRef, frameStore, onPlayingChange]);
+  }, [ready, revision, variant, playerRef, frameStore, previewPerf, onPlayingChange]);
 
   // How smoothly the user's own playback runs, per clip (agentcut_preview_check records its own).
   // A new recorder for every bundle, variant and timeline: the numbers describe what's on screen.
@@ -332,6 +373,7 @@ export function StudioPreview(props: StudioPreviewProps) {
         fps: project.fps,
         layers,
         source: "playback",
+        lastFrame: project.durationInFrames - 1,
       },
       () => player.getContainerNode(),
     );
@@ -374,11 +416,12 @@ export function StudioPreview(props: StudioPreviewProps) {
     };
   }, [ready, revision, variant, layers, project, doc.slug, playerRef, previewPerf]);
 
+  // A check plays muted; the user's choice comes back when it ends.
   useEffect(() => {
     if (!playerRef.current) return;
-    if (muted) playerRef.current.mute();
+    if (muted || checking) playerRef.current.mute();
     else playerRef.current.unmute();
-  }, [muted, playerRef, ready, revision]);
+  }, [muted, checking, playerRef, ready, revision]);
 
   // Where the composition sits inside the container (Player letterboxes it).
   const scale =
@@ -407,13 +450,9 @@ export function StudioPreview(props: StudioPreviewProps) {
   }, [layers, selection, variant]);
 
   const errors = doc.issues.filter((issue) => issue.severity === "error");
-  const slow =
-    perf.report &&
-    perf.report.slug === doc.slug &&
-    perf.report.revision === revision &&
-    perf.report.variant === variant
-      ? [...new Set(slowClips(perf.report).map((clip) => clip.label))]
-      : [];
+  const slow = usePreviewPerf(perfStore, (state) =>
+    slowLabel(state, doc.slug, revision, variant, layers),
+  );
   const buildErrors = bundle && !bundle.ok ? bundle.errors : [];
 
   return (
@@ -487,11 +526,11 @@ export function StudioPreview(props: StudioPreviewProps) {
               )}
             </div>
           )}
-          {(editing || perf.checking) && ready ? (
+          {(editing || checking) && ready ? (
             <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
               <span className="flex items-center gap-2 rounded-full border border-white/15 bg-black/75 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur">
                 <Loader2 className="size-3.5 animate-spin text-primary" />
-                {perf.checking
+                {checking
                   ? `${agentName} is checking how smoothly this plays`
                   : `${agentName} is editing · play when it's done`}
               </span>
@@ -558,7 +597,7 @@ export function StudioPreview(props: StudioPreviewProps) {
           editing={editing}
           drawing={drawing}
           onDraw={draw ? toggleDrawing : undefined}
-          slow={slow.length ? slow.slice(0, 2).join(", ") : undefined}
+          slow={slow || undefined}
         />
       ) : null}
     </div>

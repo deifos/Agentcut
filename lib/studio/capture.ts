@@ -43,6 +43,26 @@ export async function captureFrame(request: CaptureRequest): Promise<Blob> {
   return result.blob({ format: request.format ?? "png", quality: request.quality });
 }
 
+/** Cut `region` (composition pixels) out of a frame captured at `scale`, as PNG. */
+export async function cropToRegion(
+  blob: Blob,
+  region: { x: number; y: number; width: number; height: number },
+  scale: number,
+): Promise<Blob> {
+  const bitmap = await createImageBitmap(blob);
+  const width = Math.round(region.width * scale);
+  const height = Math.round(region.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  // Same scale in and out: a straight pixel copy, no resampling.
+  canvas.getContext("2d")!.drawImage(bitmap, Math.round(region.x * scale), Math.round(region.y * scale), width, height, 0, 0, width, height);
+  bitmap.close();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((out) => (out ? resolve(out) : reject(new Error("Couldn't encode the region."))), "image/png"),
+  );
+}
+
 export interface ContactSheetOptions {
   doc: StudioDoc;
   loaded: LoadedModule;

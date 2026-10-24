@@ -134,7 +134,7 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_import_reference",
-    "Style Spy: bring a reference video into the project for style analysis. With `url` (a public Instagram, TikTok or YouTube link) the helper downloads it; with `path` (a video already in assets/references/<id>/, e.g. an upload) it only prepares it. Either way it saves video.mp4, reference.json (cuts, shots), a frame per shot with an overview sheet, and motion strips (hook, every cut, captions) under assets/references/<id>/ and shows the video in Style Spy. Returns the paths. If a link needs a login, the user retries from Style Spy with their browser login: never ask for passwords or cookies.",
+    "Style Spy: bring a reference video into the project for style analysis. With `url` (a public Instagram, TikTok, YouTube or X link) the helper downloads it; with `path` (a video already in assets/references/<id>/, e.g. an upload) it only prepares it. Either way it saves video.mp4, reference.json (cuts, shots), a frame per shot with an overview sheet, and motion strips (hook, every cut, captions) under assets/references/<id>/ and shows the video in Style Spy. Returns the paths. If a link needs a login, the user retries from Style Spy with their browser login: never ask for passwords or cookies.",
     {
       url: z.string().url().optional(),
       path: z.string().regex(/^assets\/references\/[a-zA-Z0-9_-]+\/[^/]+$/).optional(),

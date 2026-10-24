@@ -13,6 +13,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- **Style Spy** on an empty project asks what your video is about, then builds a new video in the
+  reference's style for your topic, with labeled placeholders where your own footage goes and a list of
+  what to send. Before, it tried to restyle a video that wasn't there.
+
 ## [0.2.2] - 2026-10-24
 
 Works with helper 0.2.0; update to 0.2.2 (`npx -y agentcut@latest`) for X links in Style Spy.

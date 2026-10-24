@@ -979,6 +979,13 @@ export function StudioApp() {
             onOpenChange={setStyleSpyOpen}
             slug={doc.slug}
             assets={studio.assets}
+            blank={
+              !doc.layers?.tracks.some((track) => track.clips.length > 0) &&
+              !studio.assets.some(
+                (a) =>
+                  a.kind !== "other" && !a.path.startsWith("assets/references/"),
+              )
+            }
             disabled={readOnly || status !== "connected"}
             running={!chatIdle}
             getBridge={studio.getBridge}

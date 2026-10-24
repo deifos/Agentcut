@@ -88,6 +88,7 @@ export function StyleSpy({
   onOpenChange,
   slug,
   assets,
+  blank,
   disabled,
   running,
   getBridge,
@@ -97,6 +98,8 @@ export function StyleSpy({
   onOpenChange(open: boolean): void;
   slug: string;
   assets: AssetEntry[];
+  /** No clips and no media of the user's own: Style Spy builds a new video instead of restyling. */
+  blank: boolean;
   disabled: boolean;
   running: boolean;
   getBridge(): StudioBridge | null;
@@ -104,6 +107,7 @@ export function StyleSpy({
 }) {
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState("");
+  const [topic, setTopic] = useState("");
   const [selected, setSelected] = useState("");
   const [job, setJob] = useState<ReferenceJob | null>(null);
   const [browsers, setBrowsers] = useState<string[]>([]);
@@ -125,6 +129,7 @@ export function StyleSpy({
   const working =
     job !== null && job.stage !== "ready" && job.stage !== "failed";
   const locked = disabled || busy || working;
+  const needsTopic = blank && !topic.trim();
   const pendingUrl = referenceUrl(url);
   const newLink = pendingUrl !== null && pendingUrl !== job?.url;
   const canRetryWithLogin =
@@ -258,8 +263,13 @@ export function StyleSpy({
     try {
       const dir = path.slice(0, path.lastIndexOf("/"));
       const extra = notes.trim();
+      const analyze = `Follow references/style-spy.md: analyze ${dir} (reference.json, the frames and a transcript; if reference.json is missing or has no shots, call agentcut_import_reference with this path first), write the recipe`;
+      const copy =
+        "its layouts and when they switch (split screens, full-screen cards, what fills each part), cut rhythm, captions and how they animate, every motion graphic and how it enters, transitions, zooms, color and effects";
       await onSend(
-        `Style Spy: copy the editing style of the reference video ${JSON.stringify(path)} onto my video. Follow references/style-spy.md: analyze ${dir} (reference.json, the frames and a transcript; if reference.json is missing or has no shots, call agentcut_import_reference with this path first), write the recipe, back up my edit, then apply it. Copy its layouts and when they switch (split screens, full-screen cards, what fills each part), cut rhythm, captions and how they animate, every motion graphic and how it enters, transitions, zooms, color and effects, using my own footage, words and brand. Tell me what you couldn't match with my material.${extra ? ` Also: ${extra}` : ""}`,
+        blank
+          ? `Style Spy: my project is empty, so make a new video in the editing style of the reference video ${JSON.stringify(path)}. It's about: ${topic.trim()}. ${analyze}, then follow "Empty project": write the script for my topic and build ${copy}, with placeholders where it needs footage I haven't given you. Tell me exactly what to send to replace each placeholder.${extra ? ` Also: ${extra}` : ""}`
+          : `Style Spy: copy the editing style of the reference video ${JSON.stringify(path)} onto my video. ${analyze}, back up my edit, then apply it. Copy ${copy}, using my own footage, words and brand. Tell me what you couldn't match with my material.${extra ? ` Also: ${extra}` : ""}`,
       );
       setNotice("Sent to your agent. Follow along in chat.");
     } catch {
@@ -453,6 +463,22 @@ export function StyleSpy({
             ))}
           </select>
         )}
+        {blank && (
+          <div className="flex flex-col gap-1.5">
+            <Textarea
+              aria-label="What's your video about?"
+              placeholder="What's your video about? e.g. a 30-second launch video for my app, for indie founders"
+              rows={2}
+              className="min-h-0 resize-none text-sm"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Your project is empty, so your agent builds a new video in this
+              style and marks where your own footage goes.
+            </p>
+          </div>
+        )}
         <Textarea
           aria-label="Anything to change"
           placeholder="Anything to keep or change? (optional)"
@@ -476,6 +502,7 @@ export function StyleSpy({
             disabled ||
             busy ||
             running ||
+            needsTopic ||
             (!newLink && !working && !preview)
           }
           onClick={copyStyle}

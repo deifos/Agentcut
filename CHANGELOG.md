@@ -13,6 +13,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-10-24
+
+Works with helper 0.2.0; update to 0.2.4 (`npx -y agentcut@latest`) so your agent can check preview smoothness
+(`agentcut_preview_check`), follow the new preview performance rules, and see what each clip draws.
+
 ### Added
 
 - **Smoother previews, measured.** The studio records how smoothly the preview plays, per clip: dropped

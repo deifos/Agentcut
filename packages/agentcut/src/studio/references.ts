@@ -22,11 +22,11 @@ import { killTree } from "./proc.js";
 import { assertSlug, projectDir, safeJoin, StudioError } from "./projects.js";
 import type { WorkspacePaths } from "./workspace.js";
 
-// Style Spy references: the helper downloads a public Instagram, TikTok or YouTube video with
+// Style Spy references: the helper downloads a public Instagram, TikTok, YouTube or X video with
 // yt-dlp, then samples frames with ffmpeg so the agent can look at it. Both tools are fetched on
 // first use into ~/.agentcut/tools (checksums verified), never installed system-wide.
 
-export const REFERENCE_DOMAINS = ["instagram.com", "tiktok.com", "youtube.com", "youtu.be"];
+export const REFERENCE_DOMAINS = ["instagram.com", "tiktok.com", "youtube.com", "youtu.be", "x.com", "twitter.com"];
 export const LOGIN_BROWSERS = ["chrome", "safari", "firefox", "edge", "brave"] as const;
 export type LoginBrowser = (typeof LOGIN_BROWSERS)[number];
 
@@ -116,7 +116,7 @@ export function normalizeReferenceUrl(raw: unknown) {
   try {
     url = new URL(String(raw ?? "").trim());
   } catch {
-    throw new StudioError("Paste an HTTPS video link from Instagram, TikTok, or YouTube.", "bad_input");
+    throw new StudioError("Paste an HTTPS video link from Instagram, TikTok, YouTube, or X.", "bad_input");
   }
   if (
     url.protocol !== "https:" ||
@@ -125,7 +125,7 @@ export function normalizeReferenceUrl(raw: unknown) {
     url.port ||
     !REFERENCE_DOMAINS.some((domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`))
   ) {
-    throw new StudioError("Paste an HTTPS video link from Instagram, TikTok, or YouTube.", "bad_input");
+    throw new StudioError("Paste an HTTPS video link from Instagram, TikTok, YouTube, or X.", "bad_input");
   }
   return url.href;
 }

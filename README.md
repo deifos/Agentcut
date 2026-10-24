@@ -7,7 +7,7 @@ You watch the live preview, scrub the timeline, tweak any layer by hand, and exp
 **Try it:** https://agentcut.synteq.app · [components](https://agentcut.synteq.app/components) · [templates](https://agentcut.synteq.app/templates) · [changelog](CHANGELOG.md)
 
 - **Chat to edit**: describe the change; the agent writes the scenes, layers, captions and sound.
-- **Style Spy**: paste an Instagram, TikTok or YouTube link (or drop a video) and copy its editing style:
+- **Style Spy**: paste an Instagram, TikTok, YouTube or X link (or drop a video) and copy its editing style:
   layouts and split screens, cut rhythm, captions, motion graphics, transitions and color.
 - **Record**: record talking-head takes from your camera right in the studio, then tell the agent what to do.
 - **Edit by hand**: timeline, inspector, components, templates and video styles; export an MP4 in the

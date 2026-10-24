@@ -39,7 +39,7 @@ const BROWSERS: Record<string, string> = {
   safari: "Safari",
 };
 
-const DOMAINS = ["instagram.com", "tiktok.com", "youtube.com", "youtu.be"];
+const DOMAINS = ["instagram.com", "tiktok.com", "youtube.com", "youtu.be", "x.com", "twitter.com"];
 
 function referenceUrl(raw: string) {
   try {
@@ -194,7 +194,7 @@ export function StyleSpy({
     setNotice("");
     const source = referenceUrl(raw);
     if (!source) {
-      setError("Paste an HTTPS video link from Instagram, TikTok, or YouTube.");
+      setError("Paste an HTTPS video link from Instagram, TikTok, YouTube, or X.");
       return;
     }
     setBusy(true);
@@ -295,7 +295,7 @@ export function StyleSpy({
         >
           <Input
             aria-label="Reference video URL"
-            placeholder="Paste an Instagram, TikTok, or YouTube link"
+            placeholder="Paste an Instagram, TikTok, YouTube, or X link"
             value={url}
             disabled={disabled}
             onChange={(e) => setUrl(e.target.value)}

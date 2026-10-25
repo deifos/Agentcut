@@ -13,8 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Cinematic Mode needs helper 0.2.5 (`npx -y agentcut@latest`): it brings the agent's cinematic and loops
-guides, the toolkit's types and three.js for local renders. Everything else works with helper 0.2.0.
+## [0.2.5] - 2026-10-25
+
+Works with helper 0.2.0; Cinematic Mode needs helper 0.2.5 (`npx -y agentcut@latest`), which brings your
+agent the cinematic and loops guides, the toolkit's types and three.js for local renders.
 
 ### Added
 
@@ -22,8 +24,8 @@ guides, the toolkit's types and three.js for local renders. Everything else work
   product film: a real 3D camera (tilt, orbit, push-ins, whip pans with motion blur), lens blur that follows
   the depth of each screen, UI pieces lifting off the glass with real shadows, light sweeps, reflections and
   floors. Every take rolls a new direction (mood, camera, signature move, backdrop, type, cuts) and your
-  agent directs a different film around it; on **Another take** your agent backs up the previous cut first. The agent
-  checks every shot in wide and mobile before it hands off.
+  agent directs a different film around it; on **Another take** your agent backs up the previous cut
+  first. The agent checks every shot in wide and mobile before it hands off.
 - **Real 3D devices** for scenes: an iPhone 16 Pro Max model (by MajdyModels, CC BY 4.0), a MacBook with a
   lid that opens and a Studio Display, lit like a product studio and drawn through the same camera
   (`Device3D` in `agentcut/components`), plus flat browser, MacBook, iPhone, iPad and monitor frames.
@@ -31,8 +33,9 @@ guides, the toolkit's types and three.js for local renders. Everything else work
   backgrounds, shapes, symmetry (kaleidoscope, mandala, spirograph, mirror tiles, sunburst), shape morphing
   (circle → square → triangle → star, liquid metaballs), little games (Snake, Pong, falling blocks, Game of
   Life gliders), physics (Newton's cradle, gears, dominoes, liquid fill) and generative pieces. Each has dark,
-  brand-colour and paper tones, a layout seed and motion blur in exports (also on transparent loops). Browse them live at `/loops`
-  (recolour every loop with your brand colours; one page per loop with copy-ready usage), use them as
+  brand-colour and paper tones, a layout seed and motion blur in exports (also on transparent loops).
+  Browse them live at `/loops` (recolour every loop with your brand colours; one page per loop with
+  copy-ready usage), use them as
   `motion-loop` clips or in scenes (`LoopCanvas`), and your agent can write new ones and save them to the
   workspace library. The agent now builds every video's palette from your brand colours and rotates loops,
   tones and shapes so no two videos look alike.
@@ -149,7 +152,11 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/deifos/Agentcut/compare/v0.2.4...v0.2.5
+[0.2.4]: https://github.com/deifos/Agentcut/compare/v0.2.3...v0.2.4
+[0.2.3]: https://github.com/deifos/Agentcut/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/deifos/Agentcut/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/deifos/Agentcut/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/deifos/Agentcut/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/deifos/Agentcut/releases/tag/v0.1.0

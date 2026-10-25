@@ -6,6 +6,12 @@ export const APP_VERSION: string = packageJson.version;
 /** Oldest helper (`npx agentcut`) this page works with: Style Spy and Record need 0.2.0. */
 export const MIN_HELPER_VERSION = "0.2.0";
 
+/**
+ * Oldest helper Cinematic Mode works with: the workspace needs its skill references (cinematic.md,
+ * loops.md), the cinematic toolkit's types and three for local renders.
+ */
+export const CINEMATIC_HELPER_VERSION = "0.2.5";
+
 export const CHANGELOG_URL =
   "https://github.com/deifos/Agentcut/blob/main/CHANGELOG.md";
 

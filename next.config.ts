@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
+  // 3D device models load from local renders too (motion/components/cinematic/devices3d).
+  async headers() {
+    return [{ source: "/models/:path*", headers: [{ key: "Access-Control-Allow-Origin", value: "*" }] }];
+  },
 };
 
 export default nextConfig;

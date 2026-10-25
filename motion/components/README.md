@@ -23,7 +23,8 @@ Props left out get their defaults. The inspector shows a form for them; Claude f
    variant) plus its props. Rules:
    - Animate only from `useCurrentFrame()` (no timers, no `Math.random()` without a seed), so the
      preview, the export and every re-render match frame for frame.
-   - Import only `react`, `remotion`, `../lib` and `../looks`. No CSS 3D (`perspective`, `preserve-3d`),
+   - Import only `react`, `remotion`, `../lib` and `../looks` (and `../cinematic/Cinematic` for 3D,
+     `../loops/*` for motion loops). No CSS 3D (`perspective`, `preserve-3d`),
      `backdrop-filter`, `mix-blend-mode` or inset shadows: the browser export can't draw them.
    - Radial gradients: the browser export only draws centered, unsized ones
      (`radial-gradient(color 0%, transparent 70%)`). For a glow at a point use `glowStyle()`, and fade
@@ -43,6 +44,14 @@ Props left out get their defaults. The inspector shows a form for them; Claude f
 5. Register it: its meta in `catalog.ts` and its component in `COMPONENTS` in `index.ts`.
 6. Check it: open the gallery (`/motion/components`) and look at it in wide and mobile, then
    `npm run verify:components` (registration, defaults, examples and style tags).
+
+## Cinematic toolkit
+
+`cinematic/` is not a timeline component: it's the 3D camera scenes import from `agentcut/components`
+(`Stage`, `Plane`, `Screen`, `Lift`, `Group`, `Device`, `Backdrop`, `Floor`, `Glare`). The stage computes
+one `matrix3d()` per plane (camera, lens, placement), which the preview draws natively and the browser
+export draws through WebGL; lens blur is a gradient between blurred copies along each plane's depth.
+The skill's `references/cinematic.md` is how Claude directs it.
 
 ## Project styles
 

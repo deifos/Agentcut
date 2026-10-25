@@ -1,0 +1,312 @@
+{
+  "id": "motion-loop",
+  "name": "Motion Loop",
+  "category": "Backgrounds",
+  "description": "A seamless motion loop in your brand colours: 44 loops across backgrounds, shapes, symmetry (kaleidoscope, mandala, spirograph), shape morphing, little games (snake, pong, falling blocks, Game of Life), physics (Newton's cradle, gears, dominoes) and generative pieces, each a pure function of time that never shows a seam.",
+  "useWhen": "Behind titles, product shots, quotes and end cards; between shots; as a shape centerpiece over a background (transparent). Rotate loops: never the same loop twice in a row, and pick by mood (see each option). Set accent/accent2 to the brand colours and choose the tone: dark (deep brand background), accent (solid brand colour), light (paper). Change seed for another layout of the same loop.",
+  "durationInFrames": 360,
+  "layer": "full",
+  "tags": [
+    "loop",
+    "background",
+    "motion graphics",
+    "shapes",
+    "pattern",
+    "brand",
+    "seamless",
+    "abstract"
+  ],
+  "props": {
+    "loop": {
+      "type": "select",
+      "label": "Loop",
+      "default": "gradient-blobs",
+      "options": [
+        {
+          "value": "perspective-grid",
+          "label": "Perspective Grid · Backgrounds"
+        },
+        {
+          "value": "dot-wave",
+          "label": "Dot Wave · Backgrounds"
+        },
+        {
+          "value": "flow-lines",
+          "label": "Flow Lines · Backgrounds"
+        },
+        {
+          "value": "gradient-blobs",
+          "label": "Gradient Blobs · Backgrounds"
+        },
+        {
+          "value": "stripes-scroll",
+          "label": "Stripe Scroll · Backgrounds"
+        },
+        {
+          "value": "concentric-pulse",
+          "label": "Concentric Pulse · Backgrounds"
+        },
+        {
+          "value": "checker-twist",
+          "label": "Checker Twist · Backgrounds"
+        },
+        {
+          "value": "halftone-sweep",
+          "label": "Halftone Sweep · Backgrounds"
+        },
+        {
+          "value": "terrain-ridges",
+          "label": "Terrain Ridges · Backgrounds"
+        },
+        {
+          "value": "starfield-warp",
+          "label": "Starfield Warp · Backgrounds"
+        },
+        {
+          "value": "bokeh-drift",
+          "label": "Bokeh Drift · Backgrounds"
+        },
+        {
+          "value": "iso-cubes",
+          "label": "Iso Cubes · Backgrounds"
+        },
+        {
+          "value": "ribbon-weave",
+          "label": "Ribbon Weave · Backgrounds"
+        },
+        {
+          "value": "tile-mosaic",
+          "label": "Tile Mosaic · Backgrounds"
+        },
+        {
+          "value": "orbit-rings",
+          "label": "Orbit Rings · Shapes"
+        },
+        {
+          "value": "morph-blob",
+          "label": "Morph Blob · Shapes"
+        },
+        {
+          "value": "bouncing-ball",
+          "label": "Bouncing Ball · Shapes"
+        },
+        {
+          "value": "spinner-petals",
+          "label": "Spinner Petals · Shapes"
+        },
+        {
+          "value": "stacked-squares",
+          "label": "Stacked Squares · Shapes"
+        },
+        {
+          "value": "ripple-drop",
+          "label": "Ripple Drop · Shapes"
+        },
+        {
+          "value": "cube-spin",
+          "label": "Cube Spin · Shapes"
+        },
+        {
+          "value": "dna-helix",
+          "label": "DNA Helix · Shapes"
+        },
+        {
+          "value": "pie-burst",
+          "label": "Pie Burst · Shapes"
+        },
+        {
+          "value": "wave-bars",
+          "label": "Wave Bars · Shapes"
+        },
+        {
+          "value": "kaleidoscope",
+          "label": "Kaleidoscope · Symmetry"
+        },
+        {
+          "value": "mandala-bloom",
+          "label": "Mandala Bloom · Symmetry"
+        },
+        {
+          "value": "spirograph",
+          "label": "Spirograph · Symmetry"
+        },
+        {
+          "value": "mirror-tiles",
+          "label": "Mirror Tiles · Symmetry"
+        },
+        {
+          "value": "radial-burst",
+          "label": "Radial Burst · Symmetry"
+        },
+        {
+          "value": "shape-morph",
+          "label": "Shape Morph · Morphing"
+        },
+        {
+          "value": "morph-grid",
+          "label": "Morph Grid · Morphing"
+        },
+        {
+          "value": "shape-shuffle",
+          "label": "Shape Shuffle · Morphing"
+        },
+        {
+          "value": "metaballs",
+          "label": "Metaballs · Morphing"
+        },
+        {
+          "value": "snake-game",
+          "label": "Snake · Games"
+        },
+        {
+          "value": "falling-blocks",
+          "label": "Falling Blocks · Games"
+        },
+        {
+          "value": "pong",
+          "label": "Pong · Games"
+        },
+        {
+          "value": "life-gliders",
+          "label": "Life Gliders · Games"
+        },
+        {
+          "value": "newtons-cradle",
+          "label": "Newton's Cradle · Physics"
+        },
+        {
+          "value": "clock-gears",
+          "label": "Clock Gears · Physics"
+        },
+        {
+          "value": "liquid-fill",
+          "label": "Liquid Fill · Physics"
+        },
+        {
+          "value": "domino-wave",
+          "label": "Domino Wave · Physics"
+        },
+        {
+          "value": "vortex",
+          "label": "Vortex · Generative"
+        },
+        {
+          "value": "lissajous-trail",
+          "label": "Lissajous Trail · Generative"
+        },
+        {
+          "value": "bubble-pop",
+          "label": "Bubble Pop · Generative"
+        }
+      ]
+    },
+    "tone": {
+      "type": "select",
+      "label": "Tone",
+      "default": "dark",
+      "options": [
+        {
+          "value": "dark",
+          "label": "Dark (deep brand)"
+        },
+        {
+          "value": "accent",
+          "label": "Accent (brand colour)"
+        },
+        {
+          "value": "light",
+          "label": "Light (paper)"
+        }
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "style": "accent",
+      "label": "Brand colour",
+      "default": "#7c5cff"
+    },
+    "accent2": {
+      "type": "color",
+      "label": "Second colour",
+      "default": "#ff5ca8"
+    },
+    "speed": {
+      "type": "number",
+      "label": "Speed",
+      "default": 1,
+      "min": 0.25,
+      "max": 3,
+      "step": 0.25,
+      "unit": "×",
+      "help": "Any speed is seamless within the clip. To repeat the clip itself, make its length × speed a multiple of 12 s."
+    },
+    "seed": {
+      "type": "number",
+      "label": "Layout",
+      "default": 0,
+      "min": 0,
+      "max": 99,
+      "step": 1
+    },
+    "transparent": {
+      "type": "boolean",
+      "label": "Transparent",
+      "default": false,
+      "help": "No background: a shape over footage or another layer."
+    },
+    "blur": {
+      "type": "number",
+      "label": "Motion blur",
+      "default": 4,
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "help": "Sub-frames per frame in the export (the preview shows 1)."
+    },
+    "fade": {
+      "type": "boolean",
+      "label": "Fade in/out",
+      "default": true
+    }
+  },
+  "examples": [
+    {
+      "name": "Brand mesh",
+      "props": {}
+    },
+    {
+      "name": "Synth grid",
+      "props": {
+        "loop": "perspective-grid",
+        "accent": "#22d3ee",
+        "accent2": "#f472b6"
+      }
+    },
+    {
+      "name": "Paper dots",
+      "props": {
+        "loop": "dot-wave",
+        "tone": "light",
+        "accent": "#f97316"
+      }
+    },
+    {
+      "name": "Orbit on brand",
+      "props": {
+        "loop": "orbit-rings",
+        "tone": "accent",
+        "accent": "#2563eb",
+        "accent2": "#facc15"
+      }
+    },
+    {
+      "name": "Iso city",
+      "props": {
+        "loop": "iso-cubes",
+        "accent": "#10b981",
+        "accent2": "#f59e0b"
+      }
+    }
+  ],
+  "stillAt": 0.3
+}

@@ -16,7 +16,7 @@ everything — so a scene can look right in the preview and wrong in the export.
 | `backdrop-filter` (glass blur) | a semi-opaque fill + a blurred copy of the background behind it |
 | `box-shadow: inset …`, shadow spread | an inner element with a gradient/border, or an outer shadow without spread |
 | `object-position` | position the `<Img>` inside an `overflow: hidden` box with transforms |
-| `perspective`, `transform-style: preserve-3d` | 2D transforms (scale/skew/rotate) faking depth |
+| `perspective`, `transform-style: preserve-3d` | the cinematic `Stage` / `Plane` from `agentcut/components` (one `matrix3d()` per element, drawn through WebGL; see `cinematic.md`), or 2D transforms faking depth |
 | `mask-image` with radial/SVG masks | linear-gradient masks, or `clip-path` shapes (`inset`, `circle`, `polygon`) |
 | `clip-path: url(#svgClip)` | `clip-path: polygon(…)` / `circle(…)` |
 | `OffthreadVideo`, `Html5Video`, `Html5Audio` | `<Video>` / `<Audio>` from `@remotion/media` (or video/audio clips) |

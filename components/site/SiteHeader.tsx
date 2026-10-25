@@ -5,6 +5,7 @@ import { Wordmark } from "@/components/site/Wordmark";
 
 const NAV = [
   { href: "/components", label: "Components" },
+  { href: "/loops", label: "Loops" },
   { href: "/templates", label: "Templates" },
 ];
 

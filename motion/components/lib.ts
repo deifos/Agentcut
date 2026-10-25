@@ -1,6 +1,6 @@
 // Small helpers shared by the components. Components import only react, remotion and this file,
 // so they bundle the same way in the gallery, the studio preview, the browser export and a local render.
-import { useEffect, useState } from "react";
+import { useLayoutEffect } from "react";
 import { Easing, interpolate, spring, useDelayRender } from "remotion";
 
 /** Scale for the frame size: 1 at 1080 px on the short side. */
@@ -118,11 +118,23 @@ export function loadMotionFonts() {
 /** Holds the render (export, still, local render) until the fonts are in, so frame 0 has the right type. */
 export function useMotionFonts() {
   const { delayRender, continueRender } = useDelayRender();
-  const [handle] = useState(() => (fontsLoaded ? null : delayRender("Loading motion component fonts")));
-  useEffect(() => {
-    if (handle === null) return;
-    loadMotionFonts().then(() => continueRender(handle));
-  }, [handle, continueRender]);
+  // A layout effect: the hold exists before the commit ends, is never taken by a render React throws
+  // away, and is released on unmount (StrictMode mounts twice) and when a font fails to load.
+  useLayoutEffect(() => {
+    if (fontsLoaded) return;
+    const handle = delayRender("Loading motion component fonts");
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      continueRender(handle);
+    };
+    loadMotionFonts().then(release, (error: unknown) => {
+      console.warn("[agentcut] motion component fonts didn't load", error);
+      release();
+    });
+    return release;
+  }, [delayRender, continueRender]);
 }
 
 /** The `background` prop as a CSS value ("transparent" keeps an overlay see-through). */

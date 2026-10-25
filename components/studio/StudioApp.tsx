@@ -60,10 +60,12 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { ChatPanel } from "@/components/studio/ChatPanel";
 import { StylesGallery } from "@/components/studio/styles/StylesGallery";
 import { StyleSpy, StyleSpyTab } from "@/components/studio/StyleSpy";
+import { Cinematic, CinematicTab } from "@/components/studio/Cinematic";
 import { Recorder } from "@/components/studio/Recorder";
 import {
   APP_VERSION,
   CHANGELOG_URL,
+  CINEMATIC_HELPER_VERSION,
   isOlderVersion,
   MIN_HELPER_VERSION,
 } from "@/lib/version";
@@ -205,6 +207,7 @@ export function StudioApp() {
   const [exportOpen, setExportOpen] = useState(false);
   const [stylesOpen, setStylesOpen] = useState(false);
   const [styleSpyOpen, setStyleSpyOpen] = useState(false);
+  const [cinematicOpen, setCinematicOpen] = useState(false);
   // An export in progress (browser or this computer) stays visible on the Export button and the
   // tab title after the dialog closes, like the editor's export.
   const exportJob = studio.exportJob;
@@ -291,6 +294,9 @@ export function StudioApp() {
         exportOpen ||
         newProjectOpen ||
         voicesOpen ||
+        cinematicOpen ||
+        stylesOpen ||
+        styleSpyOpen ||
         readOnly
       )
         return;
@@ -330,12 +336,15 @@ export function StudioApp() {
     return () => window.removeEventListener("keydown", onKey);
   }, [
     chat.running,
+    cinematicOpen,
     doc?.project?.durationInFrames,
     duplicate,
     exportOpen,
     frameStore,
     newProjectOpen,
     voicesOpen,
+    stylesOpen,
+    styleSpyOpen,
     readOnly,
     playerRef,
     remove,
@@ -344,6 +353,23 @@ export function StudioApp() {
     split,
     studio,
   ]);
+
+  // A file dropped outside a drop zone (or on a disabled one) would make the browser open it and
+  // leave the studio. Drop zones handle their events first; this only cancels what they didn't.
+  useEffect(() => {
+    const guard = (event: DragEvent) => {
+      if (event.defaultPrevented || !event.dataTransfer?.types.includes("Files"))
+        return;
+      event.preventDefault();
+      if (event.type === "dragover") event.dataTransfer.dropEffect = "none";
+    };
+    window.addEventListener("dragover", guard);
+    window.addEventListener("drop", guard);
+    return () => {
+      window.removeEventListener("dragover", guard);
+      window.removeEventListener("drop", guard);
+    };
+  }, []);
 
   const sendChat = useCallback(
     async (
@@ -754,6 +780,7 @@ export function StudioApp() {
                   onClick={() => setStylesOpen(true)}
                 />
                 <StyleSpyTab onClick={() => setStyleSpyOpen(true)} />
+                <CinematicTab onClick={() => setCinematicOpen(true)} />
               </div>
             </div>
           ) : null}
@@ -991,6 +1018,38 @@ export function StudioApp() {
             running={!chatIdle}
             getBridge={studio.getBridge}
             onSend={async (text) => {
+              setChatOpen(true);
+              await sendChat(text, { attachFrame: false });
+            }}
+          />
+        ) : null}
+        {doc?.project ? (
+          <Cinematic
+            key={`cinematic-${doc.slug}`}
+            open={cinematicOpen}
+            onOpenChange={setCinematicOpen}
+            slug={doc.slug}
+            assets={studio.assets}
+            hasTake={
+              doc.layers?.tracks.some(
+                (track) =>
+                  /cinematic/i.test(`${track.id} ${track.name ?? ""}`) &&
+                  track.clips.length > 0,
+              ) ?? false
+            }
+            disabled={readOnly || status !== "connected"}
+            running={!chatIdle}
+            helperUpdate={
+              info?.version &&
+              isOlderVersion(info.version, CINEMATIC_HELPER_VERSION)
+                ? `Cinematic Mode needs helper ${CINEMATIC_HELPER_VERSION} or newer (you have ${info.version}). Stop it (Ctrl+C) and run: ${STUDIO_COMMAND}@latest`
+                : null
+            }
+            onSend={async (text) => {
+              // The controller skips a send without a helper or a project, without an error:
+              // fail here so the dialog doesn't report a request that never left.
+              if (status !== "connected" || !doc)
+                throw new Error("The studio helper isn't connected.");
               setChatOpen(true);
               await sendChat(text, { attachFrame: false });
             }}

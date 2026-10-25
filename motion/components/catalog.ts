@@ -19,6 +19,8 @@ import highlighter from "./highlighter/meta.json";
 import logoSting from "./logo-sting/meta.json";
 import marquee from "./marquee/meta.json";
 import aurora from "./aurora/meta.json";
+import motionLoop from "./motion-loop/meta.json";
+import dotTraceTitle from "./dot-trace-title/meta.json";
 import lavaLamp from "./lava-lamp/meta.json";
 import spotlightGrid from "./spotlight-grid/meta.json";
 import irisWipe from "./iris-wipe/meta.json";
@@ -70,6 +72,8 @@ export const COMPONENT_METAS: Record<string, ComponentMeta> = {
   "logo-sting": logoSting as unknown as ComponentMeta,
   "marquee": marquee as unknown as ComponentMeta,
   "aurora": aurora as unknown as ComponentMeta,
+  "motion-loop": motionLoop as unknown as ComponentMeta,
+  "dot-trace-title": dotTraceTitle as unknown as ComponentMeta,
   "lava-lamp": lavaLamp as unknown as ComponentMeta,
   "spotlight-grid": spotlightGrid as unknown as ComponentMeta,
   "iris-wipe": irisWipe as unknown as ComponentMeta,

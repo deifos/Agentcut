@@ -9,6 +9,7 @@ const SITE_URL = "https://vladpalacio.com";
 const LINKS = [
   { href: "/studio", label: "Studio" },
   { href: "/components", label: "Components" },
+  { href: "/loops", label: "Loops" },
   { href: "/templates", label: "Templates" },
 ];
 

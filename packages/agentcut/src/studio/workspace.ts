@@ -89,12 +89,16 @@ const MANAGED_DEPENDENCIES: Record<string, string> = {
   "@remotion/noise": REMOTION_VERSION,
   "@remotion/light-leaks": REMOTION_VERSION,
   "@remotion/cli": REMOTION_VERSION,
+  // The cinematic toolkit's 3D devices (agentcut/components) for local renders.
+  three: "0.183.2",
   react: REACT_VERSION,
   "react-dom": REACT_VERSION,
 };
 
 const MANAGED_DEV_DEPENDENCIES: Record<string, string> = {
   "@types/react": "^19.2.0",
+  // three ships no types; the workspace typecheck covers agentcut/components (Device3D).
+  "@types/three": "0.183.1",
   typescript: "^5.8.3",
 };
 

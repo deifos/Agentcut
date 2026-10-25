@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -67,6 +68,8 @@ import {
 import {
   ReferenceChip,
   readDraggedReference,
+  uploadChatFiles,
+  uploadFailureMessage,
 } from "@/components/studio/ChatReferences";
 import { formatFrameTime } from "@/lib/studio/format";
 import { useFrame, type FrameStore } from "@/lib/studio/frame-store";
@@ -621,7 +624,10 @@ export interface ChatPanelProps {
   disabled: boolean;
   /** Files to send with the next message (from the assets panel or drag and drop). */
   references: ChatReference[];
-  onReferencesChange(references: ChatReference[]): void;
+  /** Takes an updater too: uploads finish later, after the chips may have changed. */
+  onReferencesChange(
+    update: ChatReference[] | ((current: ChatReference[]) => ChatReference[]),
+  ): void;
   frameStore: FrameStore;
   fps: number;
   selectionCount: number;
@@ -661,6 +667,25 @@ export function ChatPanel({
   slug,
 }: ChatPanelProps) {
   const [dropping, setDropping] = useState(false);
+  const [uploading, setUploading] = useState(0);
+  // Files from the computer (dropped or pasted) go into the project's assets and attach to the message.
+  const attachFiles = async (files: File[]) => {
+    if (!slug || !files.length) return;
+    setUploading((n) => n + files.length);
+    try {
+      const { added, failed } = await uploadChatFiles(slug, files);
+      if (added.length) addReferences(added);
+      if (failed.length) toast.error(uploadFailureMessage(files.length, failed));
+    } finally {
+      setUploading((n) => n - files.length);
+    }
+  };
+  // Functional updates: chips added or removed while an upload or a send was in flight stay put.
+  const addReferences = (added: ChatReference[]) =>
+    onReferencesChange((current) => [
+      ...current.filter((r) => !added.some((a) => a.path === r.path)),
+      ...added,
+    ]);
   const [text, setTextState] = useState(() => drafts.get(slug ?? "") ?? "");
   const setText = (value: string) => {
     drafts.set(slug ?? "", value);
@@ -673,13 +698,18 @@ export function ChatPanel({
   const send = async (value = text) => {
     const trimmed = value.trim();
     // While the agent works, a new message waits in the queue and runs next.
-    if (!trimmed || sending || disabled) return;
+    // Wait for dropped or pasted files to finish uploading, so they go with the message.
+    if (!trimmed || sending || disabled || uploading) return;
     setSending(true);
+    // Only the chips sent with this message go; files attached while it sends wait for the next one.
+    const sent = references;
     try {
-      await onSend(trimmed, { attachFrame, references });
+      await onSend(trimmed, { attachFrame, references: sent });
       setText("");
       setAttachFrame(false);
-      onReferencesChange([]);
+      onReferencesChange((current) =>
+        current.filter((r) => !sent.some((s) => s.path === r.path)),
+      );
     } catch {
       // toast shown by the controller
     } finally {
@@ -866,27 +896,40 @@ export function ChatPanel({
               dropping && "border-primary ring-2 ring-primary/30",
             )}
             onDragOver={(event) => {
+              const types = event.dataTransfer.types;
               if (
-                !event.dataTransfer.types.includes(
-                  "application/x-agentcut-asset",
-                )
+                !types.includes("application/x-agentcut-asset") &&
+                !(types.includes("Files") && slug && !disabled)
               )
                 return;
               event.preventDefault();
               event.dataTransfer.dropEffect = "copy";
               setDropping(true);
             }}
-            onDragLeave={() => setDropping(false)}
+            onDragLeave={(event) => {
+              // Moving onto a child (the textarea, a chip) fires dragleave too: not a real leave.
+              if (
+                event.relatedTarget instanceof Node &&
+                event.currentTarget.contains(event.relatedTarget)
+              )
+                return;
+              setDropping(false);
+            }}
             onDrop={(event) => {
               setDropping(false);
               const reference = readDraggedReference(event.dataTransfer);
-              if (!reference) return;
+              if (!reference) {
+                const files = Array.from(event.dataTransfer.files);
+                if (!files.length || disabled) return;
+                event.preventDefault();
+                void attachFiles(files);
+                return;
+              }
               event.preventDefault();
-              if (!references.some((r) => r.path === reference.path))
-                onReferencesChange([...references, reference]);
+              addReferences([reference]);
             }}
           >
-            {references.length ? (
+            {references.length || uploading ? (
               <InputGroupAddon
                 align="block-start"
                 className="flex-wrap gap-1 pb-0"
@@ -896,17 +939,35 @@ export function ChatPanel({
                     key={reference.path}
                     reference={reference}
                     onRemove={() =>
-                      onReferencesChange(
-                        references.filter((r) => r.path !== reference.path),
+                      onReferencesChange((current) =>
+                        current.filter((r) => r.path !== reference.path),
                       )
                     }
                   />
                 ))}
+                {uploading ? (
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                    Adding {uploading} file{uploading > 1 ? "s" : ""}…
+                  </span>
+                ) : null}
               </InputGroupAddon>
             ) : null}
             <InputGroupTextarea
               value={text}
               onChange={(event) => setText(event.target.value)}
+              onPaste={(event) => {
+                // A pasted screenshot or file becomes an asset; pasted text stays text.
+                const files = Array.from(event.clipboardData.files);
+                if (!files.length || !slug) return;
+                // Word, Excel and PowerPoint put a picture of the selection next to its text: keep the text.
+                if (
+                  event.clipboardData.getData("text/plain").trim() &&
+                  files.every((file) => file.type.startsWith("image/"))
+                )
+                  return;
+                event.preventDefault();
+                void attachFiles(files);
+              }}
               onKeyDown={(event) => {
                 if (
                   event.key === "Enter" &&
@@ -926,7 +987,7 @@ export function ChatPanel({
                     ? `${agentName} is working. Send the next request: it runs right after.`
                     : references.length
                       ? `What should ${agentName} do with this? (Enter to send)`
-                      : "Describe a change… drop a file here to point at it"
+                      : "Describe a change… drop or paste images and files to show them"
               }
               className="max-h-48 min-h-[4.5rem] text-[13px]"
             />
@@ -965,10 +1026,14 @@ export function ChatPanel({
                   variant="default"
                   size="icon-sm"
                   onClick={() => void send()}
-                  disabled={!text.trim() || sending || disabled}
+                  disabled={!text.trim() || sending || disabled || uploading > 0}
                   aria-label={running ? "Queue message" : "Send"}
                   title={
-                    running ? `Queue: runs when ${agentName} is done` : "Send"
+                    uploading
+                      ? "Adding files…"
+                      : running
+                        ? `Queue: runs when ${agentName} is done`
+                        : "Send"
                   }
                   className={cn("rounded-full", !running && "ml-auto")}
                 >

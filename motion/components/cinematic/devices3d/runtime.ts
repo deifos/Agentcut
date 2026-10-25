@@ -82,6 +82,8 @@ export async function createDeviceRenderer(
   canvas: HTMLCanvasElement,
   id: VideoDeviceModelId,
   finishColor?: string,
+  /** A GLB the user brings (in place of the bundled model, or required for external models). */
+  modelSrc?: string,
 ): Promise<DeviceRenderer> {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
@@ -102,15 +104,20 @@ export async function createDeviceRenderer(
   });
   pmrem.dispose();
   scene.environment = environment;
+  // Laptops and displays are big flat aluminium and black keys: a softer, darker studio keeps the
+  // anodised finish and the keyboard from washing out. Phones keep the brighter rig.
+  const studio = id === "procedural-macbook" || id === "macbook-pro-14" || id === "procedural-display";
+  scene.environmentIntensity = studio ? 0.6 : 1;
+  const baseExposure = studio ? 0.98 : 1.12;
 
   const camera = new THREE.PerspectiveCamera(24, 16 / 9, 1, 100000);
   scene.add(camera);
-  scene.add(new THREE.HemisphereLight(0xf1f5ff, 0x14161b, 1.4));
+  scene.add(new THREE.HemisphereLight(0xf1f5ff, 0x14161b, studio ? 0.35 : 1.4));
   // Lights ride with the camera so every angle stays product-lit (ScreenSlick's rig).
   for (const [color, intensity, position] of [
-    [0xfff4e7, 5.2, [-2.8, 3.4, 4.4]],
-    [0x86aaff, 3.1, [3.5, 1.5, -3.2]],
-    [0xffffff, 1.4, [1.8, -1.4, 3.2]],
+    [0xfff4e7, studio ? 3.4 : 5.2, [-2.8, 3.4, 4.4]],
+    [0x86aaff, studio ? 2.4 : 3.1, [3.5, 1.5, -3.2]],
+    [0xffffff, studio ? 0.6 : 1.4, [1.8, -1.4, 3.2]],
   ] as const) {
     const light = new THREE.DirectionalLight(color, intensity);
     light.position.set(position[0], position[1], position[2]);
@@ -135,7 +142,7 @@ export async function createDeviceRenderer(
 
   let model: LoadedVideoDeviceModel | null = null;
   try {
-    model = await loadVideoDeviceModel(id, screenMaterial, finishColor);
+    model = await loadVideoDeviceModel(id, screenMaterial, finishColor, modelSrc);
     if (!model) throw new Error(`Couldn't load the ${id} device model.`);
   } catch (error) {
     // Free the GPU side before giving up: a failed load must not keep a WebGL context alive.
@@ -163,7 +170,9 @@ export async function createDeviceRenderer(
     if (imageAspect > screenAspect) repeatX = screenAspect / imageAspect;
     else repeatY = imageAspect / screenAspect;
     const offsetX = (1 - repeatX) / 2;
-    const offsetY = (1 - repeatY) * (1 - Math.min(1, Math.max(0, scroll)));
+    const s = Math.min(1, Math.max(0, scroll));
+    // flipY puts the image's top at v = 1; without it (glTF UVs) the top is at v = 0.
+    const offsetY = (1 - repeatY) * (model.config.textureFlipY ? 1 - s : s);
     const mirror = model.config.textureMirrorX;
     return { tx: mirror ? 1 - offsetX : offsetX, ty: offsetY, sx: mirror ? -repeatX : repeatX, sy: repeatY };
   };
@@ -191,9 +200,9 @@ export async function createDeviceRenderer(
       holder.updateMatrixWorld(true);
       relative.copy(holder.matrixWorld).invert().multiply(model.screen.matrixWorld);
       const f = uvFit(scroll);
-      // Image v runs up (flipY): the top of the screenshot is v = 1.
+      // With flipY image v runs up (the top of the screenshot is v = 1); without it, v runs down.
       const u = (x - f.tx) / f.sx;
-      const v = (1 - y - f.ty) / f.sy;
+      const v = ((model.config.textureFlipY ? 1 - y : y) - f.ty) / f.sy;
       const frame = model.screenFrame;
       point.copy(frame.origin).addScaledVector(frame.du, u).addScaledVector(frame.dv, v).applyMatrix4(relative);
       return [point.x, point.y, point.z];
@@ -221,7 +230,7 @@ export async function createDeviceRenderer(
         renderer.setPixelRatio(p.pixelRatio);
         renderer.setSize(p.width, p.height, false);
       }
-      renderer.toneMappingExposure = 1.12 * p.exposure;
+      renderer.toneMappingExposure = baseExposure * p.exposure;
       if (p.scroll !== lastScroll) fitTexture(p.scroll);
       if (id === "procedural-macbook") setMacbookLidAngle(model.root, p.lidAngle);
 

@@ -15,6 +15,7 @@ export type VideoDeviceModelId =
   | "procedural-iphone"
   | "iphone-16-pro-max"
   | "procedural-macbook"
+  | "macbook-pro-14"
   | "procedural-display";
 
 export interface VideoDeviceModelConfig {
@@ -27,6 +28,10 @@ export interface VideoDeviceModelConfig {
   screenMeshName?: string;
   screenMaterialName?: string;
   screenUvMirrorX: boolean;
+  /** Keep the screen mesh's own UVs (they already map a full screen image) instead of reprojecting. */
+  keepScreenUvs?: boolean;
+  /** Not bundled (its licence forbids redistribution): the scene must pass its own copy as modelSrc. */
+  external?: boolean;
   shadowMode: "silhouette" | "base";
   shadowSilhouetteMeshNames?: string[];
   mappingVersion: number;
@@ -331,6 +336,29 @@ export const VIDEO_DEVICE_MODEL_CONFIGS: Record<
     cameraY: 0.05,
     credit: "Original ScreenSlick procedural model",
   },
+  "macbook-pro-14": {
+    id: "macbook-pro-14",
+    name: "MacBook Pro 14-inch",
+    category: "laptop",
+    // Sketchfab "MacBook Pro 14-inch M5" (Standard licence): users bring their own copy (modelSrc).
+    external: true,
+    // 3024 × 1964 Liquid Retina XDR.
+    screenAspect: 3024 / 1964,
+    screenFit: "cover",
+    screenMaterialName: "HlQwFCAPWzetDQy",
+    screenUvMirrorX: false,
+    keepScreenUvs: true,
+    shadowMode: "silhouette",
+    mappingVersion: 1,
+    // glTF UVs put the image's top at v = 0.
+    textureFlipY: false,
+    textureMirrorX: false,
+    targetSize: 2,
+    rotation: [0, 0, 0],
+    cameraZ: 4.2,
+    cameraY: 0.05,
+    credit: "MacBook Pro 14-inch (M5) model",
+  },
   "procedural-display": {
     id: "procedural-display",
     name: "Studio Display",
@@ -353,8 +381,8 @@ export const VIDEO_DEVICE_MODEL_CONFIGS: Record<
 
 const MODEL_FALLBACK_ORIGIN = "https://agentcut.synteq.app";
 
-const templatePromises = new Map<VideoDeviceModelId, Promise<THREE.Group>>();
-const templates = new Map<VideoDeviceModelId, THREE.Group>();
+const templatePromises = new Map<string, Promise<THREE.Group>>();
+const templates = new Map<string, THREE.Group>();
 
 function cloneModelTemplate(template: THREE.Group) {
   const clone = template.clone(true);
@@ -464,33 +492,48 @@ function projectScreenUvs(screen: THREE.Mesh, config: VideoDeviceModelConfig) {
   screen.userData.ownsVideoScreenGeometry = true;
 }
 
-export async function preloadVideoDeviceModel(id: VideoDeviceModelId) {
-  if (!VIDEO_DEVICE_MODEL_CONFIGS[id]?.source || templates.has(id)) return;
-  const existing = templatePromises.get(id);
+/** Cache key: a model id, plus the file when the caller brings its own (modelSrc). */
+const templateKey = (id: VideoDeviceModelId, source?: string) => (source ? `${id}|${source}` : id);
+
+/** The GLB a model loads: the caller's own file (bring-your-own models), else the bundled one. */
+function modelSource(id: VideoDeviceModelId, sourceOverride?: string) {
+  return sourceOverride || VIDEO_DEVICE_MODEL_CONFIGS[id]?.source || "";
+}
+
+export async function preloadVideoDeviceModel(id: VideoDeviceModelId, sourceOverride?: string) {
+  const config = VIDEO_DEVICE_MODEL_CONFIGS[id];
+  if (!config) return;
+  const source = modelSource(id, sourceOverride);
+  if (!source) {
+    if (config.external) {
+      throw new Error(
+        `The ${config.name} model isn't bundled with Agentcut (its licence doesn't allow redistribution): pass your own copy with modelSrc.`,
+      );
+    }
+    return;
+  }
+  const key = templateKey(id, sourceOverride);
+  if (templates.has(key)) return;
+  const existing = templatePromises.get(key);
   if (existing) {
     await existing;
     return;
   }
-  const config = VIDEO_DEVICE_MODEL_CONFIGS[id];
-  if (!config.source) return;
-  const source = config.source;
-  // The studio serves models from its own origin; a local render (no /models there) fetches them from
-  // the public site.
-  const promise = new GLTFLoader()
-    .loadAsync(source)
-    .catch(() => new GLTFLoader().loadAsync(`${MODEL_FALLBACK_ORIGIN}${source}`))
-    .then(
-      (gltf) => {
-        templates.set(id, gltf.scene);
-        return gltf.scene;
-      },
-      (error: unknown) => {
-        // Forget the failure so the next device (or a retry) loads again instead of failing for good.
-        templatePromises.delete(id);
-        throw error;
-      },
-    );
-  templatePromises.set(id, promise);
+  // The studio serves bundled models from its own origin; a local render (no /models there) fetches
+  // them from the public site. A model the user brings is loaded only from where they put it.
+  const first = new GLTFLoader().loadAsync(source);
+  const promise = (sourceOverride ? first : first.catch(() => new GLTFLoader().loadAsync(`${MODEL_FALLBACK_ORIGIN}${source}`))).then(
+    (gltf) => {
+      templates.set(key, gltf.scene);
+      return gltf.scene;
+    },
+    (error: unknown) => {
+      // Forget the failure so the next device (or a retry) loads again instead of failing for good.
+      templatePromises.delete(key);
+      throw error;
+    },
+  );
+  templatePromises.set(key, promise);
   await promise;
 }
 
@@ -498,10 +541,11 @@ export function createPreloadedVideoDeviceModel(
   id: VideoDeviceModelId,
   screenMaterial: THREE.Material,
   finishColor?: THREE.ColorRepresentation,
+  sourceOverride?: string,
 ): LoadedVideoDeviceModel | null {
   const config = VIDEO_DEVICE_MODEL_CONFIGS[id];
   if (!config) return null;
-  if (!config.source) {
+  if (!modelSource(id, sourceOverride) && !config.external) {
     const root =
       id === "procedural-iphone"
         ? createIphoneVideoMockupModel({ screenMaterial, finishColor })
@@ -524,7 +568,7 @@ export function createPreloadedVideoDeviceModel(
     };
   }
 
-  const template = templates.get(id);
+  const template = templates.get(templateKey(id, sourceOverride));
   if (!template) return null;
   const modelRoot = cloneModelTemplate(template);
   const screen = findScreenMesh(modelRoot, config);
@@ -533,7 +577,7 @@ export function createPreloadedVideoDeviceModel(
     return null;
   }
   modelRoot.updateMatrixWorld(true);
-  projectScreenUvs(screen, config);
+  if (!config.keepScreenUvs) projectScreenUvs(screen, config);
   const previousScreenMaterials = Array.isArray(screen.material)
     ? screen.material
     : [screen.material];
@@ -557,9 +601,10 @@ export async function loadVideoDeviceModel(
   id: VideoDeviceModelId,
   screenMaterial: THREE.Material,
   finishColor?: THREE.ColorRepresentation,
+  sourceOverride?: string,
 ) {
-  await preloadVideoDeviceModel(id);
-  return createPreloadedVideoDeviceModel(id, screenMaterial, finishColor);
+  await preloadVideoDeviceModel(id, sourceOverride);
+  return createPreloadedVideoDeviceModel(id, screenMaterial, finishColor, sourceOverride);
 }
 
 export function disposeVideoDeviceModel(model: LoadedVideoDeviceModel) {

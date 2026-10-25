@@ -7,23 +7,27 @@ import { blurFor, Group, Plane, useStageContext } from "./Cinematic";
 import { mul, placementMatrix, type M4, type Placement } from "./math";
 import type { DeviceRenderer, VideoDeviceModelId } from "./devices3d/runtime";
 
-export type Device3DModel = "iphone" | "iphone-classic" | "macbook" | "display";
+export type Device3DModel = "iphone" | "iphone-color" | "iphone-classic" | "macbook" | "macbook-pro" | "display";
 
 const MODEL_IDS: Record<Device3DModel, VideoDeviceModelId> = {
   iphone: "iphone-16-pro-max",
+  "iphone-color": "procedural-iphone",
   "iphone-classic": "procedural-iphone",
   macbook: "procedural-macbook",
+  "macbook-pro": "macbook-pro-14",
   display: "procedural-display",
 };
 
 /** Default size: the device's largest dimension in world px. */
-const DEFAULT_SIZE: Record<Device3DModel, number> = { iphone: 760, "iphone-classic": 760, macbook: 1250, display: 1150 };
+const DEFAULT_SIZE: Record<Device3DModel, number> = { iphone: 760, "iphone-color": 760, "iphone-classic": 760, macbook: 1250, "macbook-pro": 1250, display: 1150 };
 
 /** Rough footprint (width, height as fractions of size) for the soft shadow behind the device. */
 const FOOTPRINT: Record<Device3DModel, [number, number]> = {
   iphone: [0.47, 1],
+  "iphone-color": [0.47, 1],
   "iphone-classic": [0.47, 1],
   macbook: [1, 0.62],
+  "macbook-pro": [1, 0.62],
   display: [1, 0.86],
 };
 
@@ -31,17 +35,34 @@ export const DEVICE_FINISHES: Record<string, string> = {
   silver: "#cfd1d3",
   starlight: "#d9cdb6",
   "space-gray": "#6f7174",
+  // The deep anodised black of the current MacBook Pro (matched to a reference model).
+  "space-black": "#565457",
+  // Colour iPhone finishes (iphone-color), most with calibrated logo tints in iphone-model.ts.
+  lavender: "#c5a4df",
+  "mist-blue": "#829dce",
+  white: "#d9dad6",
+  "cosmic-orange": "#c9643a",
+  graphite: "#6a6a6a",
   midnight: "#2f3541",
   black: "#3c3d40",
 };
 
 export interface Device3DProps extends Placement {
   model: Device3DModel;
+  /**
+   * Your own GLB for this device (asset("library:models/…")). Required for "macbook-pro", whose model
+   * can't ship with Agentcut; optional for the others.
+   */
+  modelSrc?: string;
   /** Screenshot on the screen (asset("assets/…")). It covers the screen; a taller one shows its top. */
   src?: string;
   /** Largest dimension of the device in world px (iPhone ≈ its height, MacBook ≈ its width). */
   size?: number;
-  /** Hardware color: silver, starlight, space-gray, midnight, black, or a hex (MacBook, display, classic iPhone). */
+  /**
+   * Hardware colour, or any hex. MacBook / display: space-black (MacBook default), space-gray, silver,
+   * starlight, midnight, black. iphone-color: graphite (default), lavender, mist-blue, white,
+   * cosmic-orange, or a brand hex. The iPhone 16 Pro Max model has its own fixed finish.
+   */
   finish?: string;
   /** MacBook lid angle in degrees: 110 open, 0 closed. Animate it for an opening shot. */
   lidAngle?: number;
@@ -99,6 +120,7 @@ function loadImage(src: string) {
 /** A real 3D device in the Stage, with a screenshot on its screen. */
 export function Device3D({
   model,
+  modelSrc,
   src,
   size,
   finish,
@@ -118,7 +140,9 @@ export function Device3D({
   const holder = useRef<HTMLDivElement>(null);
   const pending = useRef<number | null>(null);
   const [device, setDevice] = useState<DeviceRenderer | null>(null);
-  const finishColor = finish ? (DEVICE_FINISHES[finish] ?? finish) : undefined;
+  // The built-in MacBook defaults to space black; other devices keep their own default.
+  const finishName = finish ?? (model === "macbook" ? "space-black" : model === "iphone-color" ? "graphite" : undefined);
+  const finishColor = finishName ? (DEVICE_FINISHES[finishName] ?? finishName) : undefined;
   const deviceSize = size ?? DEFAULT_SIZE[model];
 
   // Load three, the model and the screenshot; hold the render until the first frame is drawn. A layout
@@ -140,7 +164,7 @@ export function Device3D({
     image.catch(() => {});
     (async () => {
       const { createDeviceRenderer } = await import("./devices3d/runtime");
-      const renderer = await createDeviceRenderer(canvas, MODEL_IDS[model], finishColor);
+      const renderer = await createDeviceRenderer(canvas, MODEL_IDS[model], finishColor, modelSrc);
       if (!alive) {
         renderer.dispose();
         return;
@@ -163,7 +187,7 @@ export function Device3D({
         pending.current = null;
       }
     };
-  }, [model, finishColor, src, delayRender, continueRender, cancelRender]);
+  }, [model, modelSrc, finishColor, src, delayRender, continueRender, cancelRender]);
 
   const matrix = mul(ctx.view, ctx.model, placementMatrix(placement));
   const centerDist = ctx.D - matrix[11];
@@ -199,7 +223,8 @@ export function Device3D({
   const shadowBlur = Math.max(8, deviceSize * 0.04);
   // Phones float: their shadow falls on a wall behind them. Laptops and displays stand: it pools on
   // the floor under them.
-  const standing = model === "macbook" || model === "display";
+  const laptop = model === "macbook" || model === "macbook-pro";
+  const standing = laptop || model === "display";
   return (
     <>
       {shadow > 0 ? (
@@ -207,10 +232,10 @@ export function Device3D({
           {standing ? (
             <Plane
               y={deviceSize * fh * 0.5}
-              z={model === "macbook" ? deviceSize * 0.12 : 0}
+              z={laptop ? deviceSize * 0.12 : 0}
               tilt={90}
-              width={deviceSize * (model === "macbook" ? 1.02 : 0.5)}
-              height={deviceSize * (model === "macbook" ? 0.72 : 0.3)}
+              width={deviceSize * (laptop ? 1.02 : 0.5)}
+              height={deviceSize * (laptop ? 0.72 : 0.3)}
               radius={deviceSize * 0.08}
               background={shadowFill}
               dof={false}

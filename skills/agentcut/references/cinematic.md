@@ -45,7 +45,7 @@ narrower moves).
   - `shiftX`, `shiftY`: move the subject off-center (fractions of the frame) to leave room for a title.
   - `float` 0–1: handheld drift (0.3–0.6 on holds keeps them alive). `motionBlur` 0–1: blur on fast moves.
 - `<Screen kind src width ...placement>` — a screenshot (`src`), a screen recording (`video`, with
-  `videoProps` for `volume`, `loop`, `trimBefore`…) or `children` (live React UI) in a device. `kind`: `browser` (+ `url`), `macbook`, `iphone`, `ipad`,
+  `videoProps` for `volume`, `loop`, `trimBefore`…) or `children` (live React UI) in a device. `kind`: `browser` (+ `url`), `iphone`, `ipad`,
   `monitor`, `none`. `width` is the SCREEN width. Set `aspect` to the screenshot's width/height when it
   differs from the device (or `imageAspect` + `scroll` 0→1 to scroll a tall page). `finish`: `black` /
   `silver` (hardware), `light` / `dark` (browser). Extras: `shadow` (0.7), `reflection` (0–0.5 on dark
@@ -53,14 +53,27 @@ narrower moves).
 - `<Device3D model src size lifts ...placement>` — **real 3D hardware**, and the default for every phone,
   laptop and desktop shot (three.js, drawn through the same camera, studio-lit with real reflections):
   `model` `iphone` (iPhone 16 Pro Max model), `macbook` (keyboard, trackpad, opening lid: animate
-  `lidAngle` 0→110), `display` (Studio Display on its foot), `iphone-classic`. `src` is the screenshot
+  `lidAngle` 0→110), `display` (Studio Display on its foot), `iphone-color` (a modern iPhone in colour: `finish` `graphite` (default), `lavender`, `mist-blue`,
+  `white`, `cosmic-orange`, or the brand's hex; pick a colour that suits the palette, show the back in
+  orbits and turn-arounds, and use several colours side by side for "for everyone" shots). `src` is the screenshot
   on its screen (it covers the screen; a taller one shows its top, `scroll` 0→1 moves down it). `size` =
-  largest dimension in world px (defaults 760 / 1250 / 1150), `finish` `silver` `starlight` `space-gray`
+  largest dimension in world px (defaults 760 / 1250 / 1150), `finish` `space-black` (MacBook default) `space-gray` `silver` `starlight`
   `midnight` `black` (MacBook, display), `exposure`, `shadow`. `lifts`: pieces of the screenshot that rise
   off the device's screen, `[{ box: [x, y, w, h] (fractions of the SCREENSHOT), z, scale, radius }]` —
   they follow the screen's angle, even on an opening lid. Devices blur as a whole with the lens. Credit
   the iPhone model in the hand-off: "iPhone 16 Pro Max model by MajdyModels, CC BY 4.0".
-- **Never** use the flat `Screen` `iphone` / `macbook` / `ipad` / `monitor` frames when the shot shows the
+  **Better laptop if the workspace has one:** check `library/models/` for a user-supplied GLB (e.g.
+  `macbook-pro-14.glb`, a Sketchfab "MacBook Pro 14-inch M5" under a licence that forbids bundling it).
+  If it's there, prefer `model="macbook-pro" modelSrc={asset("library:models/macbook-pro-14.glb")}` for
+  laptop shots: it's far more detailed than the built-in `macbook`. Its lid doesn't open (`lidAngle` is
+  ignored), so use the built-in `macbook` for lid-opening shots. Never copy such a model into a project's
+  assets or anywhere it would be shared. If it isn't there and the user wants the most realistic laptop,
+  tell them they can download it free (their own Sketchfab "Free Standard" licence, fine for their
+  videos) from https://sketchfab.com/3d-models/macbook-pro-14-inch-m5-652a992f4f244122ae251f9cbb81da1e
+  (the "glb · Original format" download) and save it as `library/models/macbook-pro-14.glb` in the
+  workspace. Use `modelSrc` only with `macbook-pro` (or `iphone` with a copy of the same GLB): the
+  built-in `macbook`, `display`, `iphone-color` and `iphone-classic` are drawn in code and can't take a GLB.
+- **Never** use the flat `Screen` `iphone` / `ipad` / `monitor` frames when the shot shows the
   device: they look like clip-art next to the 3D models. Flat `Screen` is for browser windows
   (`kind="browser"`), frameless UI (`kind="none"`), giant readable close-ups where the hardware is off
   frame, and tall pages you fly over with `scroll`.

@@ -155,7 +155,8 @@ function createLegendTexture(
   keys: KeyRect[],
   bounds: { x: number; z: number; w: number; d: number },
 ) {
-  const pxPerMm = 9;
+  // Dense enough that the legends stay crisp in close-ups.
+  const pxPerMm = 14;
   const width = Math.ceil(bounds.w * pxPerMm);
   const height = Math.ceil(bounds.d * pxPerMm);
   const canvas = createCanvas(width, height);
@@ -166,7 +167,8 @@ function createLegendTexture(
     | undefined;
   if (!canvas || !context) return null;
   context.clearRect(0, 0, width, height);
-  context.fillStyle = "rgba(236, 238, 242, 0.92)";
+  // Bright, slightly bold legends: backlit-key white that reads against the black caps.
+  context.fillStyle = "#ffffff";
   context.textBaseline = "middle";
   for (const key of keys) {
     if (!key.label) continue;
@@ -175,7 +177,7 @@ function createLegendTexture(
     const keyWidth = key.w * pxPerMm;
     const keyDepth = key.d * pxPerMm;
     if (key.kind === "mod") {
-      context.font = `500 ${Math.round(2.3 * pxPerMm)}px -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif`;
+      context.font = `600 ${Math.round(2.5 * pxPerMm)}px -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif`;
       context.textAlign = "left";
       context.fillText(
         key.label,
@@ -184,8 +186,8 @@ function createLegendTexture(
         keyWidth - 3 * pxPerMm,
       );
     } else {
-      const fontSize = key.kind === "half" ? 2.4 : 3.6;
-      context.font = `500 ${Math.round(fontSize * pxPerMm)}px -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif`;
+      const fontSize = key.kind === "half" ? 2.6 : 3.9;
+      context.font = `600 ${Math.round(fontSize * pxPerMm)}px -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif`;
       context.textAlign = "center";
       context.fillText(
         key.label,
@@ -197,7 +199,31 @@ function createLegendTexture(
   }
   const texture = new THREE.CanvasTexture(canvas as HTMLCanvasElement);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/** Speaker grille: a fine field of dark perforations on a transparent texture. */
+function createGrilleTexture(widthMm: number, depthMm: number) {
+  const pxPerMm = 12;
+  const width = Math.ceil(widthMm * pxPerMm);
+  const height = Math.ceil(depthMm * pxPerMm);
+  const canvas = createCanvas(width, height);
+  const context = canvas?.getContext("2d") as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null | undefined;
+  if (!canvas || !context) return null;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "rgba(6, 6, 8, 0.85)";
+  const pitch = 1.15 * pxPerMm;
+  for (let y = pitch / 2, row = 0; y < height; y += pitch * 0.87, row++) {
+    for (let x = pitch / 2 + (row % 2) * (pitch / 2); x < width; x += pitch) {
+      context.beginPath();
+      context.arc(x, y, 0.32 * pxPerMm, 0, Math.PI * 2);
+      context.fill();
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas as HTMLCanvasElement);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   return texture;
 }
 
@@ -222,12 +248,14 @@ function createMaterials(finishColor: THREE.ColorRepresentation) {
   const { l: lightness } = finish.getHSL({ h: 0, s: 0, l: 0 });
   const isDark = lightness < 0.35;
   return {
+    // Bead-blasted anodised aluminium: soft, wide highlights, the finish's own colour in the shadows.
     aluminum: new THREE.MeshPhysicalMaterial({
       color: finish,
-      metalness: 0.92,
-      roughness: 0.4,
-      clearcoat: 0.12,
-      clearcoatRoughness: 0.5,
+      metalness: 0.85,
+      roughness: 0.34,
+      clearcoat: 0.18,
+      clearcoatRoughness: 0.4,
+      envMapIntensity: 0.75,
     }),
     edge: new THREE.MeshPhysicalMaterial({
       color: finish.clone().lerp(new THREE.Color(0xffffff), isDark ? 0.08 : 0.2),
@@ -235,25 +263,27 @@ function createMaterials(finishColor: THREE.ColorRepresentation) {
       roughness: 0.22,
     }),
     trackpad: new THREE.MeshPhysicalMaterial({
-      color: finish.clone().lerp(new THREE.Color(0x000000), 0.04),
-      metalness: 0.55,
-      roughness: 0.3,
+      color: finish.clone().lerp(new THREE.Color(0x000000), 0.06),
+      metalness: 0.5,
+      roughness: 0.28,
       clearcoat: 0.6,
       clearcoatRoughness: 0.18,
+      envMapIntensity: 0.6,
     }),
     well: new THREE.MeshStandardMaterial({
       color: 0x050506,
       roughness: 0.85,
       metalness: 0,
-      userData: { envMapIntensity: 0.1 },
+      envMapIntensity: 0.06,
     }),
     key: new THREE.MeshPhysicalMaterial({
-      color: 0x0c0c0e,
-      roughness: 0.62,
+      color: 0x0a0a0c,
+      roughness: 0.7,
       metalness: 0.05,
-      clearcoat: 0.08,
-      userData: { envMapIntensity: 0.3 },
+      clearcoat: 0.05,
+      envMapIntensity: 0.16,
     }),
+    grille: new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }),
     legends: new THREE.MeshBasicMaterial({
       transparent: true,
       depthWrite: false,
@@ -272,7 +302,7 @@ function createMaterials(finishColor: THREE.ColorRepresentation) {
       metalness: 0.8,
       roughness: 0.35,
     }),
-    rubber: new THREE.MeshStandardMaterial({ color: 0x18181a, roughness: 0.9 }),
+    rubber: new THREE.MeshStandardMaterial({ color: 0x18181a, roughness: 0.9, envMapIntensity: 0.2 }),
     logo: new THREE.MeshPhysicalMaterial({
       color: finish
         .clone()
@@ -402,6 +432,27 @@ export function createMacbookModel(options: MacbookModelOptions = {}) {
       mm(keyboardBounds.z + keyboardBounds.d / 2),
     );
     legends.renderOrder = 2;
+  }
+
+  // ── Speaker grilles either side of the keyboard ─────────────────────
+  const sideRoom = (BASE.w - keyboardBounds.w) / 2;
+  const grilleW = Math.min(12, sideRoom - 6);
+  const grilleTexture = grilleW > 3 ? createGrilleTexture(grilleW, keyboardBounds.d) : null;
+  if (grilleTexture) {
+    materials.grille.map = grilleTexture;
+    for (const side of [-1, 1]) {
+      const grille = add(
+        "laptop-speaker-grille",
+        new THREE.Mesh(new THREE.PlaneGeometry(mm(grilleW), mm(keyboardBounds.d)).rotateX(-Math.PI / 2), materials.grille),
+      );
+      grille.castShadow = false;
+      grille.position.set(
+        side * mm(keyboardBounds.w / 2 + sideRoom / 2),
+        mm(0.3),
+        mm(keyboardBounds.z + keyboardBounds.d / 2),
+      );
+      grille.renderOrder = 2;
+    }
   }
 
   // ── Trackpad and front lip ──────────────────────────────────────────

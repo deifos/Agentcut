@@ -592,13 +592,14 @@ export function Plane({
 
 // ─── Devices and screens ─────────────────────────────────────────────────────────────────────────
 
-export type DeviceKind = "none" | "browser" | "macbook" | "iphone" | "ipad" | "monitor";
+// No flat MacBook: laptops are 3D (Device3D "macbook" / "macbook-pro"). A scene that still passes
+// kind="macbook" gets a frameless screen.
+export type DeviceKind = "none" | "browser" | "iphone" | "ipad" | "monitor";
 
 /** Screen aspect (width / height) each device shows by default. */
 export const DEVICE_ASPECT: Record<DeviceKind, number> = {
   none: 16 / 10,
   browser: 16 / 10,
-  macbook: 16 / 10,
   iphone: 9 / 19.5,
   ipad: 3 / 4,
   monitor: 16 / 9,
@@ -630,15 +631,6 @@ export function deviceGeometry(kind: DeviceKind, screenWidth: number, aspect = D
         outer: { width: w + b * 2, height: h + b * 2 },
         screen: { left: b, top: b, width: w, height: h, radius: w * 0.025 },
         radius: w * 0.06,
-      };
-    }
-    case "macbook": {
-      const b = w * 0.022;
-      const base = w * 0.034;
-      return {
-        outer: { width: w * 1.16, height: h + b * 2.6 + base },
-        screen: { left: w * 0.08, top: b * 1.3, width: w, height: h, radius: w * 0.004 },
-        radius: w * 0.02,
       };
     }
     case "monitor": {
@@ -677,11 +669,11 @@ export interface DeviceProps {
   screenBackground?: string;
 }
 
-/** A flat device frame (iPhone, MacBook, iPad, monitor, browser window) around its screen content. */
+/** A flat device frame (iPhone, iPad, monitor, browser window) around its screen content. */
 export function Device({ kind, screenWidth, aspect, finish, url, children, screenBackground = "#ffffff" }: DeviceProps) {
   const g = deviceGeometry(kind, screenWidth, aspect);
   const w = screenWidth;
-  const dark = finish === "dark" || finish === "black" || (finish === undefined && (kind === "iphone" || kind === "macbook"));
+  const dark = finish === "dark" || finish === "black" || (finish === undefined && kind === "iphone");
   const metal = finish === "silver" ? "#d9dce1" : "#1d1e22";
   const screen = (
     <div
@@ -730,43 +722,6 @@ export function Device({ kind, screenWidth, aspect, finish, url, children, scree
           </div>
         </div>
         {screen}
-      </div>
-    );
-  }
-  if (kind === "macbook") {
-    const lidH = g.screen.height + g.screen.top * 2;
-    const lidW = w * 1.04;
-    const baseH = g.outer.height - lidH;
-    const lidColor = finish === "silver" ? "#c9ccd1" : "#0d0d0f";
-    return (
-      <div style={{ position: "relative", width: g.outer.width, height: g.outer.height }}>
-        <div
-          style={{
-            position: "absolute",
-            left: (g.outer.width - lidW) / 2,
-            top: 0,
-            width: lidW,
-            height: lidH,
-            borderRadius: `${w * 0.022}px ${w * 0.022}px ${w * 0.006}px ${w * 0.006}px`,
-            background: lidColor,
-            border: `${w * 0.0016}px solid ${finish === "silver" ? "#aeb2b8" : "#3a3b40"}`,
-          }}
-        />
-        <div style={{ position: "absolute", left: g.outer.width / 2 - w * 0.06, top: g.screen.top * 0.1, width: w * 0.12, height: g.screen.top * 0.9, borderRadius: `0 0 ${w * 0.01}px ${w * 0.01}px`, background: lidColor }} />
-        {screen}
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: lidH,
-            width: g.outer.width,
-            height: baseH,
-            borderRadius: `${w * 0.004}px ${w * 0.004}px ${w * 0.05}px ${w * 0.05}px / ${w * 0.004}px ${w * 0.004}px ${baseH * 0.9}px ${baseH * 0.9}px`,
-            background: finish === "silver" || finish === undefined ? "linear-gradient(180deg, #e9ebee 0%, #b9bdc3 55%, #8e9298 100%)" : "linear-gradient(180deg, #4a4b50 0%, #2a2b2f 60%, #151517 100%)",
-          }}
-        >
-          <div style={{ position: "absolute", left: "50%", top: 0, width: w * 0.16, height: baseH * 0.32, marginLeft: -w * 0.08, borderRadius: `0 0 ${w * 0.012}px ${w * 0.012}px`, background: alpha("#000000", 0.18) }} />
-        </div>
       </div>
     );
   }
@@ -858,14 +813,13 @@ export function Screen({
       {...placement}
       width={g.outer.width}
       height={g.outer.height}
-      radius={kind === "macbook" ? 0 : g.radius}
+      radius={g.radius}
       shadow={shadow}
       shadowDepth={shadowDepth}
       reflection={reflection}
       rim={rim}
       dof={dof}
       opacity={opacity}
-      style={{ overflow: kind === "macbook" ? "visible" : "hidden" }}
     >
       <Device kind={kind} screenWidth={width} aspect={aspect} finish={finish} url={url} screenBackground={screenBackground}>
         {src ? (

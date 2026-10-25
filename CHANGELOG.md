@@ -13,6 +13,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-10-25
+
+Works with helper 0.2.0; update to 0.2.6 (`npx -y agentcut@latest`) so your agent knows the new device
+colours and models.
+
+### Added
+
+- **Phones in colour.** A colour iPhone for scenes (`Device3D model="iphone-color"`) in graphite,
+  lavender, mist blue, white, cosmic orange or your brand colour, for turn-arounds and colourful lineups.
+- **Bring your own device models.** `modelSrc` loads your own GLB from the workspace library, e.g. the
+  free, highly detailed "MacBook Pro 14-inch M5" from Sketchfab (`model="macbook-pro"`),
+  whose licence doesn't allow it to ship with Agentcut. Your agent tells you where to get it and uses it
+  for laptop shots when it's there.
+
+### Changed
+
+- **A better built-in 3D MacBook.** Space black by default (new `space-black` finish), black keycaps with
+  bright, crisp legends, speaker grilles, and softer studio lighting for laptops and displays, so the
+  aluminium and the keyboard no longer wash out to grey.
+
+### Removed
+
+- **The flat 2D MacBook frame** (`Screen kind="macbook"`). Laptops are 3D now (`Device3D` `macbook` or
+  `macbook-pro`); a scene that still asks for the flat frame gets a frameless screen.
+
 ## [0.2.5] - 2026-10-25
 
 Works with helper 0.2.0; Cinematic Mode needs helper 0.2.5 (`npx -y agentcut@latest`), which brings your
@@ -152,7 +177,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/deifos/Agentcut/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/deifos/Agentcut/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/deifos/Agentcut/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/deifos/Agentcut/compare/v0.2.2...v0.2.3

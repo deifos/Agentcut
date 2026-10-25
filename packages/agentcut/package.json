@@ -1,6 +1,6 @@
 {
   "name": "agentcut",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Local helper for Agentcut: runs your coding agent (Claude Code or Codex), your video workspace and live preview bundles for the Agentcut studio page.",
   "license": "MIT",
   "type": "module",

@@ -13,6 +13,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-10-25
+
+Works with helper 0.2.0; update to 0.2.7 (`npx -y agentcut@latest`) so your agent knows how to film macro
+focus shots.
+
 ### Added
 
 - **Macro focus shots.** Your agent can now film extreme close-ups of a screen with a macro lens: one
@@ -24,9 +29,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   with a ladder of blur levels, so a wide aperture gives a crisp focus band and strong falloff instead of
   a faint soft-sharp mix; screens that pass the camera in a close-up are drawn up to the lens instead of
   vanishing.
-
-### Fixed
-
 - **The 3D MacBook is truly space black.** At low, front-facing angles the deck mirrored the bright studio
   and read light grey; dark finishes now reflect less, like real dark anodising, and `space-black` is a
   deeper charcoal (`#3d3c40`).
@@ -195,7 +197,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/deifos/Agentcut/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/deifos/Agentcut/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/deifos/Agentcut/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/deifos/Agentcut/compare/v0.2.3...v0.2.4

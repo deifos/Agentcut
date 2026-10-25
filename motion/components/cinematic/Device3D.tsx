@@ -36,7 +36,7 @@ export const DEVICE_FINISHES: Record<string, string> = {
   starlight: "#d9cdb6",
   "space-gray": "#6f7174",
   // The deep anodised black of the current MacBook Pro (matched to a reference model).
-  "space-black": "#565457",
+  "space-black": "#3d3c40",
   // Colour iPhone finishes (iphone-color), most with calibrated logo tints in iphone-model.ts.
   lavender: "#c5a4df",
   "mist-blue": "#829dce",

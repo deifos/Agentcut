@@ -13,6 +13,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **Macro focus shots.** Your agent can now film extreme close-ups of a screen with a macro lens: one
+  line sharp, everything else melted, drifting slowly. Used sparingly, for the detail worth savouring.
+
+### Fixed
+
+- **Real depth of field in close-ups.** Lens blur now follows the part of a screen that's on camera,
+  with a ladder of blur levels, so a wide aperture gives a crisp focus band and strong falloff instead of
+  a faint soft-sharp mix; screens that pass the camera in a close-up are drawn up to the lens instead of
+  vanishing.
+
 ### Fixed
 
 - **The 3D MacBook is truly space black.** At low, front-facing angles the deck mirrored the bright studio

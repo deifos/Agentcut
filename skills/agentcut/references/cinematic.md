@@ -40,7 +40,7 @@ narrower moves).
     tilt small (5–20) with some `turn` and `roll`.
   - `fov`: 15–25 flat telephoto (default 24, product look), 35 natural, 50–70 dramatic close-ups.
   - `focus`: a world point `[x, y, z]` (put it ON the thing that matters) or px toward the camera from
-    the target. `aperture`: 0 none, 0.4 subtle, 1 strong, 2 macro. Focus and aperture animate: a rack
+    the target. `aperture`: 0 none, 0.4 subtle, 1 strong, 2.5–4 macro (see Macro focus), 6+ a razor line. Focus and aperture animate: a rack
     focus is two keys with different `focus` points.
   - `shiftX`, `shiftY`: move the subject off-center (fractions of the frame) to leave room for a title.
   - `float` 0–1: handheld drift (0.3–0.6 on holds keeps them alive). `motionBlur` 0–1: blur on fast moves.
@@ -126,6 +126,7 @@ narrower moves).
 | Hero push | same angle, zoom +15–25 % over the shot, `inOut`, `float 0.4` |
 | Rack focus | camera still or drifting; `focus` from region A to B over 20–30 f, `aperture 0.9–1.3` |
 | Lift-out | `Device3D` `lifts` (or `Lift` on a flat Screen) z 0→80–140, scale →1.08, `back` or `expo`, focus moves to the lift |
+| Macro focus | see "Macro focus" below: a flat screen seen at a grazing angle, one line sharp, everything else melted; slow drift only |
 | Push to detail | zoom 1→2.2–3 on a hero region (`x, y` = its world center), aperture up as you go in |
 | Fly-over | low `tilt 55–65`, camera `y` travels down the page, `fov 35`, long screenshot with `scroll` |
 | Orbit | `Device3D` iPhone: camera `turn` −35 → +25, `tilt` 5–12, `fov 28–32`, a dark backdrop with a glow behind |
@@ -145,6 +146,27 @@ Find the brand colours first (logo, UI, website) and build the palette from them
 (`references/loops.md` › Brand palette). Every take must differ in loop choice, tone rotation, shapes
 and type, not only in camera moves: write the rotation in the shot list, and check notes.md for what
 the last take used.
+
+## Macro focus (an occasional signature shot)
+
+The extreme close-up where the camera skims the screen, one line of UI is crisp and everything in front
+and behind melts into blur (the look of a macro lens). Use it **once or twice per film at most**, for a
+detail worth savouring: a key number, a headline, a list. It is not the default framing.
+
+- **Keep the screen flat** (no `tilt` on the Screen/Group) and get the angle from the **camera**:
+  `tilt 60–70`, `turn ±15–30`, `roll ±10–20`, `fov 30–36`, `zoom 2.5–3.2`, `aperture 2.5–4`
+  (6+ shrinks the sharp band to a line, only for a brief accent).
+- **Focus on the surface:** `x, y` and `focus: [x, y, 0]` = the world point of the hero line on the flat
+  screen (measure it from the screenshot like a hero region). With a tilted screen a point `[x, y, 0]` is
+  off the surface and nothing comes out sharp.
+- **The sharp area is a band, not a dot:** real depth of field is a slice across the surface at one
+  distance. Aim the band along the line of text you want (turn/roll set its direction). **Never** cut a
+  plane into tiles or stack copies to fake a focus point: the blurred tiles leave a visible grid.
+- **Move slowly.** A macro shot is a slow, almost still drift: over 3–5 s, the camera's `x`/`y` travel at
+  most 60–120 world px and its angles at most 3–5°, with `inOut` or `linear` keys (no `expo`, `back`
+  or `whip`), `float 0.2–0.4`, no motion blur. Optionally a slow rack: `focus` slides 80–200 px along the
+  line over the whole shot. Fast moves at this magnification look like a glitch, not a lens.
+- Cut into and out of it on a calm beat; the shots around it should be wider so the close-up lands.
 
 ## Taste rules
 

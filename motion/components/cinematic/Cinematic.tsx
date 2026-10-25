@@ -290,7 +290,8 @@ export interface PlaneProps extends Placement {
 }
 
 /** Lens blur cap in screen px at 1080 (scaled with the frame). */
-const MAX_BLUR = 42;
+// Room for macro close-ups (aperture 2–4): a razor-thin focus band with everything else melted.
+const MAX_BLUR = 80;
 
 /** Camera distance of a world-space point on this plane (local px). */
 function distAt(m: M4, D: number, x: number, y: number) {
@@ -310,7 +311,8 @@ export function localScale(camModel: M4) {
   return Math.max(1e-6, Math.sqrt(kx * ky));
 }
 
-const STOPS = 11;
+// Fine enough that a macro shot's thin focus band stays smooth.
+const STOPS = 49;
 
 /**
  * Lens blur across a plane: none, one blur, or a gradient of blur along the plane's depth. Blurs come
@@ -340,15 +342,35 @@ function planeFocus(ctx: StageContext, camModel: M4, w: number, h: number) {
   const L = Math.abs(w * dx) + Math.abs(h * dy);
   const screen: number[] = [];
   const local: number[] = [];
+  const onScreen: boolean[] = [];
+  const toScreen = mul(ctx.project, camModel);
   for (let i = 0; i < STOPS; i++) {
     const t = i / (STOPS - 1) - 0.5;
-    const dist = distAtLocal(w / 2 + dx * t * L, h / 2 + dy * t * L);
+    const px = w / 2 + dx * t * L;
+    const py = h / 2 + dy * t * L;
+    const dist = distAtLocal(px, py);
     screen.push(blurFor(ctx, dist));
     local.push(localBlur(dist));
+    const [sx, sy, , sw] = apply(toScreen, px, py, 0);
+    const margin = 0.25;
+    onScreen.push(
+      sw > 0 &&
+        sx / sw > -margin * ctx.width &&
+        sx / sw < (1 + margin) * ctx.width &&
+        sy / sw > -margin * ctx.height &&
+        sy / sw < (1 + margin) * ctx.height,
+    );
   }
-  const maxScreen = Math.max(...screen);
-  const minScreen = Math.min(...screen);
-  const max = Math.max(...local);
+  // Scale the blur copies to what's on screen. In a close-up most of the plane is out of frame, and its
+  // far end (tiny on screen, so a huge blur in local px) would otherwise set the scale and leave the
+  // visible part a faint mix of sharp and soft whatever the aperture.
+  const visible = (values: number[]) => {
+    const kept = values.filter((_, i) => onScreen[i]);
+    return kept.length ? kept : values;
+  };
+  const maxScreen = Math.max(...visible(screen));
+  const minScreen = Math.min(...visible(screen));
+  const max = Math.max(...visible(local));
   if (maxScreen < 0.6) return { kind: "sharp" as const };
   if (maxScreen - minScreen < Math.max(1, maxScreen * 0.2)) return { kind: "uniform" as const, blur: (max + Math.min(...local)) / 2 };
   /** Local blur along the gradient line of the box padded by `pad` on every side (the copies' box). */
@@ -431,15 +453,63 @@ export function Plane({
   const lightPreview = env.isPlayer && !env.isRendering;
   const model = mul(ctx.model, basis ?? placementMatrix(placement));
   const camModel = mul(ctx.view, model, translate(-width / 2, -height / 2, 0));
-  // Skip a plane that reaches behind the camera (it can't be projected). Big surfaces (Floor) are tiled
-  // so only the part at the lens drops out.
+  // A plane reaching behind the camera can't be projected as a whole: below, only its part in front of
+  // the lens is drawn. Big surfaces (Floor) are also tiled.
   const nearest = Math.min(
     distAt(camModel, ctx.D, 0, 0),
     distAt(camModel, ctx.D, width, 0),
     distAt(camModel, ctx.D, 0, height),
     distAt(camModel, ctx.D, width, height),
   );
-  if (nearest < ctx.D * 0.04 || opacity <= 0) return null;
+  if (opacity <= 0) return null;
+  const near = ctx.D * 0.04;
+  if (nearest < near) {
+    // The plane passes the lens (macro close-ups, low fly-overs). Keep the part in front of the camera:
+    // the largest edge-aligned rectangle whose corners are all safely in front, redrawn as a smaller
+    // plane with the content offset so nothing moves.
+    const d00 = distAt(camModel, ctx.D, 0, 0);
+    const gx = (distAt(camModel, ctx.D, width, 0) - d00) / Math.max(1, width);
+    const gy = (distAt(camModel, ctx.D, 0, height) - d00) / Math.max(1, height);
+    const dist = (x: number, y: number) => d00 + gx * x + gy * y;
+    const safe = near * 1.5;
+    let [x0, y0, x1, y1] = [0, 0, width, height];
+    for (let i = 0; i < 40; i++) {
+      const corners: [number, number][] = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
+      const worst = corners.reduce((a, c) => (dist(c[0], c[1]) < dist(a[0], a[1]) ? c : a));
+      if (dist(worst[0], worst[1]) >= safe) break;
+      // Pull in the two edges that meet at the closest corner, in proportion to how fast depth changes.
+      const step = 0.05;
+      if (Math.abs(gx) * width > 1e-6) {
+        if (worst[0] === x0 && gx > 0) x0 += (x1 - x0) * step;
+        else if (worst[0] === x1 && gx < 0) x1 -= (x1 - x0) * step;
+      }
+      if (Math.abs(gy) * height > 1e-6) {
+        if (worst[1] === y0 && gy > 0) y0 += (y1 - y0) * step;
+        else if (worst[1] === y1 && gy < 0) y1 -= (y1 - y0) * step;
+      }
+    }
+    const sw = x1 - x0;
+    const sh = y1 - y0;
+    const ok = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].every(([x, y]) => dist(x, y) >= near);
+    if (!ok || sw < 2 || sh < 2) return null;
+    const subBasis = mul(basis ?? placementMatrix(placement), translate(x0 + sw / 2 - width / 2, y0 + sh / 2 - height / 2, 0));
+    return (
+      <Plane
+        basis={subBasis}
+        width={sw}
+        height={sh}
+        radius={radius}
+        background={background}
+        opacity={opacity}
+        dof={dof}
+        rim={rim}
+        blur={blur}
+        style={style}
+      >
+        <div style={{ position: "absolute", left: -x0, top: -y0, width, height }}>{children}</div>
+      </Plane>
+    );
+  }
 
   // Extra softness asked for in world px, in this plane's local px.
   const extra = (blur * ctx.u) / localScale(camModel);
@@ -561,31 +631,45 @@ export function Plane({
   } else if (focus.kind === "uniform") {
     const b = withExtra(focus.blur);
     layers.push(copyOf("main", camModel, { blur: b, pad: padFor(b), opacity, copy: false }));
-  } else if (lightPreview) {
-    const { max, angle } = focus;
-    const farBlur = withExtra(max * 0.7);
-    const pad = padFor(farBlur);
-    const alphas = focus.blursAcross(pad).map((b) => stackAlphas([b / max, 1 - b / max], opacity));
-    layers.push(
-      copyOf("far", camModel, { blur: farBlur, pad, mask: maskFrom(angle, alphas.map((a) => a[0])), opacity: 1, copy: true }),
-      copyOf("main", camModel, { blur: extra, pad, mask: maskFrom(angle, alphas.map((a) => a[1])), opacity: 1, copy: false }),
-    );
   } else {
-    // Three copies at increasing blur, cross-faded along the plane's depth.
+    // Copies at geometric blur levels (each about twice the last), cross-faded along the plane's depth:
+    // each point mixes the two levels around its own blur. A screen-space blur that's even across a
+    // tilted plane is a 10× range in the plane's own px (near parts are magnified), which one blurred
+    // copy can't follow; macro close-ups need the full ladder. The preview climbs fewer rungs.
     const { max, angle } = focus;
-    const mid = max / 3;
-    const farBlur = withExtra(max);
-    const pad = padFor(farBlur);
-    const alphas = focus.blursAcross(pad).map((b) => {
-      const wS = b <= mid ? 1 - b / mid : 0;
-      const wM = b <= mid ? b / mid : 1 - (b - mid) / Math.max(1e-6, max - mid);
-      return stackAlphas([Math.max(0, 1 - wS - wM), wM, wS], opacity);
+    // Enough rungs to reach ~1 px, so the in-focus band resolves cleanly (capped for cost).
+    const rungs = Math.max(1, Math.min(lightPreview ? 2 : 6, Math.ceil(Math.log(Math.max(1.01, max / 0.9)) / Math.log(2.2))));
+    const levels = [0];
+    for (let i = rungs - 1; i >= 0; i--) levels.push(max / Math.pow(2.2, i));
+    const pad = padFor(withExtra(max));
+    const weights = focus.blursAcross(pad).map((b) => {
+      const w = new Array<number>(levels.length).fill(0);
+      if (b <= 0) {
+        w[0] = 1;
+        return w;
+      }
+      let i = 0;
+      while (i < levels.length - 2 && b > levels[i + 1]) i++;
+      const t = Math.min(1, Math.max(0, (b - levels[i]) / Math.max(1e-6, levels[i + 1] - levels[i])));
+      w[i] = 1 - t;
+      w[i + 1] = t;
+      return w;
     });
-    layers.push(
-      copyOf("far", camModel, { blur: farBlur, pad, mask: maskFrom(angle, alphas.map((a) => a[0])), opacity: 1, copy: true }),
-      copyOf("mid", camModel, { blur: withExtra(mid), pad, mask: maskFrom(angle, alphas.map((a) => a[1])), opacity: 1, copy: true }),
-      copyOf("main", camModel, { blur: extra, pad, mask: maskFrom(angle, alphas.map((a) => a[2])), opacity: 1, copy: false }),
-    );
+    // Stack from the blurriest copy (bottom) up to the sharp main copy (top).
+    const order = levels.map((_, i) => levels.length - 1 - i);
+    const alphas = weights.map((w) => stackAlphas(order.map((i) => w[i]), opacity));
+    order.forEach((level, k) => {
+      const isMain = level === 0;
+      layers.push(
+        copyOf(isMain ? "main" : `blur${level}`, camModel, {
+          blur: isMain ? extra : withExtra(levels[level]),
+          pad,
+          mask: maskFrom(angle, alphas.map((a) => a[k])),
+          opacity: 1,
+          copy: !isMain,
+        }),
+      );
+    });
   }
   return <>{layers}</>;
 }

@@ -246,29 +246,33 @@ function createLogoGeometry(width: number) {
 function createMaterials(finishColor: THREE.ColorRepresentation) {
   const finish = new THREE.Color(finishColor);
   const { l: lightness } = finish.getHSL({ h: 0, s: 0, l: 0 });
-  const isDark = lightness < 0.35;
+  // Space black and darker finishes count as dark.
+  const isDark = lightness < 0.4;
   return {
     // Bead-blasted anodised aluminium: soft, wide highlights, the finish's own colour in the shadows.
+    // Dark finishes (space black) reflect much less of the studio, like real dark anodising: otherwise a
+    // low camera facing the deck sees the bright environment and the black washes out to light grey.
     aluminum: new THREE.MeshPhysicalMaterial({
       color: finish,
-      metalness: 0.85,
-      roughness: 0.34,
-      clearcoat: 0.18,
+      metalness: isDark ? 0.55 : 0.85,
+      roughness: isDark ? 0.48 : 0.34,
+      clearcoat: isDark ? 0.04 : 0.18,
       clearcoatRoughness: 0.4,
-      envMapIntensity: 0.75,
+      envMapIntensity: isDark ? 0.3 : 0.75,
     }),
     edge: new THREE.MeshPhysicalMaterial({
       color: finish.clone().lerp(new THREE.Color(0xffffff), isDark ? 0.08 : 0.2),
-      metalness: 1,
-      roughness: 0.22,
+      metalness: isDark ? 0.85 : 1,
+      roughness: isDark ? 0.3 : 0.22,
+      envMapIntensity: isDark ? 0.55 : 1,
     }),
     trackpad: new THREE.MeshPhysicalMaterial({
-      color: finish.clone().lerp(new THREE.Color(0x000000), 0.06),
-      metalness: 0.5,
-      roughness: 0.28,
-      clearcoat: 0.6,
+      color: finish.clone().lerp(new THREE.Color(0x000000), isDark ? 0.12 : 0.06),
+      metalness: isDark ? 0.4 : 0.5,
+      roughness: isDark ? 0.36 : 0.28,
+      clearcoat: isDark ? 0.25 : 0.6,
       clearcoatRoughness: 0.18,
-      envMapIntensity: 0.6,
+      envMapIntensity: isDark ? 0.28 : 0.6,
     }),
     well: new THREE.MeshStandardMaterial({
       color: 0x050506,

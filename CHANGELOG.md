@@ -13,6 +13,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The 3D MacBook is truly space black.** At low, front-facing angles the deck mirrored the bright studio
+  and read light grey; dark finishes now reflect less, like real dark anodising, and `space-black` is a
+  deeper charcoal (`#3d3c40`).
+
 ## [0.2.6] - 2026-10-25
 
 Works with helper 0.2.0; update to 0.2.6 (`npx -y agentcut@latest`) so your agent knows the new device

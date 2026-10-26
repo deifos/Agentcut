@@ -6,7 +6,7 @@ motion and camera numbers (ffmpeg), a thumbnail, and two cuts (`preview.mp4` for
 for export). The output folder has the same layout as the CDN (`agentcut/broll/`).
 
 Runs on your own machine, no API keys. Needs Node 20+, ffmpeg/ffprobe on PATH and
-[Ollama](https://ollama.com) with a vision model (`gemma3:12b` by default, `BROLL_DESCRIBE_MODEL` to change).
+[Ollama](https://ollama.com) with a vision model (`gemma3:4b` by default, `BROLL_DESCRIBE_MODEL` to change).
 
 ```bash
 npm install

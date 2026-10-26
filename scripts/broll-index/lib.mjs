@@ -13,7 +13,7 @@ if (!dataRoot) {
 export const DATA = resolve(dataRoot);
 export const FILMS_DIR = join(DATA, "films"); // downloaded sources: untrusted data, only ever read by ffmpeg
 export const WORK_DIR = join(DATA, "work");
-export const OUT_DIR = join(DATA, "out"); // mirrors the CDN layout: broll/v1/
+export const OUT_DIR = join(DATA, "out"); // mirrors the CDN layout: agentcut/broll/
 export const MODEL_CACHE = join(DATA, "cache", "hf");
 
 export const USER_AGENT = "AgentcutBrollIndexer/0.1 (+https://agentcut.synteq.app)";

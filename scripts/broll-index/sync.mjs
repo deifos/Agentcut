@@ -1,17 +1,16 @@
-// Uploads the built catalog (out/) to R2 under broll/v1/: only files not uploaded yet, the index last,
+// Uploads the built catalog (out/) to R2 under agentcut/broll/: only files not uploaded yet, the index last,
 // so the live catalog never points at a missing file. With --loop it repeats, for a catalog that grows
 // while the indexer runs.
-//   BROLL_DATA=E:/agentcut-broll BROLL_ENV_FILE=E:/projects/screenslick/.env node sync.mjs [--loop minutes]
-// The env file needs CLOUDFLARE_BUCKET_API, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY,
-// CLOUDFLARE_BUCKET_NAME and CLOUDFLARE_PUBLIC_URL. Keys are read, never printed.
+//   BROLL_DATA=E:/agentcut-broll BROLL_ENV_FILE=path/to/.env node sync.mjs [--loop minutes]
+// The env file needs CLOUDFLARE_BUCKET_API, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY and
+// CLOUDFLARE_BUCKET_NAME (the CLOUDFARE_* spelling works too). Keys are read, never printed.
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { DATA, OUT_DIR, readJson, writeJson } from "./lib.mjs";
 
-const PREFIX = process.env.BROLL_PREFIX ?? "broll/v1";
-const LEDGER = join(DATA, "uploaded.json");
+const PREFIX = process.env.BROLL_PREFIX ?? "agentcut/broll";
 const CONCURRENCY = 6;
 
 function loadEnv(path) {
@@ -21,19 +20,23 @@ function loadEnv(path) {
     const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
     if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, "");
   }
-  for (const key of ["CLOUDFLARE_BUCKET_API", "CLOUDFLARE_ACCESS_KEY_ID", "CLOUDFLARE_SECRET_ACCESS_KEY", "CLOUDFLARE_BUCKET_NAME", "CLOUDFLARE_PUBLIC_URL"]) {
-    if (!env[key]) throw new Error(`${key} is missing from the env file.`);
+  const out = {};
+  for (const key of ["BUCKET_API", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "BUCKET_NAME"]) {
+    out[key] = env[`CLOUDFLARE_${key}`] ?? env[`CLOUDFARE_${key}`];
+    if (!out[key]) throw new Error(`CLOUDFLARE_${key} is missing from the env file.`);
   }
-  return env;
+  return out;
 }
 
 const env = loadEnv(process.env.BROLL_ENV_FILE);
-const bucket = env.CLOUDFLARE_BUCKET_NAME;
+const bucket = env.BUCKET_NAME;
 const client = new S3Client({
   region: "auto",
-  endpoint: env.CLOUDFLARE_BUCKET_API,
-  credentials: { accessKeyId: env.CLOUDFLARE_ACCESS_KEY_ID, secretAccessKey: env.CLOUDFLARE_SECRET_ACCESS_KEY },
+  endpoint: env.BUCKET_API,
+  credentials: { accessKeyId: env.ACCESS_KEY_ID, secretAccessKey: env.SECRET_ACCESS_KEY },
 });
+// One record of uploaded files per bucket and folder.
+const LEDGER = join(DATA, `uploaded-${bucket}-${PREFIX.replace(/[^a-z0-9]+/gi, "_")}.json`);
 
 const TYPES = { ".json": "application/json", ".webp": "image/webp", ".mp4": "video/mp4", ".i8": "application/octet-stream" };
 // Shots, thumbnails and versioned vectors never change; the index is replaced as the catalog grows.

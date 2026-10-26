@@ -1370,5 +1370,197 @@
   {
     "id": "NewOrlea1941",
     "theme": "pilot"
+  },
+  {
+    "id": "NASA-Orion-Resource-Reel",
+    "title": "NASA Orion Resource Reel",
+    "year": null,
+    "collection": "nasa",
+    "width": 1920,
+    "theme": "space"
+  },
+  {
+    "id": "Time-lapseAstronautPhotographyOfEarth-2",
+    "title": "Time-Lapse Astronaut Photography of Earth - 2",
+    "year": 2011,
+    "collection": "nasa",
+    "width": 1280,
+    "theme": "space"
+  },
+  {
+    "id": "Animalsi1937",
+    "title": "Animals in Modern Life",
+    "year": 1937,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "animals"
+  },
+  {
+    "id": "Poultryo1937",
+    "title": "Poultry on the Farm",
+    "year": 1937,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "animals"
+  },
+  {
+    "id": "Fishfrom1945",
+    "title": "Fish from Hell (Part I)",
+    "year": 1945,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "underwater"
+  },
+  {
+    "id": "gov.dod.dimoc.25224",
+    "title": "OCEANOGRAPHIC RESEARCH WITH THE COUSTEAU DIVING SAUCER",
+    "year": 1966,
+    "collection": "FedFlix",
+    "width": 640,
+    "theme": "underwater"
+  },
+  {
+    "id": "ChildWen1942",
+    "title": "Child Went Forth, A",
+    "year": 1942,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "kids"
+  },
+  {
+    "id": "Tomorrow1954",
+    "title": "Tomorrow's Drivers",
+    "year": 1954,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "kids"
+  },
+  {
+    "id": "AllAmeri1936",
+    "title": "All-American Soap Box Derby, The (1936)",
+    "year": 1936,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "kids"
+  },
+  {
+    "id": "DayofTha1951",
+    "title": "Day of Thanksgiving, A",
+    "year": 1951,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "holidays"
+  },
+  {
+    "id": "PatheNew1950",
+    "title": "Pathe News Christmas with Their Cameramen and Crews 'Round the World",
+    "year": 1950,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "holidays"
+  },
+  {
+    "id": "RideforC1937",
+    "title": "Ride for Cinderella, A",
+    "year": 1937,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "signs"
+  },
+  {
+    "id": "WhyPlayL1949",
+    "title": "Why Play Leap Frog?",
+    "year": 1949,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "signs"
+  },
+  {
+    "id": "Corvairi1960",
+    "title": "Corvair in Action, The",
+    "year": 1960,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "signs"
+  },
+  {
+    "id": "CaseofSp1940",
+    "title": "Case of Spring Fever, A",
+    "year": 1940,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "animation"
+  },
+  {
+    "id": "InMyMerr1932",
+    "title": "In My Merry Oldsmobile",
+    "year": 1932,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "animation"
+  },
+  {
+    "id": "ParkCons1938",
+    "title": "Park Conscious",
+    "year": 1938,
+    "collection": "prelinger",
+    "width": 643,
+    "theme": "circus"
+  },
+  {
+    "id": "gov.archives.arc.654179",
+    "title": "When the Circus Comes to Town / Side Show/ Swingeroo Circus/ Barnyard Babies / Animal Land / Circus at the Zoo",
+    "year": null,
+    "collection": "FedFlix",
+    "width": 640,
+    "theme": "circus"
+  },
+  {
+    "id": "gov.dod.dimoc.30119",
+    "title": "WINTER WAR",
+    "year": 1959,
+    "collection": "FedFlix",
+    "width": 640,
+    "theme": "winter"
+  },
+  {
+    "id": "amateur_old_west",
+    "title": "Amateur: Old West, Cowboys and Indians, Arizona and New Mexico",
+    "year": null,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "west"
+  },
+  {
+    "id": "DesertVe1958",
+    "title": "Desert Venture (Part I)",
+    "year": 1948,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "west"
+  },
+  {
+    "id": "EskimosW1950",
+    "title": "Eskimos: Winter in Western Alaska",
+    "year": 1950,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "west"
+  },
+  {
+    "id": "Wonderfu1960",
+    "title": "Wonderful New World of Fords, A (1960 Ford Spot)",
+    "year": 1960,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "future"
+  },
+  {
+    "id": "world_trade_center",
+    "title": "World Trade Center",
+    "year": null,
+    "collection": "prelinger",
+    "width": 640,
+    "theme": "future"
   }
 ]

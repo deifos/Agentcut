@@ -9,6 +9,11 @@ const TEXT_MODEL = "Xenova/siglip-base-patch16-224";
 // Image–text similarity sits around 0.0–0.2; a keyword hit is a strong extra signal.
 const KEYWORD_BONUS = 0.02;
 const CALM_MOTION = 6;
+// Below this (similarity + keyword bonus) a shot doesn't really show the query: real matches score
+// 0.10–0.20, the rest of the catalog sits around 0.04–0.08.
+const MIN_SCORE = 0.09;
+// When nothing clears it, show this many nearest shots, marked as such.
+const CLOSEST = 12;
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -113,7 +118,15 @@ async function search(base: string, q: BrollQuery & { wait?: boolean }) {
     if (text && !query && hits === 0) continue;
     results.push({ ...shot, score: +(similarity + hits * KEYWORD_BONUS).toFixed(4) });
   }
-  if (text) results.sort((a, b) => b.score - a.score);
+  let closest = false;
+  if (text) {
+    results.sort((a, b) => b.score - a.score);
+    if (query) {
+      const strong = results.filter((r) => r.score >= MIN_SCORE);
+      closest = strong.length === 0;
+      results.splice(0, results.length, ...(closest ? results.slice(0, CLOSEST) : strong));
+    }
+  }
   // No query: a stable shuffle across every film, without title cards and near-black frames.
   else {
     const hash = (id: string) => {
@@ -135,6 +148,8 @@ async function search(base: string, q: BrollQuery & { wait?: boolean }) {
     matches: results.length,
     offset,
     mode: query ? "meaning" : text ? "keywords" : "browse",
+    /** Nothing really matched: these are only the nearest shots. */
+    closest,
     results: results.slice(offset, offset + limit),
   };
 }

@@ -833,7 +833,9 @@ export async function runStudioTool(
         matches: data.matches,
         offset: data.offset,
         shots: data.results.map(brollSummary),
-        note: "Descriptions come from a vision model: open the thumb of a shot you're unsure of before using it. Add picks with studio_add_broll.",
+        note: data.closest
+          ? "Nothing in the catalog matches this closely: these are only the nearest shots. Try other words (what the shot would show, or the feeling), or use a different visual for this beat."
+          : "Descriptions come from a vision model: open the thumb of a shot you're unsure of before using it. Add picks with studio_add_broll.",
       };
     }
 

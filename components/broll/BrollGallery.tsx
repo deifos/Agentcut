@@ -191,7 +191,12 @@ export function BrollGallery() {
         </Toggle>
       </div>
       <p className="mb-6 font-mono text-xs text-muted-foreground">
-        {data ? `${data.matches.toLocaleString()} of ${data.total.toLocaleString()} shots` : "Loading the catalog…"}
+        {data
+          ? data.closest
+            ? `${data.total.toLocaleString()} shots`
+            : `${data.matches.toLocaleString()} of ${data.total.toLocaleString()} shots`
+          : "Loading the catalog…"}
+        {data?.closest && " · nothing matches that closely yet, these are the nearest shots"}
         {data?.mode === "keywords" &&
           ` · matching words for now, search by meaning is loading${modelLoad !== null ? ` (${modelLoad}%)` : ""}`}
       </p>

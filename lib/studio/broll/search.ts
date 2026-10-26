@@ -10,6 +10,8 @@ export interface BrollSearchResult {
   offset: number;
   /** "keywords" until the meaning model has loaded (only when not waiting for it). */
   mode: "meaning" | "keywords" | "browse";
+  /** Nothing in the catalog really matched; results are only the nearest shots. */
+  closest: boolean;
   results: BrollResult[];
 }
 

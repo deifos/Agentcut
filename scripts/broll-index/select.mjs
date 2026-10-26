@@ -49,6 +49,16 @@ const THEMES = {
   construction: "construction building bridge dam",
   energy: "electricity power energy atomic",
   oil: "oil steel mining industry",
+  underwater: "underwater fish diving coral",
+  kids: "toys children playground games",
+  holidays: "christmas holiday thanksgiving fireworks",
+  signs: "signs neon advertising billboard",
+  animation: "cartoon animation animated",
+  circus: "circus carnival amusement park rides",
+  winter: "winter snow skiing ice skating",
+  west: "desert cowboys western ranch",
+  future: "future tomorrow world fair robot",
+  racing: "racing speedway race track rodeo",
 };
 
 const first = (v) => (Array.isArray(v) ? v[0] : v);

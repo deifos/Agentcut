@@ -13,7 +13,7 @@
 //   cut       preview.mp4 (from the derivative) and full.mp4 (from the original), timed
 //   pipeline  all of the above per film, overlapped, rebuilding the index after each film
 //   build     out/shots.json + out/vectors.i8 (the files the CDN serves; vectors.f32 for serve.mjs)
-import { existsSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -285,17 +285,22 @@ async function stepCut(film) {
     const preview = join(dir, "preview.mp4");
     const full = join(dir, "full.mp4");
     const range = ["-ss", shot.start.toFixed(3), "-t", (shot.end - shot.start).toFixed(3)];
+    // Encode to a .part file and rename when complete: an interrupted cut never looks finished.
     if (!existsSync(preview)) {
       await ffmpeg([
         ...range, "-i", indexSrc, "-an", "-vf", "scale=-2:'min(480,ih)'",
-        "-c:v", "libx264", "-crf", "27", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", preview,
+        "-c:v", "libx264", "-crf", "27", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        "-f", "mp4", `${preview}.part`,
       ]);
+      renameSync(`${preview}.part`, preview);
     }
     if (!existsSync(full)) {
       await ffmpeg([
         ...range, "-i", fullSrc, "-an", "-vf", FULL_FILTER,
-        "-c:v", "libx264", "-crf", "16", "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart", full,
+        "-c:v", "libx264", "-crf", "16", "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        "-f", "mp4", `${full}.part`,
       ]);
+      renameSync(`${full}.part`, full);
       done++;
     }
     shot.bytes = { preview: statSync(preview).size, full: statSync(full).size };

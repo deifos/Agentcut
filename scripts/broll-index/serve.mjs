@@ -40,7 +40,7 @@ async function search(params) {
   return { query: q, total: shots.length, results: results.slice(0, 48) };
 }
 
-const TYPES = { ".webp": "image/webp", ".mp4": "video/mp4", ".json": "application/json" };
+const TYPES = { ".webp": "image/webp", ".mp4": "video/mp4", ".json": "application/json", ".f32": "application/octet-stream" };
 
 createServer(async (req, res) => {
   try {
@@ -62,6 +62,8 @@ createServer(async (req, res) => {
     }
     const size = statSync(file).size;
     const type = TYPES[extname(file)] ?? "application/octet-stream";
+    // Stands in for the CDN while developing the studio, which downloads shots cross-origin.
+    res.setHeader("access-control-allow-origin", "*");
     const range = /bytes=(\d*)-(\d*)/.exec(req.headers.range ?? "");
     if (range) {
       const start = range[1] ? Number(range[1]) : 0;

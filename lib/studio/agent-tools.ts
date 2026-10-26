@@ -810,6 +810,87 @@ export async function runStudioTool(
       return { project: doc.slug, results };
     }
 
+    case "studio_broll_search": {
+      // Archival b-roll: public-domain shots searched by meaning on the site (lib/broll-search.server.ts).
+      const { BROLL_AVAILABLE, NO_BROLL, brollSummary } = await import("@/lib/broll");
+      if (!BROLL_AVAILABLE) throw new Error(NO_BROLL);
+      const search = new URLSearchParams();
+      if (typeof params.query === "string") search.set("q", params.query);
+      if (typeof params.color === "string") search.set("color", params.color);
+      for (const flag of ["backgroundOk", "noPeople", "calm"]) if (params[flag] === true) search.set(flag, "1");
+      for (const key of ["minSeconds", "limit", "offset"]) {
+        if (typeof params[key] === "number") search.set(key, String(params[key]));
+      }
+      const response = await fetch(`/api/broll/search?${search}`);
+      const data = (await response.json()) as {
+        error?: string;
+        total: number;
+        matches: number;
+        offset: number;
+        results: import("@/lib/broll").BrollResult[];
+      };
+      if (!response.ok) throw new Error(data.error ?? `b-roll search failed (${response.status}).`);
+      return {
+        total: data.total,
+        matches: data.matches,
+        offset: data.offset,
+        shots: data.results.map(brollSummary),
+        note: "Descriptions come from a vision model: open the thumb of a shot you're unsure of before using it. Add picks with studio_add_broll.",
+      };
+    }
+
+    case "studio_add_broll": {
+      const doc = await ready(context, params);
+      const ids = stringList(params.ids ?? params.id).slice(0, 12);
+      if (ids.length === 0) throw new Error("ids is required (shot ids from studio_broll_search).");
+      const { BROLL_AVAILABLE, NO_BROLL, brollUrl } = await import("@/lib/broll");
+      if (!BROLL_AVAILABLE) throw new Error(NO_BROLL);
+      const { uploadToProject } = await import("@/lib/studio/export");
+      const existing = new Set(
+        (
+          (await context
+            .bridge()
+            ?.request<{ assets: { path: string }[] }>("studio.assets.list", { slug: doc.slug })
+            .catch(() => null)) ?? { assets: [] }
+        ).assets.map((a) => a.path),
+      );
+      const index = (await fetch(brollUrl("shots.json")).then((r) => r.json())) as import("@/lib/broll").BrollIndex;
+      const results = [];
+      for (const id of ids) {
+        const shot = index.shots.find((s) => s.id === id);
+        if (!shot) {
+          results.push({ id, error: "No such shot id." });
+          continue;
+        }
+        // The full-quality cut (a few MB): exports use the same file the preview plays.
+        const target = `assets/broll/${shot.id}.mp4`;
+        const info = {
+          id,
+          path: target,
+          seconds: shot.seconds,
+          size: `${shot.width}x${shot.height}`,
+          credit: `${shot.film.title}${shot.film.year ? ` (${shot.film.year})` : ""}, ${shot.film.url}, public domain`,
+        };
+        if (existing.has(target)) {
+          results.push({ ...info, note: "already in the project" });
+          continue;
+        }
+        try {
+          const response = await fetch(brollUrl(shot.full));
+          if (!response.ok) throw new Error(`Download failed (${response.status}).`);
+          const saved = await uploadToProject(doc.slug, target, await response.blob());
+          results.push({ ...info, path: saved });
+        } catch (error) {
+          results.push({ id, error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+      return {
+        project: doc.slug,
+        results,
+        next: "Put each on a video track (fit cover; the shots are silent and mostly 4:3, so frame them for wide and mobile), check with agentcut_capture_frames, and list the credits in notes.md.",
+      };
+    }
+
     case "studio_add_catalog_music": {
       const doc = await ready(context, params);
       const ids = stringList(params.ids ?? params.id).slice(0, 8);

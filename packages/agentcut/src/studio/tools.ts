@@ -375,6 +375,34 @@ export function registerStudioTools(server: McpServer) {
 
   defineTool(
     server,
+    "agentcut_broll_search",
+    "Search Agentcut's archival b-roll: public-domain shots cut from archive.org films (Prelinger and others), free to use in any video. Search by meaning, not just keywords: describe what the shot shows or the feeling it should carry (\"lonely city at night\", \"crowd celebrating\", \"clock, waiting\"). Each result has a description, tags, mood, camera and motion, people, color, size and a thumbnail URL. Filters: color, backgroundOk (calm enough for text on top), noPeople, calm (little movement), minSeconds. Then add picks with agentcut_add_broll.",
+    {
+      query: z.string().optional().describe("What the shot shows or evokes; empty browses the catalog."),
+      color: z.enum(["black-and-white", "color", "tinted"]).optional(),
+      backgroundOk: z.boolean().optional().describe("Only shots calm and simple enough to sit behind text."),
+      noPeople: z.boolean().optional(),
+      calm: z.boolean().optional().describe("Little movement in frame."),
+      minSeconds: z.number().positive().optional(),
+      limit: z.number().int().min(1).max(60).optional().describe("Results per call, default 24."),
+      offset: z.number().int().min(0).optional(),
+    },
+    async (args) => page("studio_broll_search", args, MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_add_broll",
+    "Copy archival b-roll shots (ids from agentcut_broll_search) into the project's assets/broll/ at full quality, so they play and export like any video. Up to 12 at a time; skips ones already there. Returns each file's path, length, size and the credit line for notes.md.",
+    {
+      project,
+      ids: z.array(z.string()).min(1).max(12),
+    },
+    async (args) => page("studio_add_broll", args, 5 * MINUTE),
+  );
+
+  defineTool(
+    server,
     "agentcut_music_options",
     "Whether Lyria music generation is available (the user's Gemini key, saved under Voices) and which models. Call before making a new song.",
     {},

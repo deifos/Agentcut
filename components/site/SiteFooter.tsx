@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/studio", label: "Studio" },
   { href: "/components", label: "Components" },
   { href: "/loops", label: "Loops" },
+  { href: "/sound-effects", label: "Sounds" },
   { href: "/templates", label: "Templates" },
 ];
 

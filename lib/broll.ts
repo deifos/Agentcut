@@ -47,8 +47,10 @@ export interface BrollIndex {
   builtAt: string;
   embedModel: string;
   dim: number;
-  /** vectors.i8 holds round(v / vectorScale). */
+  /** The vectors file holds round(v / vectorScale). */
   vectorScale: number;
+  /** Published catalogs name a content-addressed vectors file; local builds use vectors.i8. */
+  vectorsFile?: string;
   count: number;
   shots: BrollShot[];
 }

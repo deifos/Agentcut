@@ -26,16 +26,15 @@ let catalog: Promise<Catalog> | null = null;
 function getCatalog(base: string) {
   if (!catalog) {
     catalog = (async () => {
-      const [index, vectors] = await Promise.all([
-        fetch(`${base}/shots.json`).then((r) => {
-          if (!r.ok) throw new Error(`b-roll catalog: HTTP ${r.status}`);
-          return r.json() as Promise<BrollIndex>;
-        }),
-        fetch(`${base}/vectors.i8`).then((r) => {
-          if (!r.ok) throw new Error(`b-roll vectors: HTTP ${r.status}`);
-          return r.arrayBuffer();
-        }),
-      ]);
+      const index = await fetch(`${base}/shots.json`).then((r) => {
+        if (!r.ok) throw new Error(`b-roll catalog: HTTP ${r.status}`);
+        return r.json() as Promise<BrollIndex>;
+      });
+      // The published index names its own vectors file, so the pair always matches.
+      const vectors = await fetch(`${base}/${index.vectorsFile ?? "vectors.i8"}`).then((r) => {
+        if (!r.ok) throw new Error(`b-roll vectors: HTTP ${r.status}`);
+        return r.arrayBuffer();
+      });
       return {
         base,
         index,

@@ -1,0 +1,116 @@
+// Uploads the built catalog (out/) to R2 under broll/v1/: only files not uploaded yet, the index last,
+// so the live catalog never points at a missing file. With --loop it repeats, for a catalog that grows
+// while the indexer runs.
+//   BROLL_DATA=E:/agentcut-broll BROLL_ENV_FILE=E:/projects/screenslick/.env node sync.mjs [--loop minutes]
+// The env file needs CLOUDFLARE_BUCKET_API, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY,
+// CLOUDFLARE_BUCKET_NAME and CLOUDFLARE_PUBLIC_URL. Keys are read, never printed.
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DATA, OUT_DIR, readJson, writeJson } from "./lib.mjs";
+
+const PREFIX = process.env.BROLL_PREFIX ?? "broll/v1";
+const LEDGER = join(DATA, "uploaded.json");
+const CONCURRENCY = 6;
+
+function loadEnv(path) {
+  if (!path || !existsSync(path)) throw new Error("Set BROLL_ENV_FILE to an env file with the CLOUDFLARE_* keys.");
+  const env = {};
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
+    if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+  for (const key of ["CLOUDFLARE_BUCKET_API", "CLOUDFLARE_ACCESS_KEY_ID", "CLOUDFLARE_SECRET_ACCESS_KEY", "CLOUDFLARE_BUCKET_NAME", "CLOUDFLARE_PUBLIC_URL"]) {
+    if (!env[key]) throw new Error(`${key} is missing from the env file.`);
+  }
+  return env;
+}
+
+const env = loadEnv(process.env.BROLL_ENV_FILE);
+const bucket = env.CLOUDFLARE_BUCKET_NAME;
+const client = new S3Client({
+  region: "auto",
+  endpoint: env.CLOUDFLARE_BUCKET_API,
+  credentials: { accessKeyId: env.CLOUDFLARE_ACCESS_KEY_ID, secretAccessKey: env.CLOUDFLARE_SECRET_ACCESS_KEY },
+});
+
+const TYPES = { ".json": "application/json", ".webp": "image/webp", ".mp4": "video/mp4", ".i8": "application/octet-stream" };
+// Shots, thumbnails and versioned vectors never change; the index is replaced as the catalog grows.
+const IMMUTABLE = "public, max-age=31536000, immutable";
+const INDEX_CACHE = "public, max-age=300";
+
+async function put(rel, body, cacheControl) {
+  const ext = rel.slice(rel.lastIndexOf("."));
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: `${PREFIX}/${rel}`,
+      Body: body,
+      ContentType: TYPES[ext] ?? "application/octet-stream",
+      CacheControl: cacheControl,
+    }),
+  );
+}
+
+async function pool(items, worker) {
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: CONCURRENCY }, async () => {
+      while (next < items.length) await worker(items[next++]);
+    }),
+  );
+}
+
+async function syncOnce() {
+  const indexPath = join(OUT_DIR, "shots.json");
+  if (!existsSync(indexPath)) return console.log("sync: nothing built yet");
+  const indexText = readFileSync(indexPath, "utf8");
+  const index = JSON.parse(indexText);
+  const ledger = readJson(LEDGER, {});
+  const files = index.shots.flatMap((s) => [s.thumb, s.preview, s.full]).filter((rel) => !ledger[rel]);
+  let bytes = 0;
+  const started = Date.now();
+  await pool(files, async (rel) => {
+    const path = join(OUT_DIR, rel);
+    if (!existsSync(path)) return;
+    const body = readFileSync(path);
+    await put(rel, body, IMMUTABLE);
+    ledger[rel] = statSync(path).size;
+    bytes += body.length;
+  });
+  writeJson(LEDGER, ledger);
+  // Vectors under a content name, then the index pointing at them: one switch, never half a catalog.
+  const vectors = readFileSync(join(OUT_DIR, "vectors.i8"));
+  // The indexer may be mid-build: only publish a matching pair.
+  if (vectors.length !== index.count * index.dim) return console.log("sync: index and vectors out of step, next round");
+  const vectorsFile = `vectors-${createHash("sha1").update(vectors).digest("hex").slice(0, 12)}.i8`;
+  if (!ledger[vectorsFile]) {
+    await put(vectorsFile, vectors, IMMUTABLE);
+    ledger[vectorsFile] = vectors.length;
+    writeJson(LEDGER, ledger);
+  }
+  const live = JSON.stringify({ ...index, vectorsFile });
+  const liveHash = createHash("sha1").update(live).digest("hex");
+  if (ledger["shots.json"] !== liveHash) {
+    await put("shots.json", live, INDEX_CACHE);
+    ledger["shots.json"] = liveHash;
+    writeJson(LEDGER, ledger);
+  }
+  console.log(
+    `${new Date().toISOString().slice(11, 19)} sync: ${index.count} shots live, ${files.length} new files ` +
+      `(${(bytes / 1e6).toFixed(0)} MB in ${((Date.now() - started) / 1000).toFixed(0)} s)`,
+  );
+}
+
+const loopAt = process.argv.indexOf("--loop");
+const minutes = loopAt >= 0 ? Number(process.argv[loopAt + 1] ?? 30) : 0;
+for (;;) {
+  try {
+    await syncOnce();
+  } catch (error) {
+    console.error(`sync failed: ${error instanceof Error ? error.message : error}`);
+  }
+  if (!minutes) break;
+  await new Promise((r) => setTimeout(r, minutes * 60_000));
+}

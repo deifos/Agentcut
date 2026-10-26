@@ -95,17 +95,16 @@ Gemini, OpenAI or Grok/xAI). You never see, ask for or mention API keys: the hel
 
 ## Music
 
-Where a song comes from, in order:
+Where a song comes from, in order (never download music from the web: it's slow and fails often):
 
 1. **A file the user gives you** (in `assets/`, or one they point at): use it.
-2. **The Agentcut music library** when the user asks for "a library song", "a song from the
-   library/editor", or just "a song" without asking for a new one: 200+ licensed tracks.
+2. **The Agentcut music library** unless the user asks for a new song: 200+ licensed tracks.
    `agentcut_music_catalog` (filter by category and `minSeconds` = video length), pick 3–6
    candidates from names that fit the vibe, `agentcut_add_catalog_music`, then rank them with
    `agentcut_listen_rank` / `_tags` against a plain description of the mood, keep the best, delete
    the other candidates from `assets/music/`, and say which song you used and why.
-3. **Lyria (Google), when the user asks for a new/original/generated song** and
-   `agentcut_music_options` says it's available. Write the prompt like a brief:
+3. **Lyria (Google)** when the user asks for a new song, or the library isn't available or has nothing
+   that fits, and `agentcut_music_options` says it's available (the user's Gemini key). Write the prompt like a brief:
 
    ```
    Instrumental only, no vocals, no singing, no humming. Total length: 48 seconds.
@@ -124,7 +123,7 @@ Where a song comes from, in order:
    `agentcut_analyze_audio` (tempo, beats, where the drop really lands) and
    `agentcut_listen_tags` (no vocals if you asked for none). Keep the best take, line its drop up
    with the reveal (move the clip or nudge the cuts to its beats), and tell the user which take and why.
-4. **Composed in code, when the user asks for a made song and Lyria isn't set up** (or they ask for code):
+4. **Composed in code** when neither the library nor Lyria is available (or the user asks for code):
    write a synthesis script in the project's `scripts/` folder and run it.
    - Python with numpy/scipy if `python -c "import numpy, scipy"` works (try `python3` and `py` too);
      otherwise a Node script (`node scripts/make_music.mjs`) that writes a 16-bit 44.1 kHz WAV itself.
@@ -136,8 +135,7 @@ Where a song comes from, in order:
      the kick. Normalize to about −14 LUFS.
    - Write it to `assets/music/<name>.wav`, then check it like a Lyria take. Tell the user it's composed
      in code (royalty-free, no samples).
-5. **CC0 music from Openverse** (as for sound effects) only when nothing above fits. Offer Lyria (a
-   Gemini key under Voices) if they want an original song.
+   Mention once that a Gemini key under Voices gives them Lyria songs instead.
 
 Never put a Suno artist tag or account name anywhere visible.
 

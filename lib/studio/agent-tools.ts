@@ -716,6 +716,79 @@ export async function runStudioTool(
       };
     }
 
+    case "studio_sfx_catalog": {
+      // Agentcut's own sound effects library (public/sfx), described and measured with earshot.
+      const { SFX_LIBRARY } = await import("@/lib/sfx-library");
+      const words = (typeof params.query === "string" ? params.query : "")
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean);
+      const category = typeof params.category === "string" ? params.category : "";
+      const recordedOnly = params.recordedOnly === true;
+      const matches = SFX_LIBRARY.filter(
+        (e) =>
+          (!category || e.category === category) &&
+          (!recordedOnly || e.recorded) &&
+          (!words.length ||
+            words.some((w) =>
+              `${e.id} ${e.category} ${e.description} ${e.useFor} ${e.readings.map((r) => r.sound).join(" ")}`
+                .toLowerCase()
+                .includes(w),
+            )),
+      );
+      const counts: Record<string, number> = {};
+      for (const e of SFX_LIBRARY) counts[e.category] = (counts[e.category] ?? 0) + 1;
+      // Recordings first: they sound more expensive than synthesized ones when both fit.
+      matches.sort((a, b) => Number(b.recorded) - Number(a.recorded));
+      return {
+        total: SFX_LIBRARY.length,
+        categories: counts,
+        matches: matches.length,
+        sounds: matches.slice(0, 120),
+        note: "Recordings (recorded: true) first, then the synthesized earshot sounds when no recording fits. Place a clip at the cue frame minus onsetS (in frames); for a whoosh put peakS on the cut. Start from the entry's volume (it evens out loudness), then balance the mix with agentcut_listen_critique. Add with agentcut_add_sfx.",
+      };
+    }
+
+    case "studio_add_sfx": {
+      const doc = await ready(context, params);
+      const ids = stringList(params.ids ?? params.id).slice(0, 12);
+      if (ids.length === 0) throw new Error("ids is required (sound ids from studio_sfx_catalog).");
+      const { SFX_LIBRARY, sfxUrl } = await import("@/lib/sfx-library");
+      const { uploadToProject } = await import("@/lib/studio/export");
+      const existing = new Set(
+        (
+          (await context
+            .bridge()
+            ?.request<{ assets: { path: string }[] }>("studio.assets.list", { slug: doc.slug })
+            .catch(() => null)) ?? { assets: [] }
+        ).assets.map((a) => a.path),
+      );
+      const results = [];
+      for (const id of ids) {
+        const entry = SFX_LIBRARY.find((e) => e.id === id);
+        if (!entry) {
+          results.push({ id, error: "No such sound id." });
+          continue;
+        }
+        // Named by id: unique across both sources.
+        const target = `assets/sfx/${entry.id}.mp3`;
+        const info = { id, path: target, seconds: entry.seconds, onsetS: entry.onsetS, peakS: entry.peakS, volume: entry.volume };
+        if (existing.has(target)) {
+          results.push({ ...info, note: "already in the project" });
+          continue;
+        }
+        try {
+          const response = await fetch(new URL(sfxUrl(entry.file), window.location.href).href);
+          if (!response.ok) throw new Error(`Download failed (${response.status}).`);
+          const saved = await uploadToProject(doc.slug, target, await response.blob());
+          results.push({ ...info, path: saved });
+        } catch (error) {
+          results.push({ id, error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+      return { project: doc.slug, results };
+    }
+
     case "studio_add_catalog_music": {
       const doc = await ready(context, params);
       const ids = stringList(params.ids ?? params.id).slice(0, 8);

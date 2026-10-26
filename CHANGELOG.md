@@ -13,6 +13,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-10-25
+
+Works with helper 0.2.0; update to 0.2.8 (`npx -y agentcut@latest`) so your agent can search and use the
+sound effects library.
+
+### Added
+
+- **A sound effects library, nothing to install.** 276 effects ship with Agentcut: 55 original recordings
+  (clicks, pops, swooshes, whooshes, impacts, dividers) plus 221 designed sounds from the
+  [earshot](https://github.com/Leonxlnx/earshot) bank (risers, logo stings, sub drops, shimmers,
+  notification chimes, glitches, typing, shutters). Each is described by what it actually sounds like,
+  what it's for, its timing and a volume that evens out its loudness, so your agent picks and places the
+  right one: `agentcut_sfx_catalog` and `agentcut_add_sfx`.
+
+### Changed
+
+- **Better sound by default.** Your agent uses the recordings first, the designed sounds next and
+  downloads last, and no longer synthesizes its own effects when the library has one.
+
 ## [0.2.7] - 2026-10-25
 
 Works with helper 0.2.0; update to 0.2.7 (`npx -y agentcut@latest`) so your agent knows how to film macro
@@ -197,7 +216,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.7...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/deifos/Agentcut/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/deifos/Agentcut/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/deifos/Agentcut/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/deifos/Agentcut/compare/v0.2.4...v0.2.5

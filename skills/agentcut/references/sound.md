@@ -15,16 +15,36 @@ the listen tools, written into notes.md (z, p_real, LUFS, onset).
 
 ## Choosing a sound effect
 
-1. Describe the sound plainly: source + action + character — "a single crisp computer mouse click",
-   "a short airy whoosh moving left to right", "a soft glass ding".
-2. Candidates: the project's `assets/`, the workspace `library:` files, then CC0 downloads (below).
-3. `agentcut_listen_rank` with that description over the candidates. Prefer **z ≥ 3** ("strong").
-4. `agentcut_listen_realness` on the file (or trim) you'll use. Prefer **p_real ≥ 0.5** — real or
-   pro-produced recordings. Synthesized sounds (`p_real < 0.2`) when the user asks for made sounds or nothing
-   real fits (see "Making sound effects").
-5. `agentcut_listen_measure` for its `onsetS` (silence before the sound starts) and loudness.
-6. Place it: clip `from` = the cue frame (press frame, pop-in start, cut) **minus the onset in frames**.
+The library first: real recordings sound expensive, and it has a sound for nearly every cue.
+
+1. **`agentcut_sfx_catalog`**: 276 effects, nothing to install. Filter by words ("soft whoosh",
+   "logo sting", "success") and/or category: click, pop, swoosh, whoosh, impact, riser, sting, notify,
+   shimmer, glitch, typing, foley, divider. Each entry says what it sounds like, what it's for, `onsetS`,
+   `peakS` and a `volume` that evens out its loudness.
+   - `recorded: true` (source `agentcut`, 55 sounds): original real recordings. **Prefer these** when one
+     fits. Their descriptions were measured by ear-models (earshot), so trust them over the file name:
+     several "click-tech" sounds are tonal chimes and plucks, the "scramble" dividers are glassy rattles.
+   - `recorded: false` (source `earshot`, 221 sounds): designed in code by earshot, including what the
+     recordings don't cover: risers and downlifters, logo stings, sub drops, shimmers, notification
+     chimes, glitches, typing runs, camera shutters. Several variants per family: use different ones so
+     repeated cues don't sound identical.
+   Add picks with `agentcut_add_sfx` (they land in `assets/sfx/`).
+2. **The project's own `assets/` and the workspace `library:`** files.
+3. **CC0 downloads** (Openverse, below) only when nothing above fits.
+
+Then for the sounds you pick:
+
+1. With several candidates, describe the sound plainly (source + action + character: "a single crisp
+   computer mouse click", "a short airy whoosh moving left to right") and `agentcut_listen_rank` them.
+   Prefer **z >= 3** ("strong").
+2. Place it: clip `from` = the cue frame (press frame, pop-in start, cut) **minus `onsetS` in frames**. For
+   whooshes and risers put `peakS` on the cut: taps and clicks lead the cut slightly, whoosh peaks land
+   just after it, a riser stops on its loudest moment at the cut. Trim a long sound with the clip's
+   duration rather than stretching it. Start from the catalog `volume`, then balance with the critique.
    Add a `note` with the cue and numbers.
+3. Vary: never the same effect twice in a row.
+
+Never synthesize sound effects yourself when the library has one: hand-made oscillator beeps read as cheap.
 
 ## Finding new files: Openverse (CC0)
 
@@ -121,8 +141,8 @@ Never put a Suno artist tag or account name anywhere visible.
 
 ## Making sound effects
 
-When nothing in the project, the library or Openverse fits (rank z < 1.5), or the user asks for a made
+Only when the library and Openverse have nothing that fits (rank z < 1.5), or the user asks for a made
 sound: synthesize it in a script (same runtime rules as music) into `assets/sfx/<name>.wav`: whooshes from
 band-passed noise with a sweep and fade, pops from a short pitched sine with a fast decay, clicks from a
-few ms of filtered noise, risers from noise + rising tone. Then rank and measure it like any candidate and
-say in notes.md that it's synthesized (`listen_realness` will be low; that's expected for a made sound).
+few ms of filtered noise, risers from noise + rising tone. Rank and measure it like any candidate and say
+in notes.md that it's synthesized (`listen_realness` will be low; that's expected for a made sound).

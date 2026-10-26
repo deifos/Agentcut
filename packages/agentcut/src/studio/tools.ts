@@ -349,6 +349,31 @@ export function registerStudioTools(server: McpServer) {
 
   defineTool(
     server,
+    "agentcut_sfx_catalog",
+    "Search Agentcut's sound effects library: 276 effects, each with a plain description of what it sounds like, what it's for, its timing (onsetS, peakS) and a volume that evens out its loudness. 55 are real recordings (source agentcut: prefer them when one fits); 221 are synthesized sounds from earshot's bank (risers, logo stings, sub drops, shimmers, notifications, glitches, typing, foley and more). Use the library before any other sound source. Filter by words (\"whoosh deep\", \"logo sting\", \"success\"), category and/or recordedOnly; with no filters it lists everything (recordings first). Then add picks with agentcut_add_sfx.",
+    {
+      query: z.string().optional().describe('Words to match in the description, use or readings, e.g. "soft whoosh" or "pop in".'),
+      category: z
+        .enum(["click", "pop", "swoosh", "whoosh", "impact", "riser", "sting", "notify", "shimmer", "glitch", "typing", "foley", "divider"])
+        .optional(),
+      recordedOnly: z.boolean().optional().describe("Only the real recordings."),
+    },
+    async (args) => page("studio_sfx_catalog", args, MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_add_sfx",
+    "Copy library sound effects (ids from agentcut_sfx_catalog) into the project's assets/sfx/ so they play, analyze and export like any asset. Up to 12 at a time; skips ones already there. Returns each file's path, onsetS, peakS and starting volume.",
+    {
+      project,
+      ids: z.array(z.string()).min(1).max(12),
+    },
+    async (args) => page("studio_add_sfx", args, 5 * MINUTE),
+  );
+
+  defineTool(
+    server,
     "agentcut_music_options",
     "Whether Lyria music generation is available (the user's Gemini key, saved under Voices) and which models. Call before making a new song.",
     {},

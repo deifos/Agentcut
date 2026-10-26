@@ -20,6 +20,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   celebrating", and drop them into your video at full quality: b-roll under a voice-over, or a matching
   shot for every line of a lyric or transcript video. `agentcut_broll_search` and `agentcut_add_broll`.
 
+### Fixed
+
+- **Pictures the agent looks at show in the chat again.** Images it read from its own scratch folders or
+  from outside the project showed as broken; the chat now keeps a copy of each one, as it does for frames.
+
 ## [0.2.9] - 2026-10-25
 
 Works with helper 0.2.0; update to 0.2.9 (`npx -y agentcut@latest`) so your agent finds sounds in one call

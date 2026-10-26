@@ -648,14 +648,25 @@ export class ChatEngine {
    */
   private imagesFor(slug: string, part: Extract<ChatPart, { type: "tool" }>, content: unknown): string[] {
     try {
+      const dir = join(projectDir(this.deps.paths, slug), ".studio", "attachments", "claude-frames");
       if (part.name === "Read") {
-        return part.file && IMAGE_FILE.test(part.file) && !isAbsolute(part.file) && !part.file.startsWith("..") ? [part.file] : [];
+        // Snapshot the picture: the chat can't load most of .studio/ (scratch folders), files outside the
+        // project, or a file the agent overwrites or deletes later.
+        if (!part.file || !IMAGE_FILE.test(part.file)) return [];
+        const source = [join(projectDir(this.deps.paths, slug), part.file), join(this.deps.paths.root, part.file), part.file].find(
+          (candidate) => isAbsolute(candidate) && existsSync(candidate),
+        );
+        if (!source) return [];
+        mkdirSync(dir, { recursive: true });
+        const name = `read-${randomUUID().slice(0, 8)}-${basename(source)}`;
+        copyFileSync(source, join(dir, name));
+        this.pruneFrames(dir);
+        return [`.studio/attachments/claude-frames/${name}`];
       }
       if (!part.name.startsWith("mcp__agentcut__")) return [];
       const found = new Set<string>();
       collectFramePaths(content, found, 0);
       if (found.size === 0) return [];
-      const dir = join(projectDir(this.deps.paths, slug), ".studio", "attachments", "claude-frames");
       mkdirSync(dir, { recursive: true });
       const out: string[] = [];
       for (const source of [...found].slice(0, 24)) {

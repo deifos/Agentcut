@@ -114,8 +114,21 @@ async function search(base: string, q: BrollQuery & { wait?: boolean }) {
     if (text && !query && hits === 0) continue;
     results.push({ ...shot, score: +(similarity + hits * KEYWORD_BONUS).toFixed(4) });
   }
-  // No query: browse in catalog order.
   if (text) results.sort((a, b) => b.score - a.score);
+  // No query: a stable shuffle across every film, without title cards and near-black frames.
+  else {
+    const hash = (id: string) => {
+      let h = 2166136261;
+      for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+      // Avalanche (murmur3 finalizer): ids differing only in the last digits land far apart.
+      h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+      h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+      return (h ^ (h >>> 16)) >>> 0;
+    };
+    const browsable = results.filter((r) => !r.titleCard && r.brightness >= 35);
+    browsable.sort((a, b) => hash(a.id) - hash(b.id));
+    results.splice(0, results.length, ...browsable);
+  }
   const offset = Math.max(0, q.offset ?? 0);
   const limit = Math.min(60, Math.max(1, q.limit ?? 24));
   return {

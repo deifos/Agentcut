@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/templates",
     "/loops",
     "/sound-effects",
+    "/b-roll",
     ...Object.keys(COMPONENT_METAS).map((id) => `/components/${id}`),
     ...LOOPS.map((loop) => `/loops/${loop.id}`),
   ].map((path) => ({ url: new URL(path, SITE_URL).href }));

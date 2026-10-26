@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/components", label: "Components" },
   { href: "/loops", label: "Loops" },
   { href: "/sound-effects", label: "Sounds" },
+  { href: "/b-roll", label: "B-roll" },
   { href: "/templates", label: "Templates" },
 ];
 

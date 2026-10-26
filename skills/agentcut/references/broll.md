@@ -12,7 +12,8 @@ documentary, nostalgic lyric videos).
 viewer feel. Literal ("a clock on a wall", "assembly line", "crowd waving hats") and figurative ("waiting",
 "progress", "lonely city at night") both work; try two or three phrasings for an important beat and pick
 from the union. Filters: `color`, `backgroundOk` (calm, simple frames for text on top), `noPeople`, `calm`
-(little movement), `minSeconds`.
+(little movement), `minSeconds`. Search runs in the user's browser: the very first search downloads its
+model once (about 110 MB) and can take a minute; after that it's instant.
 
 Results describe each shot (from a vision model), its tags and mood, camera and motion, length and size.
 Descriptions can be wrong: open the `thumb` of anything you're unsure of, and capture frames once placed.

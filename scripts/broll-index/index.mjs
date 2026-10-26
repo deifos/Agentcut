@@ -11,7 +11,7 @@
 //   describe  description and tags from a local vision model (Ollama)
 //   embed     SigLIP image vector per shot (Transformers.js)
 //   cut       preview.mp4 (from the derivative) and full.mp4 (from the original), timed
-//   build     out/shots.json + out/vectors.f32 (the files the CDN serves)
+//   build     out/shots.json + out/vectors.i8 (the files the CDN serves; vectors.f32 for serve.mjs)
 import { existsSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -354,12 +354,19 @@ function stepBuild(ids) {
   const flat = new Float32Array(records.length * dim);
   vectors.forEach((v, i) => flat.set(v, i * dim));
   writeFileSync(join(ensureDir(OUT_DIR), "vectors.f32"), Buffer.from(flat.buffer));
+  // What the studio downloads: int8 (a quarter of the size), one scale for the whole file.
+  let peak = 0;
+  for (const v of flat) peak = Math.max(peak, Math.abs(v));
+  const vectorScale = peak / 127 || 1;
+  const int8 = Int8Array.from(flat, (v) => Math.round(v / vectorScale));
+  writeFileSync(join(OUT_DIR, "vectors.i8"), Buffer.from(int8.buffer));
   writeJson(join(OUT_DIR, "shots.json"), {
     version: 1,
     builtAt: new Date().toISOString(),
     embedModel: EMBED_MODEL,
     describeModel: DESCRIBE_MODEL,
     dim,
+    vectorScale,
     count: records.length,
     shots: records,
   });

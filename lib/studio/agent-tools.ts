@@ -811,25 +811,23 @@ export async function runStudioTool(
     }
 
     case "studio_broll_search": {
-      // Archival b-roll: public-domain shots searched by meaning on the site (lib/broll-search.server.ts).
+      // Archival b-roll: public-domain shots searched by meaning in a worker (lib/studio/broll).
       const { BROLL_AVAILABLE, NO_BROLL, brollSummary } = await import("@/lib/broll");
       if (!BROLL_AVAILABLE) throw new Error(NO_BROLL);
-      const search = new URLSearchParams();
-      if (typeof params.query === "string") search.set("q", params.query);
-      if (typeof params.color === "string") search.set("color", params.color);
-      for (const flag of ["backgroundOk", "noPeople", "calm"]) if (params[flag] === true) search.set(flag, "1");
-      for (const key of ["minSeconds", "limit", "offset"]) {
-        if (typeof params[key] === "number") search.set(key, String(params[key]));
-      }
-      const response = await fetch(`/api/broll/search?${search}`);
-      const data = (await response.json()) as {
-        error?: string;
-        total: number;
-        matches: number;
-        offset: number;
-        results: import("@/lib/broll").BrollResult[];
-      };
-      if (!response.ok) throw new Error(data.error ?? `b-roll search failed (${response.status}).`);
+      const { searchBroll } = await import("@/lib/studio/broll/search");
+      const color = params.color;
+      const data = await searchBroll({
+        query: typeof params.query === "string" ? params.query : undefined,
+        color: color === "black-and-white" || color === "color" || color === "tinted" ? color : undefined,
+        backgroundOk: params.backgroundOk === true,
+        noPeople: params.noPeople === true,
+        calm: params.calm === true,
+        minSeconds: typeof params.minSeconds === "number" ? params.minSeconds : undefined,
+        limit: typeof params.limit === "number" ? params.limit : undefined,
+        offset: typeof params.offset === "number" ? params.offset : undefined,
+        // The agent waits for ranking by meaning (the first search downloads the model once).
+        wait: true,
+      });
       return {
         total: data.total,
         matches: data.matches,
@@ -854,10 +852,11 @@ export async function runStudioTool(
             .catch(() => null)) ?? { assets: [] }
         ).assets.map((a) => a.path),
       );
-      const index = (await fetch(brollUrl("shots.json")).then((r) => r.json())) as import("@/lib/broll").BrollIndex;
+      const { brollShots } = await import("@/lib/studio/broll/search");
+      const found = await brollShots(ids);
       const results = [];
-      for (const id of ids) {
-        const shot = index.shots.find((s) => s.id === id);
+      for (const [i, id] of ids.entries()) {
+        const shot = found[i];
         if (!shot) {
           results.push({ id, error: "No such shot id." });
           continue;

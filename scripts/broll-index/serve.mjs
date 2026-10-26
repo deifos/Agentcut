@@ -40,7 +40,7 @@ async function search(params) {
   return { query: q, total: shots.length, results: results.slice(0, 48) };
 }
 
-const TYPES = { ".webp": "image/webp", ".mp4": "video/mp4", ".json": "application/json", ".f32": "application/octet-stream" };
+const TYPES = { ".webp": "image/webp", ".mp4": "video/mp4", ".json": "application/json", ".f32": "application/octet-stream", ".i8": "application/octet-stream" };
 
 createServer(async (req, res) => {
   try {

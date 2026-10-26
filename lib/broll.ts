@@ -1,6 +1,6 @@
 // The archival b-roll catalog: public-domain archive.org shots indexed by scripts/broll-index and
-// served from a CDN (shots.json, vectors.f32, thumbs/, shots/<id>/{preview,full}.mp4).
-// Search runs on the site (/api/broll/search); the studio and the agent tools call it.
+// served from a CDN (shots.json, vectors.i8, thumbs/, shots/<id>/{preview,full}.mp4).
+// Search runs in the studio page (lib/studio/broll/search.worker.ts): nothing runs on a server.
 
 export const BROLL_CDN_URL = (process.env.NEXT_PUBLIC_BROLL_CDN_URL ?? "").replace(/\/+$/, "");
 export const BROLL_AVAILABLE = Boolean(BROLL_CDN_URL);
@@ -47,6 +47,8 @@ export interface BrollIndex {
   builtAt: string;
   embedModel: string;
   dim: number;
+  /** vectors.i8 holds round(v / vectorScale). */
+  vectorScale: number;
   count: number;
   shots: BrollShot[];
 }

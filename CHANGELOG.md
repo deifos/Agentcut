@@ -13,6 +13,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.11] - 2026-10-26
+
+Works with helper 0.2.0; update to 0.2.11 (`npx -y agentcut@latest`) so your agent can search and add
+archival b-roll. Same release as 0.2.10, whose helper couldn't be published to npm.
+
+### Fixed
+
+- **The b-roll page finds its catalog.** The site build now receives the catalog's address.
+
 ## [0.2.10] - 2026-10-26
 
 Works with helper 0.2.0; update to 0.2.10 (`npx -y agentcut@latest`) so your agent can search and add
@@ -251,7 +260,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.10...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.11...HEAD
+[0.2.11]: https://github.com/deifos/Agentcut/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/deifos/Agentcut/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/deifos/Agentcut/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/deifos/Agentcut/compare/v0.2.7...v0.2.8

@@ -106,7 +106,8 @@ npm run dev            # http://localhost:3000 (landing), /studio, /components, 
 The site is a Next.js app with no backend; the `Dockerfile` builds a standalone server that listens on
 `$PORT`, with a `/healthz` route for health checks. On [Synteq Apps](https://cloud.synteq.com/apps), link
 this repo (root directory `/`); pushes to `main` build the Dockerfile and roll out. Optional build-time
-env: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_MUSIC_CDN_URL` (see `.env.example`).
+env: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_MUSIC_CDN_URL`, `NEXT_PUBLIC_BROLL_CDN_URL` (see `.env.example`). The b-roll
+catalog is built and uploaded with `scripts/broll-index` (see its README).
 
 ```bash
 docker build -t agentcut-web . && docker run -p 3000:3000 agentcut-web

@@ -17,7 +17,23 @@ BROLL_DATA=/path/to/data node serve.mjs                  # search page on http:/
 
 Steps (`node index.mjs <step> [ids]`, each resumes where it stopped): `fetch` (public-domain only),
 `shots`, `analyze`, `measure`, `describe`, `embed`, `cut`, then `build` (writes `out/shots.json` and
-`out/vectors.f32`) and `report` (timings and sizes).
+`out/vectors.i8`) and `report` (timings and sizes). `pipeline films-v1.json` runs every step per film,
+downloading the next film while the GPU describes the current one, and rebuilds the index after each film.
+`select.mjs` picks a varied film list (see `films-v1.json`).
 
 `BROLL_DATA` holds `films/` (downloads), `work/` (per-film records and frames), `out/` (what gets
 published) and `cache/hf/` (the SigLIP model).
+
+## Publishing
+
+`sync.mjs` uploads `out/` to R2 under `broll/v1/` (new files only, the index last, so the live catalog
+never mixes two builds). Point the site's `NEXT_PUBLIC_BROLL_CDN_URL` at that folder's public URL.
+
+```bash
+BROLL_DATA=/path/to/data BROLL_ENV_FILE=/path/to/.env node sync.mjs            # once
+BROLL_DATA=/path/to/data BROLL_ENV_FILE=/path/to/.env node sync.mjs --loop 30  # every 30 min while indexing
+```
+
+The env file needs `CLOUDFLARE_BUCKET_API`, `CLOUDFLARE_ACCESS_KEY_ID`, `CLOUDFLARE_SECRET_ACCESS_KEY`,
+`CLOUDFLARE_BUCKET_NAME` and `CLOUDFLARE_PUBLIC_URL`. The bucket's CORS rules must allow GET from the
+site's origin (the studio and the b-roll page download shots with `fetch`).

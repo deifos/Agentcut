@@ -78,6 +78,8 @@ async function syncOnce() {
     await put(rel, body, IMMUTABLE);
     ledger[rel] = statSync(path).size;
     bytes += body.length;
+    // Save progress now and then, so an interrupted upload resumes instead of starting over.
+    if (Object.keys(ledger).length % 50 === 0) writeJson(LEDGER, ledger);
   });
   writeJson(LEDGER, ledger);
   // Vectors under a content name, then the index pointing at them: one switch, never half a catalog.

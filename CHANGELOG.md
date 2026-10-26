@@ -13,12 +13,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.10] - 2026-10-26
+
+Works with helper 0.2.0; update to 0.2.10 (`npx -y agentcut@latest`) so your agent can search and add
+archival b-roll.
+
 ### Added
 
 - **Archival b-roll, free for any video.** Your agent can search public-domain shots from old films
-  (1930s–70s industrial films, newsreels, home movies) by meaning, "lonely city at night" or "crowd
-  celebrating", and drop them into your video at full quality: b-roll under a voice-over, or a matching
-  shot for every line of a lyric or transcript video. `agentcut_broll_search` and `agentcut_add_broll`.
+  (1900s–70s industrial films, newsreels, NASA and government films, home movies) by meaning, "lonely
+  city at night" or "crowd celebrating", and drop them into your video at full quality: b-roll under a
+  voice-over, or a matching shot for every line of a lyric or transcript video. `agentcut_broll_search`
+  and `agentcut_add_broll`. Search runs in your browser; the catalog keeps growing.
+- **A free b-roll page.** Search the same catalog at `/b-roll`, hover to play, download any shot.
+
+### Changed
+
+- **Music never comes from web downloads.** Your agent uses your file, the Agentcut library, Lyria with
+  your Gemini key, or music it composes, instead of slow and unreliable CC0 downloads.
 
 ### Fixed
 
@@ -239,7 +251,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.9...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.10...HEAD
+[0.2.10]: https://github.com/deifos/Agentcut/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/deifos/Agentcut/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/deifos/Agentcut/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/deifos/Agentcut/compare/v0.2.6...v0.2.7

@@ -1,7 +1,7 @@
 // Shot descriptions from a local vision model served by Ollama (no API keys, runs on the GPU).
 import { readFileSync } from "node:fs";
 
-export const DESCRIBE_MODEL = process.env.BROLL_DESCRIBE_MODEL ?? "gemma3:12b";
+export const DESCRIBE_MODEL = process.env.BROLL_DESCRIBE_MODEL ?? "gemma3:4b";
 const OLLAMA_URL = process.env.OLLAMA_HOST ? `http://${process.env.OLLAMA_HOST.replace(/^https?:\/\//, "")}` : "http://127.0.0.1:11434";
 
 const SCHEMA = {
@@ -31,6 +31,7 @@ const SCHEMA = {
 const PROMPT = ({ title, year }) => `You are cataloguing b-roll shots from an archival film for video editors who search by meaning.
 The three images are frames from the start, middle and end of ONE shot${title ? ` from "${title}"${year ? ` (${year})` : ""}` : ""}.
 Describe only what is visible; use the film title only to name things you can actually see.
+Write about the shot itself: never say "the three frames" or "the images".
 
 - description: one or two concrete sentences: the subject, the action, the setting, and how the camera moves across the three frames.
 - subjects: the main visible things (nouns, 2–6).

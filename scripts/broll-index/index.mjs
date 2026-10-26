@@ -11,6 +11,7 @@
 //   describe  description and tags from a local vision model (Ollama)
 //   embed     SigLIP image vector per shot (Transformers.js)
 //   cut       preview.mp4 (from the derivative) and full.mp4 (from the original), timed
+//   pipeline  all of the above per film, overlapped, rebuilding the index after each film
 //   build     out/shots.json + out/vectors.i8 (the files the CDN serves; vectors.f32 for serve.mjs)
 import { existsSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -42,7 +43,9 @@ const MIN_SHOT_S = 1.5;
 const MAX_SHOT_S = 14;
 const SPLIT_TARGET_S = 10;
 const FRAME_POINTS = [0.2, 0.5, 0.8];
-const REMOTE_CUT_SAMPLES = 3;
+// Timing test of cutting straight from archive.org (it averaged ~20 s a shot): off unless asked for.
+const REMOTE_CUT_SAMPLES = Number(process.env.BROLL_REMOTE_TESTS ?? 0);
+const MAX_ORIGINAL_BYTES = 3e9;
 const BACKGROUND_CALM = 0.35;
 const BACKGROUND_MOTION = 8;
 
@@ -75,8 +78,9 @@ async function stepFetch(id) {
     const videos = (meta.files ?? []).filter((f) => VIDEO_FORMATS.has(f.format) && pixels(f) > 0);
     const index = INDEX_FORMATS.map((fmt) => videos.find((f) => f.format === fmt)).find(Boolean);
     if (!index) throw new Error(`${id}: no h.264/MPEG4 derivative to analyze`);
-    const originals = videos.filter((f) => f.source === "original");
-    const full = [...(originals.length ? originals : videos)].sort((a, b) => pixels(b) - pixels(a))[0];
+    const sized = videos.filter((f) => Number(f.size ?? 0) < MAX_ORIGINAL_BYTES);
+    const originals = sized.filter((f) => f.source === "original");
+    const full = [...(originals.length ? originals : sized.length ? sized : [index])].sort((a, b) => pixels(b) - pixels(a))[0];
     film = {
       id,
       title: String(first(m.title) ?? id),
@@ -411,9 +415,63 @@ function report(ids) {
 
 const STEPS = ["fetch", "shots", "analyze", "measure", "describe", "embed", "cut"];
 
+/**
+ * Every step for every film, overlapped: the next film downloads and is analyzed (network, CPU) while
+ * the current one is described (GPU). The index is rebuilt after each film, so it's searchable mid-run.
+ */
+async function runPipeline(ids) {
+  const ready = [];
+  let producing = true;
+  let wake = null;
+  const producer = (async () => {
+    for (const id of ids) {
+      try {
+        await stepFetch(id);
+        const film = loadFilm(id);
+        await stepShots(film);
+        await stepAnalyze(film);
+        await measureFilm(film);
+        ready.push(id);
+      } catch (error) {
+        console.error(`  ${id}: ${error instanceof Error ? error.message : error}`);
+      }
+      wake?.();
+    }
+    producing = false;
+    wake?.();
+  })();
+  for (;;) {
+    if (!ready.length) {
+      if (!producing) break;
+      await new Promise((resolve) => (wake = resolve));
+      wake = null;
+      continue;
+    }
+    const id = ready.shift();
+    try {
+      const film = loadFilm(id);
+      await stepDescribe(film);
+      await stepEmbed(film);
+      await stepCut(film);
+      stepBuild(ids);
+      console.log(`== ${id} done (${ids.indexOf(id) + 1}/${ids.length})`);
+    } catch (error) {
+      console.error(`  ${id}: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+  await producer;
+  stepBuild(ids);
+  report(ids);
+}
+
 async function main() {
   const [step = "all", ...rest] = process.argv.slice(2);
-  const ids = rest.length ? rest : readJson(fileURLToPath(new URL("./films.json", import.meta.url)), []);
+  // Film ids, or a .json list (strings or { id } objects) such as films-v1.json.
+  const list = rest.length === 1 && rest[0].endsWith(".json") ? rest[0] : rest.length ? null : "films.json";
+  const ids = list
+    ? readJson(fileURLToPath(new URL(`./${list}`, import.meta.url)), []).map((f) => (typeof f === "string" ? f : f.id))
+    : rest;
+  if (step === "pipeline") return runPipeline(ids);
   if (step === "build") return stepBuild(ids);
   if (step === "report") return report(ids);
   const steps = step === "all" ? STEPS : [step];

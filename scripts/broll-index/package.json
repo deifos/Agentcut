@@ -1,0 +1,13 @@
+{
+  "name": "agentcut-broll-index",
+  "private": true,
+  "description": "Builds the Agentcut archival b-roll index (shots, descriptions, SigLIP vectors) from public-domain archive.org films.",
+  "type": "module",
+  "scripts": {
+    "index": "node index.mjs",
+    "serve": "node serve.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.0"
+  }
+}

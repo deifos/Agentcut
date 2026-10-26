@@ -13,6 +13,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- **Finding sounds takes one call.** The sound effects catalog returns a compact index of the whole
+  library, then full details for the sounds your agent picks, instead of making it page through every
+  category; it can add up to 40 sounds at once.
+
 ## [0.2.8] - 2026-10-25
 
 Works with helper 0.2.0; update to 0.2.8 (`npx -y agentcut@latest`) so your agent can search and use the

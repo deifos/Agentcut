@@ -718,6 +718,8 @@ export async function runStudioTool(
 
     case "studio_sfx_catalog": {
       // Agentcut's own sound effects library (public/sfx), described and measured with earshot.
+      // One call should be enough: without filters it returns a compact index of every sound; full
+      // details (timing, volume, readings) come back for specific ids or a small filtered set.
       const { SFX_LIBRARY } = await import("@/lib/sfx-library");
       const words = (typeof params.query === "string" ? params.query : "")
         .toLowerCase()
@@ -725,33 +727,52 @@ export async function runStudioTool(
         .filter(Boolean);
       const category = typeof params.category === "string" ? params.category : "";
       const recordedOnly = params.recordedOnly === true;
-      const matches = SFX_LIBRARY.filter(
-        (e) =>
-          (!category || e.category === category) &&
-          (!recordedOnly || e.recorded) &&
-          (!words.length ||
-            words.some((w) =>
-              `${e.id} ${e.category} ${e.description} ${e.useFor} ${e.readings.map((r) => r.sound).join(" ")}`
-                .toLowerCase()
-                .includes(w),
-            )),
-      );
+      const ids = stringList(params.ids ?? params.id);
       const counts: Record<string, number> = {};
       for (const e of SFX_LIBRARY) counts[e.category] = (counts[e.category] ?? 0) + 1;
+      const matches = ids.length
+        ? SFX_LIBRARY.filter((e) => ids.includes(e.id))
+        : SFX_LIBRARY.filter(
+            (e) =>
+              (!category || e.category === category) &&
+              (!recordedOnly || e.recorded) &&
+              (!words.length ||
+                words.some((w) =>
+                  `${e.id} ${e.category} ${e.description} ${e.useFor} ${e.readings.map((r) => r.sound).join(" ")}`
+                    .toLowerCase()
+                    .includes(w),
+                )),
+          );
       // Recordings first: they sound more expensive than synthesized ones when both fit.
-      matches.sort((a, b) => Number(b.recorded) - Number(a.recorded));
+      matches.sort((x, y) => Number(y.recorded) - Number(x.recorded));
+      const FULL = 40;
+      const full = ids.length > 0 || matches.length <= FULL;
+      const placement =
+        "Place a clip at the cue frame minus onsetS (in frames); for whooshes and risers put peakS on the cut. Start from volume (it evens out loudness), then balance with agentcut_listen_critique.";
       return {
         total: SFX_LIBRARY.length,
         categories: counts,
         matches: matches.length,
-        sounds: matches.slice(0, 120),
-        note: "Recordings (recorded: true) first, then the synthesized earshot sounds when no recording fits. Place a clip at the cue frame minus onsetS (in frames); for a whoosh put peakS on the cut. Start from the entry's volume (it evens out loudness), then balance the mix with agentcut_listen_critique. Add with agentcut_add_sfx.",
+        ...(full
+          ? { sounds: matches }
+          : {
+              index: matches.map((e) => ({
+                id: e.id,
+                category: e.category,
+                recorded: e.recorded,
+                seconds: e.seconds,
+                sound: e.description.length > 90 ? `${e.description.slice(0, 87)}...` : e.description,
+              })),
+            }),
+        note: full
+          ? `${placement} Add with agentcut_add_sfx (up to 40 ids at once).`
+          : `A compact index of ${matches.length} sounds: pick candidates from it, then call again with ids: [...] (or a narrower query/category) for full details. Prefer recorded: true when one fits. ${placement} Add with agentcut_add_sfx (up to 40 ids at once).`,
       };
     }
 
     case "studio_add_sfx": {
       const doc = await ready(context, params);
-      const ids = stringList(params.ids ?? params.id).slice(0, 12);
+      const ids = stringList(params.ids ?? params.id).slice(0, 40);
       if (ids.length === 0) throw new Error("ids is required (sound ids from studio_sfx_catalog).");
       const { SFX_LIBRARY, sfxUrl } = await import("@/lib/sfx-library");
       const { uploadToProject } = await import("@/lib/studio/export");

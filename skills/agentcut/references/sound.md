@@ -17,10 +17,12 @@ the listen tools, written into notes.md (z, p_real, LUFS, onset).
 
 The library first: real recordings sound expensive, and it has a sound for nearly every cue.
 
-1. **`agentcut_sfx_catalog`**: 276 effects, nothing to install. Filter by words ("soft whoosh",
-   "logo sting", "success") and/or category: click, pop, swoosh, whoosh, impact, riser, sting, notify,
-   shimmer, glitch, typing, foley, divider. Each entry says what it sounds like, what it's for, `onsetS`,
-   `peakS` and a `volume` that evens out its loudness.
+1. **`agentcut_sfx_catalog`**: 276 effects, nothing to install. **One call with no filters** returns a
+   compact index of every sound (id, category, recorded, length, what it sounds like): plan from it, then
+   call once more with `ids: [...]` for the full details of your picks (what it's for, `onsetS`, `peakS`
+   and a `volume` that evens out its loudness). A query ("soft whoosh", "logo sting") or category (click,
+   pop, swoosh, whoosh, impact, riser, sting, notify, shimmer, glitch, typing, foley, divider) that matches
+   40 or fewer also returns full details. Don't page through the categories one by one.
    - `recorded: true` (source `agentcut`, 55 sounds): original real recordings. **Prefer these** when one
      fits. Their descriptions were measured by ear-models (earshot), so trust them over the file name:
      several "click-tech" sounds are tonal chimes and plucks, the "scramble" dividers are glassy rattles.

@@ -280,7 +280,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.11...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.12...HEAD
+[0.2.12]: https://github.com/deifos/Agentcut/compare/v0.2.11...v0.2.12
 [0.2.11]: https://github.com/deifos/Agentcut/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/deifos/Agentcut/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/deifos/Agentcut/compare/v0.2.8...v0.2.9

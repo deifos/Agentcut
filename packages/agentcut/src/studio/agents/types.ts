@@ -22,7 +22,20 @@ export interface AgentInfo {
   installUrl: string;
   /** What to run once in a terminal to sign in, e.g. `claude`. */
   loginCommand: string;
+  /** Models the page offers; leaving the model out uses the CLI's own default. */
+  models?: AgentModel[];
+  /** The model the CLI uses by default, when known (shown as "Default (…)"). */
+  defaultModel?: string | null;
 }
+
+export interface AgentModel {
+  /** What the CLI takes, e.g. `opus` or `gpt-6.1-sol`. */
+  id: string;
+  label: string;
+}
+
+/** Model names the CLIs accept: letters, digits and . _ : - [ ] (never passed through a shell unchecked). */
+export const MODEL_ID = /^[A-Za-z0-9][\w.:\-[\]]{0,79}$/;
 
 /** The MCP server the agent connects to (the agentcut tools). */
 export interface McpServerSpec {
@@ -49,6 +62,8 @@ export interface AgentRun {
   allowShell: boolean;
   /** Extra folders the agent may read but must not change. */
   readDirs: string[];
+  /** The model to use (checked against MODEL_ID), or null for the CLI's default. */
+  model: string | null;
 }
 
 /**
@@ -100,6 +115,8 @@ export interface AgentAdapter {
   skillsDir: string;
   /** How the prompt tells the agent to look at an attached image, e.g. "open it with Read". */
   imageHint: string;
+  /** The models to offer, and the CLI's default when it can be read. */
+  listModels(): { models: AgentModel[]; defaultModel: string | null };
   /** Arguments for one turn. The prompt goes on stdin. */
   buildArgs(run: AgentRun): string[];
   createParser(): AgentParser;

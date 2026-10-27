@@ -122,7 +122,9 @@ import { TimelineThumbs } from "@/components/studio/timeline-thumbs";
 import {
   agentChoiceStore,
   canPickAgent,
+  modelChoiceStore,
   pickAgent,
+  pickModel,
   studioAgents,
 } from "@/lib/studio/agents";
 
@@ -172,6 +174,12 @@ export function StudioApp() {
   const agents = studioAgents(info);
   const agent = pickAgent(agents, agentChoice, info?.defaultAgent);
   const agentPickable = canPickAgent(info);
+  const modelChoices = useSyncExternalStore(
+    modelChoiceStore.subscribe,
+    modelChoiceStore.get,
+    modelChoiceStore.getServer,
+  );
+  const model = agentPickable ? pickModel(agent, modelChoices) : null;
   const [playing, setPlaying] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   // Files attached to the next chat message, per project.
@@ -413,9 +421,10 @@ export function StudioApp() {
         attachments,
         references: options.references ?? [],
         agent: agentPickable ? agent?.id : undefined,
+        model: model ?? undefined,
       });
     },
-    [agent?.id, agentPickable, doc, frameStore, loaded, studio, variant],
+    [agent?.id, agentPickable, model, doc, frameStore, loaded, studio, variant],
   );
 
   /** A camera take goes at the end of the Footage track (made when missing). */
@@ -516,6 +525,7 @@ export function StudioApp() {
       {
         attachments,
         agent: agentPickable ? agent?.id : undefined,
+        model: model ?? undefined,
         drawing: drawingSupported ? description : undefined,
       },
     );
@@ -812,6 +822,8 @@ export function StudioApp() {
                 agent={agent}
                 agents={agentPickable ? agents : []}
                 onAgentChange={agentChoiceStore.set}
+                model={model}
+                onModelChange={modelChoiceStore.set}
                 disabled={status !== "connected" || !doc}
                 references={chatReferences}
                 onReferencesChange={setChatReferences}

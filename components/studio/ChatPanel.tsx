@@ -567,48 +567,90 @@ function QueuedBubble({
   );
 }
 
-/** Switch the agent that answers the next message (Claude Code, Codex…). */
+/** Switch the agent that answers the next message (Claude Code, Codex…) and its model. */
 function AgentPicker({
   agent,
   agents,
   onChange,
+  model,
+  onModelChange,
 }: {
   agent: AgentInfo | null;
   agents: AgentInfo[];
   onChange(id: string): void;
+  model: string | null;
+  onModelChange(agentId: string, model: string | null): void;
 }) {
+  const models = agent?.found ? (agent.models ?? []) : [];
+  const modelLabel = models.find((m) => m.id === model)?.label;
+  const defaultLabel = agent?.defaultModel
+    ? `Default (${models.find((m) => m.id === agent.defaultModel)?.label ?? agent.defaultModel})`
+    : "Default";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-bold hover:bg-muted">
         <span>{agent?.name ?? "Agent"}</span>
         <span className="truncate text-[11px] font-normal text-muted-foreground">
-          {agent?.found ? (agent.version ?? "") : "not installed"}
+          {!agent?.found
+            ? "not installed"
+            : modelLabel
+              ? `· ${modelLabel}`
+              : (agent.version ?? "")}
         </span>
         <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
-          Who answers your next message. Switching keeps the conversation.
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup
-          value={agent?.id ?? ""}
-          onValueChange={onChange}
-        >
-          {agents.map((option) => (
-            <DropdownMenuRadioItem
-              key={option.id}
-              value={option.id}
-              disabled={!option.found}
-              className="text-xs"
+        {agents.length > 1 && (
+          <>
+            <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+              Who answers your next message. Switching keeps the conversation.
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={agent?.id ?? ""}
+              onValueChange={onChange}
             >
-              <span className="font-semibold">{option.product}</span>
-              <span className="ml-auto text-[11px] text-muted-foreground">
-                {option.found ? (option.version ?? "") : "not installed"}
-              </span>
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
+              {agents.map((option) => (
+                <DropdownMenuRadioItem
+                  key={option.id}
+                  value={option.id}
+                  disabled={!option.found}
+                  className="text-xs"
+                >
+                  <span className="font-semibold">{option.product}</span>
+                  <span className="ml-auto text-[11px] text-muted-foreground">
+                    {option.found ? (option.version ?? "") : "not installed"}
+                  </span>
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </>
+        )}
+        {agent && models.length > 0 && (
+          <>
+            {agents.length > 1 && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+              {agent.name} model
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={model ?? ""}
+              onValueChange={(id) => onModelChange(agent.id, id || null)}
+            >
+              <DropdownMenuRadioItem value="" className="text-xs">
+                {defaultLabel}
+              </DropdownMenuRadioItem>
+              {models.map((option) => (
+                <DropdownMenuRadioItem
+                  key={option.id}
+                  value={option.id}
+                  className="text-xs"
+                >
+                  {option.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -621,6 +663,9 @@ export interface ChatPanelProps {
   /** Agents to choose from (empty when the helper can't switch). */
   agents: AgentInfo[];
   onAgentChange(id: string): void;
+  /** The model picked for the agent (null: its default). */
+  model: string | null;
+  onModelChange(agentId: string, model: string | null): void;
   disabled: boolean;
   /** Files to send with the next message (from the assets panel or drag and drop). */
   references: ChatReference[];
@@ -652,6 +697,8 @@ export function ChatPanel({
   agent,
   agents,
   onAgentChange,
+  model,
+  onModelChange,
   disabled,
   references,
   onReferencesChange,
@@ -728,11 +775,13 @@ export function ChatPanel({
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/60 px-3">
           <Bot className="size-4" />
-          {agents.length > 1 ? (
+          {agents.length > 1 || (agent?.found && agent.models?.length) ? (
             <AgentPicker
               agent={agent}
               agents={agents}
               onChange={onAgentChange}
+              model={model}
+              onModelChange={onModelChange}
             />
           ) : (
             <>

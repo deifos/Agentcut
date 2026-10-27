@@ -40,6 +40,61 @@ export function pickAgent(
   );
 }
 
+/** The model picked for this agent, if it still offers it (else null: the CLI's default). */
+export function pickModel(agent: AgentInfo | null, choices: Record<string, string>) {
+  const id = agent ? choices[agent.id] : undefined;
+  return agent?.models?.some((model) => model.id === id) ? (id as string) : null;
+}
+
+const MODEL_KEY = "agentcut.models";
+const modelListeners = new Set<() => void>();
+let modelSnapshot: { raw: string | null; value: Record<string, string> } = { raw: null, value: {} };
+
+/** The model picked per agent ({ claude: "opus" }), kept in localStorage. */
+export const modelChoiceStore = {
+  subscribe(listener: () => void) {
+    modelListeners.add(listener);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === MODEL_KEY) listener();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      modelListeners.delete(listener);
+      window.removeEventListener("storage", onStorage);
+    };
+  },
+  get(): Record<string, string> {
+    let raw: string | null = null;
+    try {
+      raw = window.localStorage.getItem(MODEL_KEY);
+    } catch {}
+    // Same object while the stored text is unchanged (useSyncExternalStore compares snapshots).
+    if (raw !== modelSnapshot.raw) {
+      let value: Record<string, string> = {};
+      try {
+        const parsed: unknown = raw ? JSON.parse(raw) : {};
+        if (parsed && typeof parsed === "object") value = parsed as Record<string, string>;
+      } catch {}
+      modelSnapshot = { raw, value };
+    }
+    return modelSnapshot.value;
+  },
+  getServer(): Record<string, string> {
+    return EMPTY_MODELS;
+  },
+  /** null goes back to the CLI's default. */
+  set(agentId: string, model: string | null) {
+    const next = { ...modelChoiceStore.get() };
+    if (model) next[agentId] = model;
+    else delete next[agentId];
+    try {
+      window.localStorage.setItem(MODEL_KEY, JSON.stringify(next));
+    } catch {}
+    for (const listener of modelListeners) listener();
+  },
+};
+const EMPTY_MODELS: Record<string, string> = {};
+
 const CHOICE_KEY = "agentcut.agent";
 const listeners = new Set<() => void>();
 

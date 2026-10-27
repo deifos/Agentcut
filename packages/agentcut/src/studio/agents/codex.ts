@@ -1,4 +1,7 @@
-import type { AgentAdapter, AgentEvent, AgentParser, AgentRun } from "./types.js";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { MODEL_ID, type AgentAdapter, type AgentEvent, type AgentModel, type AgentParser, type AgentRun } from "./types.js";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -133,6 +136,30 @@ class CodexParser implements AgentParser {
   }
 }
 
+/** The models Codex lists in its own picker (its cached model list) and the default from config.toml. */
+function codexModels() {
+  const home = process.env.CODEX_HOME || join(homedir(), ".codex");
+  let models: AgentModel[] = [];
+  try {
+    const cache = JSON.parse(readFileSync(join(home, "models_cache.json"), "utf8")) as {
+      models?: { slug?: unknown; display_name?: unknown; visibility?: unknown; priority?: unknown }[];
+    };
+    models = (cache.models ?? [])
+      .filter((m) => m.visibility === "list" && typeof m.slug === "string" && MODEL_ID.test(m.slug))
+      .sort((a, b) => Number(a.priority ?? 99) - Number(b.priority ?? 99))
+      .map((m) => ({ id: m.slug as string, label: typeof m.display_name === "string" ? m.display_name : (m.slug as string) }));
+  } catch {
+    // No cache yet (Codex never ran): only the default.
+  }
+  let defaultModel: string | null = null;
+  try {
+    defaultModel = /^\s*model\s*=\s*"([^"]+)"/m.exec(readFileSync(join(home, "config.toml"), "utf8"))?.[1] ?? null;
+  } catch {
+    // No config: Codex picks.
+  }
+  return { models, defaultModel };
+}
+
 export const codexAgent: AgentAdapter = {
   id: "codex",
   name: "Codex",
@@ -166,6 +193,7 @@ export const codexAgent: AgentAdapter = {
       // Exports, renders and transcriptions take minutes.
       `${server}.tool_timeout_sec=1800`,
     ];
+    if (run.model) config.push(`model=${tomlString(run.model)}`);
     const args = ["exec"];
     if (run.sessionId) args.push("resume");
     args.push("--json", "--skip-git-repo-check");
@@ -176,6 +204,8 @@ export const codexAgent: AgentAdapter = {
     args.push("-");
     return args;
   },
+
+  listModels: codexModels,
 
   createParser: () => new CodexParser(),
 

@@ -722,6 +722,8 @@ export function useStudioController() {
         references?: ChatReference[];
         /** The agent to answer (left out for helpers that can't switch). */
         agent?: string;
+        /** The agent's model (left out for its default). */
+        model?: string;
         /** The pencil's strokes, described (helpers with the "drawing" feature). */
         drawing?: string;
       } = {},
@@ -735,6 +737,7 @@ export function useStudioController() {
           slug: current.slug,
           text,
           agent: extra.agent,
+          ...(extra.model ? { model: extra.model } : {}),
           context: {
             variant: latest.current.variant,
             playheadFrame: frameStore.get(),

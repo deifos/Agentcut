@@ -4,7 +4,8 @@ import { claudeAgent } from "./claude.js";
 import { codexAgent } from "./codex.js";
 import type { AgentAdapter, AgentInfo } from "./types.js";
 
-export type { AgentAdapter, AgentEvent, AgentInfo, AgentParser, AgentRun, McpServerSpec } from "./types.js";
+export type { AgentAdapter, AgentEvent, AgentInfo, AgentModel, AgentParser, AgentRun, McpServerSpec } from "./types.js";
+export { MODEL_ID } from "./types.js";
 
 /** Every agent the studio chat can drive, in order of preference (the first one found is the default). */
 export const AGENTS: readonly AgentAdapter[] = [claudeAgent, codexAgent];
@@ -21,6 +22,7 @@ export function detectAgent(agent: AgentAdapter): AgentInfo {
     product: agent.product,
     installUrl: agent.installUrl,
     loginCommand: agent.loginCommand,
+    ...agent.listModels(),
   };
   const path = process.env[agent.envOverride] || resolveCommand(agent.command);
   if (!path) {

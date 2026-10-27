@@ -322,6 +322,10 @@ export interface AgentInfo {
   installUrl: string;
   /** Run once in a terminal to sign in. */
   loginCommand: string;
+  /** Models to offer (helpers that can pick one); none picked means the CLI's default. */
+  models?: { id: string; label: string }[];
+  /** The CLI's default model, when the helper can tell. */
+  defaultModel?: string | null;
 }
 
 export interface StudioInfo {

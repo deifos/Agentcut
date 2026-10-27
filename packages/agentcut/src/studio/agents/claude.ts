@@ -146,10 +146,22 @@ export const claudeAgent: AgentAdapter = {
     if (run.readDirs.length) {
       args.push("--disallowedTools", ...run.readDirs.map((dir) => `Edit(${absoluteRule(dir)})`));
     }
+    if (run.model) args.push("--model", run.model);
     if (run.sessionId) args.push("--resume", run.sessionId);
     // Images reach Claude through the prompt (it opens them with Read).
     return args;
   },
+
+  // Aliases: each always means the latest model of that family.
+  listModels: () => ({
+    models: [
+      { id: "fable", label: "Fable" },
+      { id: "opus", label: "Opus" },
+      { id: "sonnet", label: "Sonnet" },
+      { id: "haiku", label: "Haiku" },
+    ],
+    defaultModel: null,
+  }),
 
   createParser: () => new ClaudeParser(),
 

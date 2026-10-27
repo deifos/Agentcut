@@ -207,6 +207,7 @@ function buildCamera(pose: FullPose, width: number, height: number) {
 export function Stage({ camera, float = 0, motionBlur = 0, seed = 1, background, children, style }: StageProps) {
   const frame = useCurrentFrame();
   const { width, height, fps } = useVideoConfig();
+  const env = useRemotionEnvironment();
   const poseAt = (f: number) => {
     const p = cameraAt(f, camera);
     const o = floatOffset(f, fps, float, seed);
@@ -245,11 +246,17 @@ export function Stage({ camera, float = 0, motionBlur = 0, seed = 1, background,
     // Screen px, so the thresholds follow the frame size (u = 1 at 1080).
     blur = Math.min(28 * cam.u, Math.max(0, speed - 6 * cam.u) * 0.22 * motionBlur);
   }
+  const blurred = blur > 0.4 * cam.u;
+  // In the live preview a shot with motion blur keeps its filter on every frame (blur(0) while still).
+  // Switching it on and off rebuilds the page's GPU layers each time, which made the whole studio
+  // flicker under memory pressure. Captures and exports draw exactly as before.
+  const steady = motionBlur > 0 && env.isPlayer && !env.isRendering;
+  const blurStyle = blurred || steady ? { filter: `blur(${blurred ? blur.toFixed(2) : 0}px)` } : undefined;
 
   return (
     <AbsoluteFill style={{ overflow: "hidden", background, ...style }}>
       <StageCtx.Provider value={ctx}>
-        <AbsoluteFill style={blur > 0.4 * cam.u ? { filter: `blur(${blur.toFixed(2)}px)` } : undefined}>{children}</AbsoluteFill>
+        <AbsoluteFill style={blurStyle}>{children}</AbsoluteFill>
       </StageCtx.Provider>
     </AbsoluteFill>
   );
@@ -642,22 +649,30 @@ export function Plane({
     const levels = [0];
     for (let i = rungs - 1; i >= 0; i--) levels.push(max / Math.pow(2.2, i));
     const pad = padFor(withExtra(max));
-    const weights = focus.blursAcross(pad).map((b) => {
-      const w = new Array<number>(levels.length).fill(0);
-      if (b <= 0) {
-        w[0] = 1;
-        return w;
-      }
+    // Each stop's place on the ladder: rung i plus t of the way to rung i + 1.
+    const rungAt = focus.blursAcross(pad).map((b) => {
+      if (b <= 0) return 0;
       let i = 0;
       while (i < levels.length - 2 && b > levels[i + 1]) i++;
-      const t = Math.min(1, Math.max(0, (b - levels[i]) / Math.max(1e-6, levels[i + 1] - levels[i])));
-      w[i] = 1 - t;
-      w[i + 1] = t;
-      return w;
+      return i + Math.min(1, Math.max(0, (b - levels[i]) / Math.max(1e-6, levels[i + 1] - levels[i])));
     });
     // Stack from the blurriest copy (bottom) up to the sharp main copy (top).
     const order = levels.map((_, i) => levels.length - 1 - i);
-    const alphas = weights.map((w) => stackAlphas(order.map((i) => w[i]), opacity));
+    const last = levels.length - 1;
+    // Opaque plane: copy L shows fully while the stop is at rung L or blurrier, fades out over the rung above,
+    // and the bottom copy is always opaque. The alphas are then continuous along the plane, so the mask's
+    // linear blend between stops is exact and nothing behind shows through where two copies hand over
+    // (normalised weights jump there, which drew thin dark lines across every lens-blurred plane).
+    const alphas =
+      opacity >= 0.999
+        ? rungAt.map((r) => order.map((L) => (L === last ? 1 : Math.min(1, Math.max(0, L + 1 - r)))))
+        : rungAt.map((r) => {
+            const w = new Array<number>(levels.length).fill(0);
+            const i = Math.min(last - 1, Math.floor(r));
+            w[i] = 1 - (r - i);
+            w[i + 1] = r - i;
+            return stackAlphas(order.map((L) => w[L]), opacity);
+          });
     order.forEach((level, k) => {
       const isMain = level === 0;
       layers.push(

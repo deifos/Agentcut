@@ -468,6 +468,11 @@ export function StudioPreview(props: StudioPreviewProps) {
                 top: rect.top,
                 width: rect.width,
                 height: rect.height,
+                // Its own compositing layer and layout/paint boundary: heavy 3D scenes repaint inside
+                // the preview only, instead of taking the rest of the studio with them.
+                contain: "strict",
+                isolation: "isolate",
+                transform: "translateZ(0)",
               }}
             >
               <Player

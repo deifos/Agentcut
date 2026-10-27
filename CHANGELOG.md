@@ -13,6 +13,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep share import progress visible when the helper connects. Concurrent imports use separate
+  temporary folders, and duplicate project names stay within the studio's folder-name limit.
+- Reject alternate chunk names that could bypass the share Worker's storage limit, and fix its type check.
+
+### Added
+
+- **Share a project with a link.** Click **Share** and send the link: whoever opens it gets the whole
+  project (scenes, timeline, notes and assets) in their own Agentcut with one click, even if they start
+  the helper only after opening the link. Files are encrypted on your computer and the key is part of
+  the link, so the server never sees them. Links expire after 3 days; projects up to 1 GB without their
+  renders. Renders and the chat aren't shared. Needs the new helper on both ends.
+
 ## [0.2.11] - 2026-10-26
 
 Works with helper 0.2.0; update to 0.2.11 (`npx -y agentcut@latest`) so your agent can search and add

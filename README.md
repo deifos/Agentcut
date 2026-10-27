@@ -4,6 +4,8 @@
 Claude Code or Codex builds the video on your computer as real [Remotion](https://www.remotion.dev) code.
 You watch the live preview, scrub the timeline, tweak any layer by hand, and export an MP4 from the browser.
 
+![Agentcut studio with agent chat, video preview, assets, and a multitrack timeline](docs/images/studio.png)
+
 **Try it:** https://agentcut.synteq.app · [components](https://agentcut.synteq.app/components) · [templates](https://agentcut.synteq.app/templates) · [changelog](CHANGELOG.md)
 
 - **Chat to edit**: describe the change; the agent writes the scenes, layers, captions and sound.
@@ -37,8 +39,9 @@ previews are controlled by those services.
                                           └───────────────────────────────────┘
 ```
 
-The web page has no backend: your agent, files and API keys stay on your computer. The page connects to
+The studio uses a local helper: your agent and API keys stay on your computer. The page connects to
 the helper on `127.0.0.1`, the agent writes scenes and layers, and the page rebuilds the preview live.
+Project files stay local unless you choose to share them with a link.
 
 ## Quick start
 
@@ -72,6 +75,20 @@ verified, nothing installed system-wide) and keeps yt-dlp up to date. Only publi
 unless you click **Retry with my browser login**, which uses that browser's login once for that video.
 Record needs camera and microphone access in the browser.
 
+## Share a project
+
+When sharing is configured, click **Share** to create an encrypted project link. Anyone with the
+complete link can import the project into their own Agentcut workspace. Links expire after 3 days
+and support projects up to 1 GB. Renders and chat history are excluded.
+
+The helper encrypts the files before upload. The key is in the link's `#` fragment and is not sent
+to the share service. Keep the complete link private. Shared projects contain code; only open links
+from people you trust.
+
+Both users need a helper with share support (planned for 0.2.12). For self-hosting, deploy the
+[share Worker](workers/share/README.md) and set `NEXT_PUBLIC_SHARE_API_URL` before building the site.
+The Share button is hidden when this setting is empty.
+
 ## Versions
 
 The studio shows its version next to the logo (hover for the helper's). The editor and the helper are
@@ -86,6 +103,7 @@ npm install
 npm run helper:build   # build the helper (the agent's MCP server runs from packages/agentcut/dist)
 npm run helper         # start the helper from source
 npm run dev            # http://localhost:3000 (landing), /studio, /components, /templates
+npm run test:share     # share Worker and helper regression tests; no Cloudflare account required
 ```
 
 - Restyle: the theme is plain shadcn tokens in `app/globals.css` (`:root` / `.dark`). Components are in `components/ui`.

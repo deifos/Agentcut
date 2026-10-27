@@ -48,7 +48,7 @@ Write about the shot itself: never say "the three frames" or "the images".
 - quality: "damaged" for heavy scratches, tears, flicker or near-black frames; "soft" for blurry; else "good".
 - sensitive: true for violence, injury, medical or nudity, weapons pointed at people, or demeaning stereotypes.`;
 
-export async function describeShot(framePaths, context) {
+export async function describeShot(framePaths, context, { temperature = 0.2 } = {}) {
   const images = framePaths.map((p) => readFileSync(p).toString("base64"));
   const response = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: "POST",
@@ -57,7 +57,7 @@ export async function describeShot(framePaths, context) {
       model: DESCRIBE_MODEL,
       stream: false,
       format: SCHEMA,
-      options: { temperature: 0.2, num_ctx: 8192 },
+      options: { temperature, num_ctx: 8192 },
       keep_alive: "30m",
       messages: [{ role: "user", content: PROMPT(context), images }],
     }),

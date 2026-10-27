@@ -99,7 +99,8 @@ async function stepFetch(id) {
     saveFilm(film);
   }
   const local = join(FILMS_DIR, id, "index.mp4");
-  if (!existsSync(local)) {
+  // A finished film's download was deleted on purpose (removeSources): don't fetch it again.
+  if (!existsSync(local) && !film.sourcesRemoved) {
     const { bytes, seconds } = await download(archiveFileUrl(id, film.files.index.name), local);
     film.timings.indexDownload = { bytes, seconds, mbps: +((bytes * 8) / 1e6 / seconds).toFixed(2) };
     saveFilm(film);
@@ -199,10 +200,19 @@ async function stepDescribe(film) {
   for (const shot of film.shots) {
     if (shot.describe) continue;
     const t = Date.now();
-    shot.describe = await describeShot(
-      shot.frames.map((f) => join(WORK_DIR, film.id, f)),
-      { title: film.title, year: film.year },
-    );
+    const frames = shot.frames.map((f) => join(WORK_DIR, film.id, f));
+    const context = { title: film.title, year: film.year };
+    try {
+      shot.describe = await describeShot(frames, context);
+    } catch (error) {
+      // The model sometimes loops ("token repeat limit"): retry warmer, then skip just this shot.
+      try {
+        shot.describe = await describeShot(frames, context, { temperature: 0.7 });
+      } catch {
+        console.error(`  ${shot.id}: not described (${error instanceof Error ? error.message : error})`);
+        continue;
+      }
+    }
     shot.describeSeconds = (Date.now() - t) / 1000;
     saveFilm(film); // describing is the slow step: keep every result
     done++;
@@ -231,6 +241,19 @@ async function stepEmbed(film) {
   film.timings.embed = { seconds: (Date.now() - started) / 1000, shots: todo.length, model: EMBED_MODEL };
   saveFilm(film);
   console.log(`  ${film.id}: embedded ${todo.length} shots`);
+}
+
+/**
+ * Once every shot is described and cut, the downloaded film is no longer needed (it can always be
+ * fetched again): delete it so a long run doesn't fill the disk.
+ */
+function removeSources(film) {
+  const complete = film.shots.every((s) => s.describe && s.bytes);
+  const dir = join(FILMS_DIR, film.id);
+  if (!complete || !existsSync(dir)) return;
+  rmSync(dir, { recursive: true, force: true });
+  film.sourcesRemoved = new Date().toISOString();
+  saveFilm(film);
 }
 
 /** Every described shot is published; flags (title card, sensitive, quality) are data for filtering, not exclusions. */
@@ -458,6 +481,7 @@ async function runPipeline(ids) {
       await stepDescribe(film);
       await stepEmbed(film);
       await stepCut(film);
+      removeSources(film);
       stepBuild(ids);
       console.log(`== ${id} done (${ids.indexOf(id) + 1}/${ids.length})`);
     } catch (error) {
@@ -477,6 +501,13 @@ async function main() {
     ? readJson(fileURLToPath(new URL(`./${list}`, import.meta.url)), []).map((f) => (typeof f === "string" ? f : f.id))
     : rest;
   if (step === "pipeline") return runPipeline(ids);
+  if (step === "clean") {
+    for (const id of ids) {
+      const film = loadFilm(id);
+      if (film?.shots && film.timings.cut) removeSources(film);
+    }
+    return;
+  }
   if (step === "build") return stepBuild(ids);
   if (step === "report") return report(ids);
   const steps = step === "all" ? STEPS : [step];

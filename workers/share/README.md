@@ -53,7 +53,22 @@ notification in the Cloudflare dashboard just above your plan so anything unusua
 **Off switch:** set `SHARING_ENABLED = "false"` in `wrangler.toml` and `npx wrangler deploy`. New shares are
 refused at once; existing links keep working until they expire.
 
-## Develop
+## Hosted Agentcut deployment
+
+The `production` environment in `wrangler.toml` uses the existing `vladsmedia` bucket and
+`share.vladpalacio.com`. Only objects under `shares/` expire after three days. Keep the existing
+bucket lifecycle rules and media domains unchanged.
+
+```sh
+npx wrangler deploy --env production
+npx wrangler secret list --env production
+```
+
+The production `SIGNING_SECRET` is stored in Cloudflare. Normal deployments preserve it. Do not
+commit a secret or use the development signing secret in production. The hosted site's build-time
+`NEXT_PUBLIC_SHARE_API_URL` is `https://share.vladpalacio.com`.
+
+## Local development
 
 ```sh
 printf 'SIGNING_SECRET=dev-secret\nALLOWED_ORIGINS=http://localhost:3000\n' > .dev.vars

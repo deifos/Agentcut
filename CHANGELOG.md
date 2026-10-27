@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.12] - 2026-10-27
+
+Update the helper with `npx -y agentcut@latest` to create and import share links.
+
 ### Fixed
 
 - Keep share import progress visible when the helper connects. Concurrent imports use separate
@@ -21,6 +25,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Hosted sharing at `share.vladpalacio.com`, with encrypted files in the media bucket's `shares/`
+  folder and a three-day expiry rule that does not affect sound effects or other media.
 - **Share a project with a link.** Click **Share** and send the link: whoever opens it gets the whole
   project (scenes, timeline, notes and assets) in their own Agentcut with one click, even if they start
   the helper only after opening the link. Files are encrypted on your computer and the key is part of
@@ -274,7 +280,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.11...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.12...HEAD
+[0.2.12]: https://github.com/deifos/Agentcut/compare/v0.2.11...v0.2.12
 [0.2.11]: https://github.com/deifos/Agentcut/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/deifos/Agentcut/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/deifos/Agentcut/compare/v0.2.8...v0.2.9

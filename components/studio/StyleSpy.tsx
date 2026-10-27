@@ -144,7 +144,11 @@ export function StyleSpy({
   const onReference = useEffectEvent((next: ReferenceJob) => {
     if (next.slug !== slug || next.id !== job?.id) return;
     setJob(next);
-    if (next.stage === "failed") applyOnReady.current = false;
+    if (next.stage === "failed" && applyOnReady.current) {
+      applyOnReady.current = false;
+      // The dialog closed on "Copy this style": bring it back to show why.
+      onOpenChange(true);
+    }
     if (next.stage !== "ready" || !next.path) return;
     setSelected(next.path);
     if (applyOnReady.current) {
@@ -207,6 +211,7 @@ export function StyleSpy({
       applyOnReady.current = thenApply;
       await start("studio.reference.import", { url: source });
     } catch (e) {
+      if (applyOnReady.current) onOpenChange(true);
       applyOnReady.current = false;
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -271,20 +276,23 @@ export function StyleSpy({
           ? `Style Spy: my project is empty, so make a new video in the editing style of the reference video ${JSON.stringify(path)}. It's about: ${topic.trim()}. ${analyze}, then follow "Empty project": write the script for my topic and build ${copy}, with placeholders where it needs footage I haven't given you. Tell me exactly what to send to replace each placeholder.${extra ? ` Also: ${extra}` : ""}`
           : `Style Spy: copy the editing style of the reference video ${JSON.stringify(path)} onto my video. ${analyze}, back up my edit, then apply it. Copy ${copy}, using my own footage, words and brand. Tell me what you couldn't match with my material.${extra ? ` Also: ${extra}` : ""}`,
       );
-      setNotice("Sent to your agent. Follow along in chat.");
     } catch {
       setError("Could not send your request. Please try again.");
+      onOpenChange(true);
     } finally {
       setBusy(false);
     }
   }
 
+  // Closes right away; the request goes out in the background (after the import, if one is still
+  // running) and the dialog reopens with the error if it fails.
   function copyStyle() {
+    setNotice("");
     if (newLink) void importUrl(url, true);
-    else if (working) {
-      applyOnReady.current = true;
-      setNotice("Will start as soon as the reference is ready.");
-    } else if (preview) void apply(preview.path);
+    else if (working) applyOnReady.current = true;
+    else if (preview) void apply(preview.path);
+    else return;
+    onOpenChange(false);
   }
 
   return (

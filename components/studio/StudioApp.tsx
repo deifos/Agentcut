@@ -23,6 +23,7 @@ import {
   PanelRightOpen,
   Plus,
   Redo2,
+  Share2,
   Smartphone,
   Trash2,
   Undo2,
@@ -78,6 +79,8 @@ import {
 } from "@/components/studio/StudioAgent";
 import { ConnectScreen } from "@/components/studio/ConnectScreen";
 import { ExportDialog } from "@/components/studio/ExportDialog";
+import { IncomingShareDialog, ShareDialog } from "@/components/studio/ShareDialogs";
+import { SHARE_AVAILABLE, shareFromHash } from "@/lib/studio/share";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -205,6 +208,12 @@ export function StudioApp() {
   }
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  // Opened from a share link (/s/<id>#<key> forwards to /studio#share=<id>.<key>).
+  const [incomingShare, setIncomingShare] = useState(() => shareFromHash(window.location.hash));
+  const [incomingHidden, setIncomingHidden] = useState(false);
+  // Before the helper reports its version and features, don't claim it's too old.
+  const shareSupported = info ? Boolean(info.features?.includes("share")) : true;
   const [stylesOpen, setStylesOpen] = useState(false);
   const [styleSpyOpen, setStyleSpyOpen] = useState(false);
   const [cinematicOpen, setCinematicOpen] = useState(false);
@@ -529,8 +538,43 @@ export function StudioApp() {
     );
   };
 
+  // Keep this as the provider's second child in both connection states so an import stays mounted.
+  const incomingShareUi = incomingShare ? (
+    <>
+      <IncomingShareDialog
+        share={incomingShare}
+        connected={status === "connected"}
+        helperVersion={info?.version ?? null}
+        supported={shareSupported}
+        getBridge={studio.getBridge}
+        open={!incomingHidden}
+        onHide={() => setIncomingHidden(true)}
+        onOpen={studio.openProject}
+        onClose={() => {
+          setIncomingShare(null);
+          // Drop the key from the address bar so a reload doesn't offer it again.
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        }}
+      />
+      {incomingHidden ? (
+        <Button
+          type="button"
+          onClick={() => setIncomingHidden(false)}
+          className="fixed right-4 bottom-4 z-50 gap-1.5 shadow-lg"
+        >
+          <Share2 /> A shared project is waiting
+        </Button>
+      ) : null}
+    </>
+  ) : null;
+
   if (status !== "connected" && !info) {
-    return <ConnectScreen status={status} onReconnect={studio.reconnect} />;
+    return (
+      <StudioAgentContext.Provider value={agent}>
+        <ConnectScreen status={status} onReconnect={studio.reconnect} />
+        {incomingShareUi}
+      </StudioAgentContext.Provider>
+    );
   }
 
   const variants = Object.entries(doc?.project?.variants ?? {});
@@ -707,6 +751,18 @@ export function StudioApp() {
               working={Boolean(chat.running)}
               onReconnect={studio.reconnect}
             />
+            {SHARE_AVAILABLE ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShareOpen(true)}
+                disabled={!doc?.project || status !== "connected"}
+                title="Send this project to someone with a link (expires in 3 days)"
+                className="text-xs text-muted-foreground"
+              >
+                <Share2 /> Share
+              </Button>
+            ) : null}
             {exporting ? (
               <Button
                 type="button"
@@ -1089,6 +1145,18 @@ export function StudioApp() {
             getBridge={studio.getBridge}
           />
         ) : null}
+        {doc?.project && SHARE_AVAILABLE ? (
+          <ShareDialog
+            key={`share-${doc.slug}`}
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            slug={doc.slug}
+            name={doc.project.name}
+            helperVersion={info?.version ?? null}
+            supported={shareSupported}
+            getBridge={studio.getBridge}
+          />
+        ) : null}
         <VoicesDialog
           open={voicesOpen}
           onOpenChange={setVoicesOpen}
@@ -1111,6 +1179,7 @@ export function StudioApp() {
           }}
         />
       </div>
+      {incomingShareUi}
     </StudioAgentContext.Provider>
   );
 }

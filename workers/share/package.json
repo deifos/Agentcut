@@ -1,0 +1,15 @@
+{
+  "name": "agentcut-share-worker",
+  "private": true,
+  "description": "Cloudflare Worker behind Agentcut share links (encrypted project uploads on R2).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261023.1": true
+  }
+}

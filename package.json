@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:share": "node --import tsx --test tests/share.test.mjs",
     "helper": "npm run studio --workspace agentcut",
     "helper:build": "npm run build --workspace agentcut",
     "sync:skill": "npm run sync:skill --workspace agentcut"

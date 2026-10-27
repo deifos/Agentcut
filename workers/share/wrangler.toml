@@ -1,0 +1,20 @@
+# Agentcut share links. Setup and deploy: see README.md in this folder.
+name = "agentcut-share"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Page origins allowed to call from a browser (the helper sends no Origin and needs no CORS).
+ALLOWED_ORIGINS = "https://agentcut.synteq.app,http://localhost:3000,http://127.0.0.1:3000"
+# Set to "false" to stop new shares (existing links keep working until they expire).
+SHARING_ENABLED = "true"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "agentcut-shares"
+
+# New shares per IP: 3 a minute.
+[[ratelimits]]
+name = "CREATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 3, period = 60 }

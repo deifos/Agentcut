@@ -25,6 +25,7 @@ import {
 } from "./projects.js";
 import { installedBrowsers, ReferenceImports } from "./references.js";
 import { cancelLocalRender, runLocalRender } from "./render.js";
+import { importShare, shareProject } from "./share.js";
 import { openFile, projectFile, revealFile } from "./reveal.js";
 import {
   generateVoice,
@@ -360,6 +361,19 @@ export class StudioHost implements BridgeExtension {
         return { jobs: this.references.list(assertSlug(p.slug)), browsers: installedBrowsers() };
       case "studio.render.local":
         return this.renderLocal(assertSlug(p.slug), String(p.variant ?? ""), p);
+      // Share links: upload the project encrypted, or bring a shared one in. Progress comes as
+      // studio.share events tagged with the page's `job` id.
+      case "studio.share.create": {
+        const slug = assertSlug(p.slug);
+        const job = String(p.job ?? "");
+        return shareProject(this.paths, slug, p.api, (progress) => this.emit("studio.share", { job, slug, ...progress }));
+      }
+      case "studio.share.import": {
+        const job = String(p.job ?? "");
+        const result = await importShare(this.paths, p, (progress) => this.emit("studio.share", { job, ...progress }));
+        this.emit("studio.projects", { projects: listProjects(this.paths) });
+        return result;
+      }
       // Voice providers: the page sends a key once; it never comes back.
       case "studio.voice.settings":
         return voiceSettings();
@@ -517,6 +531,8 @@ export class StudioHost implements BridgeExtension {
     const parts = filename.split(/[\\/]/);
     const slug = parts[0];
     const rest = parts.slice(1).join("/");
+    // Shares unpacking (.incoming-*) and other hidden folders aren't projects.
+    if (slug?.startsWith(".")) return;
     if (!slug || !rest) {
       this.debounce("projects", () => this.emit("studio.projects", { projects: listProjects(this.paths) }), 150);
       return;
@@ -704,8 +720,8 @@ export class StudioHost implements BridgeExtension {
       projects: listProjects(this.paths),
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
-      // "drawing": chat context takes the pencil's strokes).
-      features: ["styles", "drawing"],
+      // "drawing": chat context takes the pencil's strokes; "share": share links).
+      features: ["styles", "drawing", "share"],
     };
   }
 

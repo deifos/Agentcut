@@ -85,7 +85,7 @@ The helper encrypts the files before upload. The key is in the link's `#` fragme
 to the share service. Keep the complete link private. Shared projects contain code; only open links
 from people you trust.
 
-Both users need a helper with share support (planned for 0.2.12). For self-hosting, deploy the
+Both users need helper 0.2.12 or newer. For self-hosting, deploy the
 [share Worker](workers/share/README.md) and set `NEXT_PUBLIC_SHARE_API_URL` before building the site.
 The Share button is hidden when this setting is empty.
 
@@ -124,7 +124,8 @@ npm run test:share     # share Worker and helper regression tests; no Cloudflare
 The site is a Next.js app with no backend; the `Dockerfile` builds a standalone server that listens on
 `$PORT`, with a `/healthz` route for health checks. On [Synteq Apps](https://cloud.synteq.com/apps), link
 this repo (root directory `/`); pushes to `main` build the Dockerfile and roll out. Optional build-time
-env: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_MUSIC_CDN_URL`, `NEXT_PUBLIC_BROLL_CDN_URL` (see `.env.example`). The b-roll
+env: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_MUSIC_CDN_URL`, `NEXT_PUBLIC_BROLL_CDN_URL`,
+`NEXT_PUBLIC_SHARE_API_URL` (see `.env.example`). The b-roll
 catalog is built and uploaded with `scripts/broll-index` (see its README).
 
 ```bash

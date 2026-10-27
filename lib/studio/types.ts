@@ -323,9 +323,13 @@ export interface AgentInfo {
   /** Run once in a terminal to sign in. */
   loginCommand: string;
   /** Models to offer (helpers that can pick one); none picked means the CLI's default. */
-  models?: { id: string; label: string }[];
+  models?: { id: string; label: string; efforts?: string[] }[];
   /** The CLI's default model, when the helper can tell. */
   defaultModel?: string | null;
+  /** Thinking levels for the default model (a model may list its own). */
+  efforts?: string[];
+  /** The CLI's default thinking level, when the helper can tell. */
+  defaultEffort?: string | null;
 }
 
 export interface StudioInfo {

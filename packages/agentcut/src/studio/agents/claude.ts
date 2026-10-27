@@ -147,6 +147,7 @@ export const claudeAgent: AgentAdapter = {
       args.push("--disallowedTools", ...run.readDirs.map((dir) => `Edit(${absoluteRule(dir)})`));
     }
     if (run.model) args.push("--model", run.model);
+    if (run.effort) args.push("--effort", run.effort);
     if (run.sessionId) args.push("--resume", run.sessionId);
     // Images reach Claude through the prompt (it opens them with Read).
     return args;
@@ -161,6 +162,8 @@ export const claudeAgent: AgentAdapter = {
       { id: "haiku", label: "Haiku" },
     ],
     defaultModel: null,
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: null,
   }),
 
   createParser: () => new ClaudeParser(),

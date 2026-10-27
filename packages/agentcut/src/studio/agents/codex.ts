@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { MODEL_ID, type AgentAdapter, type AgentEvent, type AgentModel, type AgentParser, type AgentRun } from "./types.js";
+import { EFFORT_ID, MODEL_ID, type AgentAdapter, type AgentEvent, type AgentModel, type AgentParser, type AgentRun } from "./types.js";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -142,22 +142,38 @@ function codexModels() {
   let models: AgentModel[] = [];
   try {
     const cache = JSON.parse(readFileSync(join(home, "models_cache.json"), "utf8")) as {
-      models?: { slug?: unknown; display_name?: unknown; visibility?: unknown; priority?: unknown }[];
+      models?: {
+        slug?: unknown;
+        display_name?: unknown;
+        visibility?: unknown;
+        priority?: unknown;
+        supported_reasoning_levels?: { effort?: unknown }[];
+      }[];
     };
     models = (cache.models ?? [])
       .filter((m) => m.visibility === "list" && typeof m.slug === "string" && MODEL_ID.test(m.slug))
       .sort((a, b) => Number(a.priority ?? 99) - Number(b.priority ?? 99))
-      .map((m) => ({ id: m.slug as string, label: typeof m.display_name === "string" ? m.display_name : (m.slug as string) }));
+      .map((m) => ({
+        id: m.slug as string,
+        label: typeof m.display_name === "string" ? m.display_name : (m.slug as string),
+        efforts: (m.supported_reasoning_levels ?? [])
+          .map((level) => level.effort)
+          .filter((effort): effort is string => typeof effort === "string" && EFFORT_ID.test(effort)),
+      }));
   } catch {
     // No cache yet (Codex never ran): only the default.
   }
   let defaultModel: string | null = null;
+  let defaultEffort: string | null = null;
   try {
-    defaultModel = /^\s*model\s*=\s*"([^"]+)"/m.exec(readFileSync(join(home, "config.toml"), "utf8"))?.[1] ?? null;
+    const config = readFileSync(join(home, "config.toml"), "utf8");
+    defaultModel = /^\s*model\s*=\s*"([^"]+)"/m.exec(config)?.[1] ?? null;
+    defaultEffort = /^\s*model_reasoning_effort\s*=\s*"([^"]+)"/m.exec(config)?.[1] ?? null;
   } catch {
     // No config: Codex picks.
   }
-  return { models, defaultModel };
+  const efforts = models.find((m) => m.id === defaultModel)?.efforts ?? ["low", "medium", "high", "xhigh"];
+  return { models, defaultModel, efforts, defaultEffort };
 }
 
 export const codexAgent: AgentAdapter = {
@@ -194,6 +210,7 @@ export const codexAgent: AgentAdapter = {
       `${server}.tool_timeout_sec=1800`,
     ];
     if (run.model) config.push(`model=${tomlString(run.model)}`);
+    if (run.effort) config.push(`model_reasoning_effort=${tomlString(run.effort)}`);
     const args = ["exec"];
     if (run.sessionId) args.push("resume");
     args.push("--json", "--skip-git-repo-check");

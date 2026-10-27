@@ -122,8 +122,11 @@ import { TimelineThumbs } from "@/components/studio/timeline-thumbs";
 import {
   agentChoiceStore,
   canPickAgent,
+  effortChoiceStore,
+  effortsFor,
   modelChoiceStore,
   pickAgent,
+  pickEffort,
   pickModel,
   studioAgents,
 } from "@/lib/studio/agents";
@@ -180,6 +183,13 @@ export function StudioApp() {
     modelChoiceStore.getServer,
   );
   const model = agentPickable ? pickModel(agent, modelChoices) : null;
+  const effortChoices = useSyncExternalStore(
+    effortChoiceStore.subscribe,
+    effortChoiceStore.get,
+    effortChoiceStore.getServer,
+  );
+  const efforts = agentPickable ? effortsFor(agent, model) : [];
+  const effort = agentPickable ? pickEffort(agent, model, effortChoices) : null;
   const [playing, setPlaying] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   // Files attached to the next chat message, per project.
@@ -422,9 +432,10 @@ export function StudioApp() {
         references: options.references ?? [],
         agent: agentPickable ? agent?.id : undefined,
         model: model ?? undefined,
+        effort: effort ?? undefined,
       });
     },
-    [agent?.id, agentPickable, model, doc, frameStore, loaded, studio, variant],
+    [agent?.id, agentPickable, model, effort, doc, frameStore, loaded, studio, variant],
   );
 
   /** A camera take goes at the end of the Footage track (made when missing). */
@@ -526,6 +537,7 @@ export function StudioApp() {
         attachments,
         agent: agentPickable ? agent?.id : undefined,
         model: model ?? undefined,
+        effort: effort ?? undefined,
         drawing: drawingSupported ? description : undefined,
       },
     );
@@ -824,6 +836,9 @@ export function StudioApp() {
                 onAgentChange={agentChoiceStore.set}
                 model={model}
                 onModelChange={modelChoiceStore.set}
+                efforts={efforts}
+                effort={effort}
+                onEffortChange={effortChoiceStore.set}
                 disabled={status !== "connected" || !doc}
                 references={chatReferences}
                 onReferencesChange={setChatReferences}

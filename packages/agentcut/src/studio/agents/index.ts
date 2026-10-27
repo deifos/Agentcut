@@ -5,7 +5,7 @@ import { codexAgent } from "./codex.js";
 import type { AgentAdapter, AgentInfo } from "./types.js";
 
 export type { AgentAdapter, AgentEvent, AgentInfo, AgentModel, AgentParser, AgentRun, McpServerSpec } from "./types.js";
-export { MODEL_ID } from "./types.js";
+export { EFFORT_ID, MODEL_ID } from "./types.js";
 
 /** Every agent the studio chat can drive, in order of preference (the first one found is the default). */
 export const AGENTS: readonly AgentAdapter[] = [claudeAgent, codexAgent];

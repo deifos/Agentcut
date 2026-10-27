@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync,
 import { basename, isAbsolute, join, relative, sep } from "node:path";
 import type { ChildProcess } from "node:child_process";
 import { debugLog } from "../log.js";
-import { getAgent, MODEL_ID, type AgentAdapter, type AgentEvent, type AgentInfo, type AgentParser, type McpServerSpec } from "./agents/index.js";
+import { EFFORT_ID, getAgent, MODEL_ID, type AgentAdapter, type AgentEvent, type AgentInfo, type AgentParser, type McpServerSpec } from "./agents/index.js";
 import { atomicWrite, projectDir, StudioError } from "./projects.js";
 import { VOICE_KEY_ENV_VARS } from "./voice.js";
 import { DETACH_FOR_GROUP_KILL, killTree, spawnCommand } from "./proc.js";
@@ -92,7 +92,7 @@ export interface ChatEngineDeps {
   addDirs: string[];
 }
 
-type ResolvedAgent = { adapter: AgentAdapter; info: AgentInfo; path: string; agents: AgentInfo[]; model: string | null };
+type ResolvedAgent = { adapter: AgentAdapter; info: AgentInfo; path: string; agents: AgentInfo[]; model: string | null; effort: string | null };
 
 const FILE_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 
@@ -135,6 +135,7 @@ interface QueuedMessage {
   text: string;
   agentId: string;
   model: string | null;
+  effort: string | null;
   context: Record<string, unknown>;
 }
 
@@ -288,7 +289,7 @@ export class ChatEngine {
   }
 
   /** The agent for a message: the one the page picked, else the chat's, else the default. */
-  private async resolveAgent(slug: string, requested: unknown, requestedModel?: unknown) {
+  private async resolveAgent(slug: string, requested: unknown, requestedModel?: unknown, requestedEffort?: unknown) {
     const agents = await this.deps.getAgents();
     const id =
       (typeof requested === "string" && requested) || this.load(slug).agent || (await this.deps.defaultAgent()) || agents[0]?.id;
@@ -301,7 +302,9 @@ export class ChatEngine {
     // Only for the agent it was picked for; anything that isn't a plain model name means the default.
     const model =
       requested === id && typeof requestedModel === "string" && MODEL_ID.test(requestedModel) ? requestedModel : null;
-    return { adapter, info, path: info.path, agents, model };
+    const effort =
+      requested === id && typeof requestedEffort === "string" && EFFORT_ID.test(requestedEffort) ? requestedEffort : null;
+    return { adapter, info, path: info.path, agents, model, effort };
   }
 
   /**
@@ -386,10 +389,17 @@ export class ChatEngine {
     ].join("\n");
   }
 
-  async send(slug: string, text: string, context: Record<string, unknown>, agentId?: unknown, model?: unknown) {
+  async send(
+    slug: string,
+    text: string,
+    context: Record<string, unknown>,
+    agentId?: unknown,
+    model?: unknown,
+    effort?: unknown,
+  ) {
     const trimmed = text.trim();
     if (!trimmed) throw new StudioError("Type a message first.", "empty");
-    const resolved = await this.resolveAgent(slug, agentId, model);
+    const resolved = await this.resolveAgent(slug, agentId, model, effort);
     const { adapter } = resolved;
 
     // The context (playhead, selection, pointed-at files) is taken now, when the user sent it.
@@ -411,7 +421,7 @@ export class ChatEngine {
     const frozen = { ...(this.deps.getPageContext() ?? {}), ...context };
     if (busy) {
       // One agent at a time: two runs writing the same workspace overwrite each other.
-      this.queue.push({ slug, messageId: userMessage.id, text: trimmed, agentId: adapter.id, model: resolved.model, context: frozen });
+      this.queue.push({ slug, messageId: userMessage.id, text: trimmed, agentId: adapter.id, model: resolved.model, effort: resolved.effort, context: frozen });
       debugLog(`chat ${slug}: queued (${this.queue.length} waiting)`);
       return { queued: true, position: this.queue.length, userMessageId: userMessage.id };
     }
@@ -421,7 +431,7 @@ export class ChatEngine {
 
   /** Synchronous once the agent is resolved, so no other turn can start in between. */
   private startTurn(slug: string, resolved: ResolvedAgent, context: Record<string, unknown>, text: string, userMessageId: string) {
-    const { adapter, path, agents, model } = resolved;
+    const { adapter, path, agents, model, effort } = resolved;
     const { text: contextText, images } = this.buildContext(slug, context, adapter);
     const file = this.load(slug);
     // Another agent owns the saved session: start a new one and pass the conversation along.
@@ -438,7 +448,7 @@ export class ChatEngine {
     this.upsertMessage(slug, assistant);
     this.deps.emit("studio.chat", { slug, kind: "start", message: assistant });
     const prompt = [handoff, contextText, text].filter(Boolean).join("\n\n");
-    this.startProcess(slug, adapter, path, model, prompt, images, assistant, switching ? null : file.sessionId, false);
+    this.startProcess(slug, adapter, path, { model, effort }, prompt, images, assistant, switching ? null : file.sessionId, false);
     return assistant.id;
   }
 
@@ -458,7 +468,7 @@ export class ChatEngine {
       this.deps.emit("studio.chat", { slug: next.slug, kind: "dequeue", message });
     }
     try {
-      const resolved = await this.resolveAgent(next.slug, next.agentId, next.model);
+      const resolved = await this.resolveAgent(next.slug, next.agentId, next.model, next.effort);
       if (this.turns.size > 0) {
         this.queue.unshift(next);
         return;
@@ -536,7 +546,7 @@ export class ChatEngine {
     slug: string,
     agent: AgentAdapter,
     agentPath: string,
-    model: string | null,
+    settings: { model: string | null; effort: string | null },
     prompt: string,
     images: string[],
     assistant: ChatMessage,
@@ -552,7 +562,7 @@ export class ChatEngine {
       mcpConfigPath: this.deps.paths.mcpConfig,
       allowShell: this.deps.allowBash,
       readDirs: this.deps.addDirs,
-      model,
+      ...settings,
     });
 
     const child = spawnCommand(agentPath, args, {
@@ -615,7 +625,7 @@ export class ChatEngine {
         // The saved session is gone (e.g. cleared); start a fresh one.
         debugLog(`chat ${slug}: resume failed, starting a new session`);
         this.saveSession(slug, agent.id, null);
-        this.startProcess(slug, agent, agentPath, model, prompt, images, assistant, null, true);
+        this.startProcess(slug, agent, agentPath, settings, prompt, images, assistant, null, true);
         return;
       }
       if (turn.cancelled) {

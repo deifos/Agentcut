@@ -329,7 +329,7 @@ export class StudioHost implements BridgeExtension {
           library: listLibrary(this.paths),
         };
       case "studio.chat.send":
-        return this.chat.send(assertSlug(p.slug), String(p.text ?? ""), asRecord(p.context), p.agent, p.model);
+        return this.chat.send(assertSlug(p.slug), String(p.text ?? ""), asRecord(p.context), p.agent, p.model, p.effort);
       case "studio.chat.cancel":
         return this.chat.cancel(assertSlug(p.slug));
       case "studio.chat.queue.edit":

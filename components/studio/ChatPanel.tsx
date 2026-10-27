@@ -656,6 +656,55 @@ function AgentPicker({
   );
 }
 
+const EFFORT_LABELS: Record<string, string> = { xhigh: "Extra high" };
+const effortLabel = (effort: string) =>
+  EFFORT_LABELS[effort] ?? effort.charAt(0).toUpperCase() + effort.slice(1);
+
+/** How hard the agent thinks on the next message (the CLI's own levels). */
+function EffortPicker({
+  agent,
+  efforts,
+  effort,
+  onChange,
+}: {
+  agent: AgentInfo;
+  efforts: string[];
+  effort: string | null;
+  onChange(agentId: string, effort: string | null): void;
+}) {
+  const fallback = agent.defaultEffort ? effortLabel(agent.defaultEffort) : null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+        title="Thinking level"
+      >
+        {effort ? effortLabel(effort) : (fallback ?? "Thinking")}
+        <ChevronDown className="size-3" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+          Thinking level. Higher is slower and uses more of your plan.
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup
+          value={effort ?? ""}
+          onValueChange={(value) => onChange(agent.id, value || null)}
+        >
+          <DropdownMenuRadioItem value="" className="text-xs">
+            {fallback ? `Default (${fallback})` : "Default"}
+          </DropdownMenuRadioItem>
+          {efforts.map((level) => (
+            <DropdownMenuRadioItem key={level} value={level} className="text-xs">
+              {effortLabel(level)}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export interface ChatPanelProps {
   chat: ChatHistory;
   /** The agent that answers the next message. */
@@ -666,6 +715,10 @@ export interface ChatPanelProps {
   /** The model picked for the agent (null: its default). */
   model: string | null;
   onModelChange(agentId: string, model: string | null): void;
+  /** Thinking levels the agent offers with its model (empty: no picker). */
+  efforts: string[];
+  effort: string | null;
+  onEffortChange(agentId: string, effort: string | null): void;
   disabled: boolean;
   /** Files to send with the next message (from the assets panel or drag and drop). */
   references: ChatReference[];
@@ -699,6 +752,9 @@ export function ChatPanel({
   onAgentChange,
   model,
   onModelChange,
+  efforts,
+  effort,
+  onEffortChange,
   disabled,
   references,
   onReferencesChange,
@@ -794,6 +850,14 @@ export function ChatPanel({
                     : ""}
               </span>
             </>
+          )}
+          {agent?.found && efforts.length > 0 && (
+            <EffortPicker
+              agent={agent}
+              efforts={efforts}
+              effort={effort}
+              onChange={onEffortChange}
+            />
           )}
           <Tooltip>
             <TooltipTrigger asChild>

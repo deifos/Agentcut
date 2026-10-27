@@ -46,54 +46,70 @@ export function pickModel(agent: AgentInfo | null, choices: Record<string, strin
   return agent?.models?.some((model) => model.id === id) ? (id as string) : null;
 }
 
-const MODEL_KEY = "agentcut.models";
-const modelListeners = new Set<() => void>();
-let modelSnapshot: { raw: string | null; value: Record<string, string> } = { raw: null, value: {} };
+/** The thinking levels the agent offers with this model. */
+export function effortsFor(agent: AgentInfo | null, model: string | null) {
+  const id = model ?? agent?.defaultModel;
+  return agent?.models?.find((m) => m.id === id)?.efforts ?? agent?.efforts ?? [];
+}
 
-/** The model picked per agent ({ claude: "opus" }), kept in localStorage. */
-export const modelChoiceStore = {
-  subscribe(listener: () => void) {
-    modelListeners.add(listener);
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === MODEL_KEY) listener();
-    };
-    window.addEventListener("storage", onStorage);
-    return () => {
-      modelListeners.delete(listener);
-      window.removeEventListener("storage", onStorage);
-    };
-  },
-  get(): Record<string, string> {
-    let raw: string | null = null;
-    try {
-      raw = window.localStorage.getItem(MODEL_KEY);
-    } catch {}
-    // Same object while the stored text is unchanged (useSyncExternalStore compares snapshots).
-    if (raw !== modelSnapshot.raw) {
-      let value: Record<string, string> = {};
+/** The thinking level picked for this agent, if its model takes it (else null: the CLI's default). */
+export function pickEffort(agent: AgentInfo | null, model: string | null, choices: Record<string, string>) {
+  const effort = agent ? choices[agent.id] : undefined;
+  return effort && effortsFor(agent, model).includes(effort) ? effort : null;
+}
+
+/** A choice per agent ({ claude: "opus" }), kept in localStorage; read with useSyncExternalStore. */
+function perAgentStore(key: string) {
+  const listeners = new Set<() => void>();
+  const empty: Record<string, string> = {};
+  let snapshot: { raw: string | null; value: Record<string, string> } = { raw: null, value: empty };
+  const store = {
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      const onStorage = (event: StorageEvent) => {
+        if (event.key === key) listener();
+      };
+      window.addEventListener("storage", onStorage);
+      return () => {
+        listeners.delete(listener);
+        window.removeEventListener("storage", onStorage);
+      };
+    },
+    get(): Record<string, string> {
+      let raw: string | null = null;
       try {
-        const parsed: unknown = raw ? JSON.parse(raw) : {};
-        if (parsed && typeof parsed === "object") value = parsed as Record<string, string>;
+        raw = window.localStorage.getItem(key);
       } catch {}
-      modelSnapshot = { raw, value };
-    }
-    return modelSnapshot.value;
-  },
-  getServer(): Record<string, string> {
-    return EMPTY_MODELS;
-  },
-  /** null goes back to the CLI's default. */
-  set(agentId: string, model: string | null) {
-    const next = { ...modelChoiceStore.get() };
-    if (model) next[agentId] = model;
-    else delete next[agentId];
-    try {
-      window.localStorage.setItem(MODEL_KEY, JSON.stringify(next));
-    } catch {}
-    for (const listener of modelListeners) listener();
-  },
-};
-const EMPTY_MODELS: Record<string, string> = {};
+      // Same object while the stored text is unchanged (useSyncExternalStore compares snapshots).
+      if (raw !== snapshot.raw) {
+        let value = empty;
+        try {
+          const parsed: unknown = raw ? JSON.parse(raw) : {};
+          if (parsed && typeof parsed === "object") value = parsed as Record<string, string>;
+        } catch {}
+        snapshot = { raw, value };
+      }
+      return snapshot.value;
+    },
+    getServer(): Record<string, string> {
+      return empty;
+    },
+    /** null goes back to the CLI's default. */
+    set(agentId: string, value: string | null) {
+      const next = { ...store.get() };
+      if (value) next[agentId] = value;
+      else delete next[agentId];
+      try {
+        window.localStorage.setItem(key, JSON.stringify(next));
+      } catch {}
+      for (const listener of listeners) listener();
+    },
+  };
+  return store;
+}
+
+export const modelChoiceStore = perAgentStore("agentcut.models");
+export const effortChoiceStore = perAgentStore("agentcut.efforts");
 
 const CHOICE_KEY = "agentcut.agent";
 const listeners = new Set<() => void>();

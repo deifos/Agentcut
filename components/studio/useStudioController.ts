@@ -724,6 +724,8 @@ export function useStudioController() {
         agent?: string;
         /** The agent's model (left out for its default). */
         model?: string;
+        /** The agent's thinking level (left out for its default). */
+        effort?: string;
         /** The pencil's strokes, described (helpers with the "drawing" feature). */
         drawing?: string;
       } = {},
@@ -738,6 +740,7 @@ export function useStudioController() {
           text,
           agent: extra.agent,
           ...(extra.model ? { model: extra.model } : {}),
+          ...(extra.effort ? { effort: extra.effort } : {}),
           context: {
             variant: latest.current.variant,
             playheadFrame: frameStore.get(),

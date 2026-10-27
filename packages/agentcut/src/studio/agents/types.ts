@@ -26,16 +26,24 @@ export interface AgentInfo {
   models?: AgentModel[];
   /** The model the CLI uses by default, when known (shown as "Default (…)"). */
   defaultModel?: string | null;
+  /** Thinking levels for the default model (a model may list its own). */
+  efforts?: string[];
+  /** The CLI's default thinking level, when known. */
+  defaultEffort?: string | null;
 }
 
 export interface AgentModel {
   /** What the CLI takes, e.g. `opus` or `gpt-6.1-sol`. */
   id: string;
   label: string;
+  /** Thinking levels this model takes, when they differ from the agent's. */
+  efforts?: string[];
 }
 
 /** Model names the CLIs accept: letters, digits and . _ : - [ ] (never passed through a shell unchecked). */
 export const MODEL_ID = /^[A-Za-z0-9][\w.:\-[\]]{0,79}$/;
+/** Thinking levels: one plain word (low, medium, high, xhigh, max…). */
+export const EFFORT_ID = /^[a-z]{2,12}$/;
 
 /** The MCP server the agent connects to (the agentcut tools). */
 export interface McpServerSpec {
@@ -64,6 +72,8 @@ export interface AgentRun {
   readDirs: string[];
   /** The model to use (checked against MODEL_ID), or null for the CLI's default. */
   model: string | null;
+  /** The thinking level (checked against EFFORT_ID), or null for the CLI's default. */
+  effort: string | null;
 }
 
 /**
@@ -115,8 +125,8 @@ export interface AgentAdapter {
   skillsDir: string;
   /** How the prompt tells the agent to look at an attached image, e.g. "open it with Read". */
   imageHint: string;
-  /** The models to offer, and the CLI's default when it can be read. */
-  listModels(): { models: AgentModel[]; defaultModel: string | null };
+  /** The models and thinking levels to offer, and the CLI's defaults when they can be read. */
+  listModels(): { models: AgentModel[]; defaultModel: string | null; efforts: string[]; defaultEffort: string | null };
   /** Arguments for one turn. The prompt goes on stdin. */
   buildArgs(run: AgentRun): string[];
   createParser(): AgentParser;

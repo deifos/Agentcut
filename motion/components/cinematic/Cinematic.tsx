@@ -5,7 +5,7 @@
 // browser export draws it through WebGL, so the two match. Never put CSS `perspective` or
 // `preserve-3d` around it: the stage already projects every plane itself.
 import { Video } from "@remotion/media";
-import { createContext, useContext, useId, type ComponentProps, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, useRemotionEnvironment, useVideoConfig } from "remotion";
 import { alpha, glowStyle } from "../lib";
 import {
@@ -415,7 +415,9 @@ function stackAlphas(weights: number[], opacity: number) {
 
 // Blur plus a no-op shadow: the browser export then blurs the copy as one picture, so its soft edge
 // spills past the rounded box as in the preview instead of being cut at it.
-const groupBlur = (px: number) => (px > 0.05 ? `blur(${px.toFixed(2)}px) drop-shadow(0 0 0 rgba(0,0,0,0))` : undefined);
+// `keep` leaves the filter on at blur(0) (the live preview, see PlaneBody).
+const groupBlur = (px: number, keep = false) =>
+  px > 0.05 || keep ? `blur(${Math.max(0, px).toFixed(2)}px) drop-shadow(0 0 0 rgba(0,0,0,0))` : undefined;
 const padFor = (px: number) => (px > 0.05 ? Math.ceil(px * 3) + 1 : 0);
 
 const PlaneCopyCtx = createContext(false);
@@ -455,11 +457,8 @@ export function Plane({
   ...placement
 }: PlaneProps) {
   const ctx = useStageContext("Plane");
-  const env = useRemotionEnvironment();
-  // The live preview draws two copies for a depth blur instead of three (captures and exports get three).
-  const lightPreview = env.isPlayer && !env.isRendering;
-  const model = mul(ctx.model, basis ?? placementMatrix(placement));
-  const camModel = mul(ctx.view, model, translate(-width / 2, -height / 2, 0));
+  const own = basis ?? placementMatrix(placement);
+  const camModel = mul(ctx.view, ctx.model, own, translate(-width / 2, -height / 2, 0));
   // A plane reaching behind the camera can't be projected as a whole: below, only its part in front of
   // the lens is drawn. Big surfaces (Floor) are also tiled.
   const nearest = Math.min(
@@ -470,6 +469,7 @@ export function Plane({
   );
   if (opacity <= 0) return null;
   const near = ctx.D * 0.04;
+  let [x0, y0, x1, y1] = [0, 0, width, height];
   if (nearest < near) {
     // The plane passes the lens (macro close-ups, low fly-overs). Keep the part in front of the camera:
     // the largest edge-aligned rectangle whose corners are all safely in front, redrawn as a smaller
@@ -479,7 +479,6 @@ export function Plane({
     const gy = (distAt(camModel, ctx.D, 0, height) - d00) / Math.max(1, height);
     const dist = (x: number, y: number) => d00 + gx * x + gy * y;
     const safe = near * 1.5;
-    let [x0, y0, x1, y1] = [0, 0, width, height];
     for (let i = 0; i < 40; i++) {
       const corners: [number, number][] = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
       const worst = corners.reduce((a, c) => (dist(c[0], c[1]) < dist(a[0], a[1]) ? c : a));
@@ -499,30 +498,72 @@ export function Plane({
     const sh = y1 - y0;
     const ok = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].every(([x, y]) => dist(x, y) >= near);
     if (!ok || sw < 2 || sh < 2) return null;
-    const subBasis = mul(basis ?? placementMatrix(placement), translate(x0 + sw / 2 - width / 2, y0 + sh / 2 - height / 2, 0));
-    return (
-      <Plane
-        basis={subBasis}
-        width={sw}
-        height={sh}
-        radius={radius}
-        background={background}
-        opacity={opacity}
-        dof={dof}
-        rim={rim}
-        blur={blur}
-        style={style}
-      >
-        <div style={{ position: "absolute", left: -x0, top: -y0, width, height }}>{children}</div>
-      </Plane>
-    );
   }
+  const clipped = nearest < near;
+  const sw = x1 - x0;
+  const sh = y1 - y0;
+  // The whole plane and its part in front of the lens draw through the same body, with the content in the
+  // same wrapper, so a camera crossing the lens (scrubbing a macro shot) updates the copies instead of
+  // rebuilding them and everything inside.
+  return (
+    <PlaneBody
+      basis={clipped ? mul(own, translate(x0 + sw / 2 - width / 2, y0 + sh / 2 - height / 2, 0)) : own}
+      width={sw}
+      height={sh}
+      radius={radius}
+      background={background}
+      opacity={opacity}
+      shadow={clipped ? 0 : shadow}
+      shadowDepth={shadowDepth}
+      reflection={clipped ? 0 : reflection}
+      dof={dof}
+      rim={rim}
+      blur={blur}
+      style={style}
+    >
+      <div style={clipped ? { position: "absolute", left: -x0, top: -y0, width, height } : { display: "contents" }}>{children}</div>
+    </PlaneBody>
+  );
+}
+
+function PlaneBody({
+  width,
+  height,
+  radius,
+  background,
+  opacity,
+  shadow,
+  shadowDepth,
+  reflection,
+  dof,
+  rim,
+  blur,
+  basis,
+  children,
+  style,
+}: Required<Omit<PlaneProps, keyof Placement | "children" | "style" | "background">> &
+  Pick<PlaneProps, "children" | "style" | "background">) {
+  const ctx = useStageContext("Plane");
+  const env = useRemotionEnvironment();
+  // The live preview draws two copies for a depth blur instead of three (captures and exports get three).
+  const lightPreview = env.isPlayer && !env.isRendering;
+  // Once a plane in the live preview has been blurred it keeps its filter on (blur(0) while sharp), and once
+  // it has drawn a depth blur it keeps the same copies (hidden by their masks when unused) for as long as
+  // it's mounted: scrubbing across a rack or an aperture change then only updates styles, instead of
+  // mounting and dropping blurred copies of the content (and their GPU layers) frame after frame, which made
+  // the whole studio flicker. Captures and exports draw as before.
+  const [was, setWas] = useState({ filter: false, copies: false });
+  const model = mul(ctx.model, basis);
+  const camModel = mul(ctx.view, model, translate(-width / 2, -height / 2, 0));
 
   // Extra softness asked for in world px, in this plane's local px.
   const extra = (blur * ctx.u) / localScale(camModel);
   const withExtra = (b: number) => Math.hypot(b, extra);
   const matrix = (m: M4) => toCss(mul(ctx.project, m));
   const focus = dof ? planeFocus(ctx, camModel, width, height) : ({ kind: "sharp" } as const);
+  const copies = lightPreview && (was.copies || focus.kind === "gradient");
+  const steady = { copies, filter: lightPreview && (was.filter || copies || focus.kind === "uniform" || extra > 0.05) };
+  if (steady.copies !== was.copies || steady.filter !== was.filter) setWas(steady);
   const surface: CSSProperties = {
     position: "absolute",
     left: 0,
@@ -571,7 +612,7 @@ export function Plane({
         ...o.mask,
       }}
     >
-      <div style={{ position: "absolute", left: o.pad, top: o.pad, width, height, filter: groupBlur(o.blur) }}>
+      <div style={{ position: "absolute", left: o.pad, top: o.pad, width, height, filter: groupBlur(o.blur, steady.filter) }}>
         <div style={{ ...surface, opacity: o.opacity }}>
           <PlaneCopyCtx.Provider value={o.copy}>{o.body ?? content}</PlaneCopyCtx.Provider>
         </div>
@@ -633,7 +674,13 @@ export function Plane({
 
   // The main copy is always last and keyed "main", so its content never remounts when the focus changes
   // (videos keep playing, loaded images stay); the blurred copies come and go under it.
-  if (focus.kind === "sharp") {
+  if (focus.kind !== "gradient" && steady.copies) {
+    // The preview's two depth copies stay mounted under the main copy, masked out.
+    const b = focus.kind === "uniform" ? withExtra(focus.blur) : extra;
+    const pad = padFor(b);
+    for (const key of ["blur2", "blur1"]) layers.push(copyOf(key, camModel, { blur: b, pad, mask: maskFrom(0, [0, 0]), opacity: 1, copy: true }));
+    layers.push(copyOf("main", camModel, { blur: b, pad, mask: maskFrom(0, [1, 1]), opacity, copy: false }));
+  } else if (focus.kind === "sharp") {
     layers.push(copyOf("main", camModel, { blur: extra, pad: padFor(extra), opacity, copy: false }));
   } else if (focus.kind === "uniform") {
     const b = withExtra(focus.blur);
@@ -645,7 +692,8 @@ export function Plane({
     // copy can't follow; macro close-ups need the full ladder. The preview climbs fewer rungs.
     const { max, angle } = focus;
     // Enough rungs to reach ~1 px, so the in-focus band resolves cleanly (capped for cost).
-    const rungs = Math.max(1, Math.min(lightPreview ? 2 : 6, Math.ceil(Math.log(Math.max(1.01, max / 0.9)) / Math.log(2.2))));
+    // (The preview always climbs two, so the same two copies stay mounted while the blur grows and shrinks.)
+    const rungs = Math.max(lightPreview ? 2 : 1, Math.min(lightPreview ? 2 : 6,Math.ceil(Math.log(Math.max(1.01, max / 0.9)) / Math.log(2.2))));
     const levels = [0];
     for (let i = rungs - 1; i >= 0; i--) levels.push(max / Math.pow(2.2, i));
     const pad = padFor(withExtra(max));

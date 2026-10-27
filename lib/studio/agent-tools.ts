@@ -672,43 +672,54 @@ export async function runStudioTool(
     }
 
     case "studio_music_catalog": {
-      // The editor's hosted Agentcut music library.
+      // The editor's hosted Agentcut music library, measured and tagged offline (lib/music-analysis.json).
       const { MUSIC_TRACKS } = await import("@/lib/music-tracks");
-      const query =
-        typeof params.query === "string"
-          ? params.query.trim().toLowerCase()
-          : "";
-      const words = query.split(/\s+/).filter(Boolean);
-      const category =
-        typeof params.category === "string" ? params.category : "";
-      const min = typeof params.minSeconds === "number" ? params.minSeconds : 0;
-      const max =
-        typeof params.maxSeconds === "number" ? params.maxSeconds : Infinity;
-      const tracks = MUSIC_TRACKS.filter(
-        (t) =>
-          !t.isCustom &&
-          (!category || t.category === category) &&
-          t.durationSeconds >= min &&
-          t.durationSeconds <= max &&
-          (!words.length ||
-            words.some((w) =>
-              `${t.name} ${t.category}`.toLowerCase().includes(w),
-            )),
-      );
+      const { searchMusic } = await import("@/lib/music-search");
+      const num = (v: unknown) => (typeof v === "number" ? v : undefined);
+      const ids = stringList(params.ids ?? params.id);
+      const energy = Array.isArray(params.energy)
+        ? ([Number(params.energy[0]), Number(params.energy[1])] as [number, number])
+        : num(params.energy);
+      const { filters, tracks } = searchMusic({
+        query: typeof params.query === "string" ? params.query : "",
+        category: typeof params.category === "string" ? params.category : "",
+        minSeconds: num(params.minSeconds),
+        maxSeconds: num(params.maxSeconds),
+        energy,
+        minBpm: num(params.minBpm),
+        maxBpm: num(params.maxBpm),
+        vocals: typeof params.vocals === "boolean" ? params.vocals : undefined,
+        ids,
+      });
       const counts: Record<string, number> = {};
       for (const t of MUSIC_TRACKS)
         counts[t.category] = (counts[t.category] ?? 0) + 1;
+      const FULL = 25;
+      const full = ids.length > 0 || tracks.length <= FULL;
       return {
         total: MUSIC_TRACKS.length,
         categories: counts,
+        ...(Object.keys(filters).length ? { understood: filters } : {}),
         matches: tracks.length,
-        tracks: tracks.slice(0, 300).map((t) => ({
-          id: t.id,
-          name: t.name,
-          category: t.category,
-          seconds: t.durationSeconds,
-        })),
-        note: "Names and categories only say so much: add 3–6 candidates with studio_add_catalog_music, then rank them by ear with the listen tools.",
+        ...(full
+          ? {
+              tracks: tracks.map(({ track: t, analysis: a }) => ({
+                id: t.id,
+                name: t.name,
+                category: t.category,
+                seconds: t.durationSeconds,
+                ...a,
+              })),
+            }
+          : {
+              index: tracks.map(({ track: t, analysis: a }) => ({
+                id: t.id,
+                name: t.name,
+                seconds: t.durationSeconds,
+                ...(a ? { bpm: a.bpm, energy: a.energy, mood: a.moods.slice(0, 2).join(", ") } : {}),
+              })),
+            }),
+        note: `energy is 1–5 relative to this library (5 = the most driving fifth); shape is the level over the song; introS is when it first reaches full level and drops are where it jumps up (put the reveal there, or trim the intro so the drop lands on it). Moods and genres come from an audio model: hints, not facts. Ask in plain words ("high energy no vocals", "calm 90 bpm", "cinematic dark") or pass ids for full details.${full ? "" : ` A compact index of ${tracks.length}: narrow it, or call again with ids for full details.`} Add 3–6 candidates with studio_add_catalog_music, then rank them by ear with the listen tools.`,
       };
     }
 

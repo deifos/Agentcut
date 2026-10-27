@@ -98,9 +98,12 @@ Gemini, OpenAI or Grok/xAI). You never see, ask for or mention API keys: the hel
 Where a song comes from, in order (never download music from the web: it's slow and fails often):
 
 1. **A file the user gives you** (in `assets/`, or one they point at): use it.
-2. **The Agentcut music library** unless the user asks for a new song: 200+ licensed tracks.
-   `agentcut_music_catalog` (filter by category and `minSeconds` = video length), pick 3–6
-   candidates from names that fit the vibe, `agentcut_add_catalog_music`, then rank them with
+2. **The Agentcut music library** unless the user asks for a new song: 224 licensed tracks, each
+   measured (tempo, energy 1–5, intro length, drops, ending, shape) and tagged (moods, genres,
+   instruments, vocals). Search `agentcut_music_catalog` in plain words for the video's feel
+   ("high energy no vocals", "calm 90 bpm", "cinematic dark", "playful") with `minSeconds` = video
+   length; pick 3–6 candidates whose energy and shape fit the edit (a drop near the reveal, an intro
+   you can trim, `vocals: false` under a voice-over), `agentcut_add_catalog_music`, then rank them with
    `agentcut_listen_rank` / `_tags` against a plain description of the mood, keep the best, delete
    the other candidates from `assets/music/`, and say which song you used and why.
 3. **Lyria (Google)** when the user asks for a new song, or the library isn't available or has nothing

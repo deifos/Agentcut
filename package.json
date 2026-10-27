@@ -1,6 +1,6 @@
 {
   "name": "agentcut-studio",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "private": true,
   "description": "Agentcut: an open-source video studio you edit by chatting with a coding agent (Claude Code or Codex).",
   "license": "MIT",
@@ -14,9 +14,11 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:share": "node --import tsx --test tests/share.test.mjs",
+    "test:music": "node --import tsx --test tests/music-search.test.mjs",
     "helper": "npm run studio --workspace agentcut",
     "helper:build": "npm run build --workspace agentcut",
-    "sync:skill": "npm run sync:skill --workspace agentcut"
+    "sync:skill": "npm run sync:skill --workspace agentcut",
+    "test:agents": "node --import tsx --test tests/agent-models.test.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",

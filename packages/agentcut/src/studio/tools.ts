@@ -326,12 +326,17 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_music_catalog",
-    "Search the Agentcut music library: the 200+ licensed songs hosted for the editor (energetic, chill, cinematic, electronic, ambient). Use it when the user asks for a library song or a library track. Filter by words in the name/category, category and length; with no filters it lists everything. Then add candidates with agentcut_add_catalog_music.",
+    "Search the Agentcut music library: 224 licensed songs hosted for the editor, each measured (bpm, energy 1–5 relative to the library, intro length, drops, ending, a 12-step shape of its level) and tagged by an audio model (moods, genres, instruments, vocals). Use it when the video needs music and the user hasn't given a song. Ask in plain words for the feel (\"high energy no vocals\", \"calm 90 bpm\", \"cinematic dark\") and set minSeconds to the video length; big result sets come back as a compact index, ids give full details. Then add candidates with agentcut_add_catalog_music.",
     {
-      query: z.string().optional().describe('Words to match in the track name or category, e.g. "glow launch".'),
+      query: z.string().optional().describe('The feel in plain words: energy ("high energy", "calm"), tempo ("120 bpm", "fast"), "no vocals", moods, genres or instruments, e.g. "high energy synthwave no vocals".'),
       category: z.enum(["energetic", "chill", "cinematic", "electronic", "ambient"]).optional(),
       minSeconds: z.number().optional().describe("Shortest track length you can use (the video length)."),
       maxSeconds: z.number().optional(),
+      energy: z.union([z.number().int().min(1).max(5), z.tuple([z.number().int().min(1).max(5), z.number().int().min(1).max(5)])]).optional().describe("Energy 1–5 relative to the library, or a [min, max] range."),
+      minBpm: z.number().optional(),
+      maxBpm: z.number().optional(),
+      vocals: z.boolean().optional().describe("false for songs without singing (under a voice-over)."),
+      ids: z.array(z.string()).optional().describe("Full details for these track ids."),
     },
     async (args) => page("studio_music_catalog", args, MINUTE),
   );

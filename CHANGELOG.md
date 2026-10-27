@@ -13,6 +13,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.13] - 2026-10-27
+
+Update the helper with `npx -y agentcut@latest` to use model and thinking-level selection.
+
+### Added
+
+- Choose the agent model and thinking level in chat. Choices are saved per agent and retained for queued messages.
+- Search library music by tempo, energy, vocals, mood, genre, and instrument. Results include intro, drop, and ending information.
+
+### Fixed
+
+- Read Codex defaults from the root TOML settings, without using inactive profile settings.
+- Keep matching music aliases in category and name searches, and return all explicitly requested track ids.
+- Preserve flex, grid, and padding layout inside cinematic planes when they are not clipped by the camera.
+- Load the music library without a custom music CDN setting.
+- Close Style Spy after selecting **Copy this style**.
+- Free disk space during b-roll indexing and recover from repeated model responses.
+- Scrubbing a cinematic shot with lens blur (a racking focus, a macro sweep that passes the lens) no longer
+  makes the whole studio flash: the preview keeps a plane's blurred copies mounted and only updates them,
+  instead of rebuilding them and their content on every focus change. Exports draw exactly as before.
+
 ## [0.2.12] - 2026-10-27
 
 Update the helper with `npx -y agentcut@latest` to create and import share links.
@@ -280,7 +301,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.12...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.13...HEAD
+[0.2.13]: https://github.com/deifos/Agentcut/compare/v0.2.12...v0.2.13
 [0.2.12]: https://github.com/deifos/Agentcut/compare/v0.2.11...v0.2.12
 [0.2.11]: https://github.com/deifos/Agentcut/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/deifos/Agentcut/compare/v0.2.9...v0.2.10

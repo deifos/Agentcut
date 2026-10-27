@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { parse } from "smol-toml";
 import { EFFORT_ID, MODEL_ID, type AgentAdapter, type AgentEvent, type AgentModel, type AgentParser, type AgentRun } from "./types.js";
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -166,9 +167,10 @@ function codexModels() {
   let defaultModel: string | null = null;
   let defaultEffort: string | null = null;
   try {
-    const config = readFileSync(join(home, "config.toml"), "utf8");
-    defaultModel = /^\s*model\s*=\s*"([^"]+)"/m.exec(config)?.[1] ?? null;
-    defaultEffort = /^\s*model_reasoning_effort\s*=\s*"([^"]+)"/m.exec(config)?.[1] ?? null;
+    const config = parse(readFileSync(join(home, "config.toml"), "utf8"));
+    // Profile tables are not defaults. Only read root settings passed to this CLI invocation.
+    defaultModel = typeof config.model === "string" ? config.model : null;
+    defaultEffort = typeof config.model_reasoning_effort === "string" ? config.model_reasoning_effort : null;
   } catch {
     // No config: Codex picks.
   }

@@ -1684,16 +1684,13 @@ export const MUSIC_TRACKS: MusicTrack[] = [
   },
 ];
 
-/** The songs are hosted on a CDN (not in this repo); without one the catalog is off. */
-export const MUSIC_LIBRARY_AVAILABLE = Boolean(process.env.NEXT_PUBLIC_MUSIC_CDN_URL);
+/** The songs are hosted on R2 (not in this repo), under /screenslick-music/<file>. The env var only
+ * overrides where; it is read at build time, so a build without it must still find the library. */
+const MUSIC_CDN_URL = (process.env.NEXT_PUBLIC_MUSIC_CDN_URL || "https://media.vladpalacio.com").replace(/\/+$/, "");
 
 export function getMusicTrackUrl(filename: string, sourceUrl?: string): string {
   if (sourceUrl) return sourceUrl;
-  const baseUrl = process.env.NEXT_PUBLIC_MUSIC_CDN_URL;
-  if (!baseUrl) {
-    return `/music/${encodeURIComponent(filename)}`;
-  }
-  return `${baseUrl}/screenslick-music/${encodeURIComponent(filename)}`;
+  return `${MUSIC_CDN_URL}/screenslick-music/${encodeURIComponent(filename)}`;
 }
 
 export function getMusicSourceId(source: {

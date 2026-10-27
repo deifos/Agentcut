@@ -17,9 +17,6 @@ import { findClip } from "@/lib/studio/edit";
 import type { StudioCursorTrack } from "@/lib/studio/cursor-track";
 import type { LoadedModule, StudioDoc } from "@/lib/studio/types";
 
-const NO_MUSIC_LIBRARY =
-  "The hosted music library isn't set up on this Agentcut (NEXT_PUBLIC_MUSIC_CDN_URL). Use agentcut_generate_music, a CC0 track, or music the user adds to assets/.";
-
 export interface StudioExportJobUpdate {
   slug: string;
   variant: string;
@@ -676,8 +673,7 @@ export async function runStudioTool(
 
     case "studio_music_catalog": {
       // The editor's hosted Agentcut music library.
-      const { MUSIC_TRACKS, MUSIC_LIBRARY_AVAILABLE } = await import("@/lib/music-tracks");
-      if (!MUSIC_LIBRARY_AVAILABLE) throw new Error(NO_MUSIC_LIBRARY);
+      const { MUSIC_TRACKS } = await import("@/lib/music-tracks");
       const query =
         typeof params.query === "string"
           ? params.query.trim().toLowerCase()
@@ -899,9 +895,7 @@ export async function runStudioTool(
         throw new Error(
           "ids is required (track ids from studio_music_catalog).",
         );
-      const { MUSIC_TRACKS, MUSIC_LIBRARY_AVAILABLE, getMusicTrackUrl } =
-        await import("@/lib/music-tracks");
-      if (!MUSIC_LIBRARY_AVAILABLE) throw new Error(NO_MUSIC_LIBRARY);
+      const { MUSIC_TRACKS, getMusicTrackUrl } = await import("@/lib/music-tracks");
       const { uploadToProject } = await import("@/lib/studio/export");
       const existing = new Set(
         (

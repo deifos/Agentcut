@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Install missing workspace dependencies before building previews, so shared projects and older workspaces can load components such as 3D devices without first exporting a video.
+
 ### Changed
 
 - The landing page loads faster: the hero draws its timeline film strips once the page is idle, the styles carousel loads as you scroll to it, the demo clip downloads once instead of twice, and the hero media is smaller and cached.

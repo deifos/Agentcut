@@ -10,6 +10,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveCommand, spawnCommand } from "./proc.js";
 import { getConfig, PACKAGE_VERSION } from "../config.js";
 import { AGENTS, type McpServerSpec } from "./agents/index.js";
 
@@ -104,7 +105,7 @@ const MANAGED_DEV_DEPENDENCIES: Record<string, string> = {
 
 /**
  * Managed packages that aren't installed in the workspace (or are on another pinned version).
- * A local render runs `npm install` when this isn't empty, so new library deps arrive on their own.
+ * Previews and local renders install missing packages so new library dependencies arrive automatically.
  */
 export function missingManagedDependencies(root: string) {
   return Object.entries(MANAGED_DEPENDENCIES)
@@ -117,6 +118,45 @@ export function missingManagedDependencies(root: string) {
       }
     })
     .map(([name]) => name);
+}
+
+const dependencyInstalls = new Map<string, Promise<void>>();
+
+/** Share setup across project previews; failed installs can be retried on the next build. */
+export async function ensurePreviewDependencies(root: string): Promise<void> {
+  root = resolve(root);
+  const pending = dependencyInstalls.get(root);
+  if (pending) return pending;
+  if (!missingManagedDependencies(root).length) return;
+  const install = (async () => {
+    ensurePackageJson(root);
+    const npm = resolveCommand("npm");
+    if (!npm) throw new Error("Preview dependency setup failed: npm is not on PATH.");
+    await new Promise<void>((resolveInstall, reject) => {
+      const child = spawnCommand(npm, ["install", "--no-audit", "--no-fund"], {
+        cwd: root,
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let tail = "";
+      const capture = (chunk: Buffer) => { tail = (tail + chunk.toString()).slice(-1500); };
+      child.stdout?.on("data", capture);
+      child.stderr?.on("data", capture);
+      child.on("error", (error) => reject(new Error(`Preview dependency setup failed: ${error.message}`)));
+      child.on("close", (code) => {
+        if (code === 0) resolveInstall();
+        else reject(new Error(`Preview dependency setup failed (npm install). Retry opening the project.\n${tail}`));
+      });
+    });
+    const missing = missingManagedDependencies(root);
+    if (missing.length) throw new Error(`Preview dependency setup did not install: ${missing.join(", ")}. Retry opening the project.`);
+  })();
+  dependencyInstalls.set(root, install);
+  try {
+    await install;
+  } finally {
+    dependencyInstalls.delete(root);
+  }
 }
 
 function ensurePackageJson(root: string) {

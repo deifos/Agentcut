@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import type { Plugin } from "esbuild";
 import { listSceneNames, projectDir } from "./projects.js";
-import type { WorkspacePaths } from "./workspace.js";
+import { ensurePreviewDependencies, type WorkspacePaths } from "./workspace.js";
 
 /**
  * Packages the web app provides to bundles (one copy of React/Remotion on the page).
@@ -102,6 +102,7 @@ export async function buildProjectBundle(
   const started = Date.now();
   const revision = (previous?.revision ?? 0) + 1;
   try {
+    await ensurePreviewDependencies(paths.root);
     const result = await esbuild.build({
       stdin: {
         contents: buildEntrySource(paths, slug, scenes),

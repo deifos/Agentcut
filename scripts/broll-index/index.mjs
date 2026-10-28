@@ -294,7 +294,9 @@ async function stepCut(film) {
   const betterOriginal = pixels(film.files.full) > pixels(film.files.index) * 1.1;
   const fullSrc = betterOriginal ? original : indexSrc;
   film.fullSource = betterOriginal ? film.files.full.name : film.files.index.name;
-  if (betterOriginal && !existsSync(original)) {
+  // Only when a full-quality cut is actually missing: a finished film never re-downloads its original.
+  const needsFull = shots.some((shot) => !existsSync(join(OUT_DIR, "shots", shot.id, "full.mp4")));
+  if (betterOriginal && needsFull && !existsSync(original)) {
     const { bytes, seconds } = await download(originalUrl, original);
     film.timings.originalDownload = { bytes, seconds, mbps: +((bytes * 8) / 1e6 / seconds).toFixed(2) };
     saveFilm(film);

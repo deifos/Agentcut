@@ -13,6 +13,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.14] - 2026-10-28
+
 ### Fixed
 
 - Install missing workspace dependencies before building previews, so shared projects and older workspaces can load components such as 3D devices without first exporting a video.

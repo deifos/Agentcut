@@ -1,6 +1,6 @@
 {
   "name": "agentcut-studio",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "private": true,
   "description": "Agentcut: an open-source video studio you edit by chatting with a coding agent (Claude Code or Codex).",
   "license": "MIT",

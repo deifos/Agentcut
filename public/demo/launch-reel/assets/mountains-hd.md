@@ -1,6 +1,6 @@
 # Mountain opener
 
-`mountains-hd.jpg` is a 1672 × 941 widescreen reconstruction of the original 808 × 632 reference, made with the built-in imagegen tool. It preserves the visual direction but reconstructs detail rather than recovering the original photographic pixels. Saved at JPEG quality 94 for the web preview and editor.
+`mountains-hd.jpg` is a 1672 × 941 widescreen reconstruction of the original 808 × 632 reference, made with the built-in imagegen tool. It preserves the visual direction but reconstructs detail rather than recovering the original photographic pixels. Saved at JPEG quality 85 (progressive) for the web preview and editor.
 
 ## Prompt
 

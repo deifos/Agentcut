@@ -67,7 +67,7 @@ const STEPS = [
 
 const PROJECT_FILES = [
   { icon: Film, name: "footage.mp4", size: "1.4 MB" },
-  { icon: ImageIcon, name: "mountains-hd.jpg", size: "538 KB" },
+  { icon: ImageIcon, name: "mountains-hd.jpg", size: "363 KB" },
   { icon: Play, name: "music.mp3", size: "145 KB" },
 ];
 
@@ -251,16 +251,28 @@ export function HeroStudio() {
   const playerRef = useRef<PlayerRef>(null);
   const [frameStore] = useState(() => createFrameStore());
   const [playing, setPlaying] = useState(false);
+  // The scene film strips are live renders: draw them once the page is idle, so they don't
+  // compete with the preview's first frame.
+  const [stripsReady, setStripsReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(() => setStripsReady(true), { timeout: 2500 });
+      return () => cancelIdleCallback(id);
+    }
+    const id = setTimeout(() => setStripsReady(true), 1200);
+    return () => clearTimeout(id);
+  }, []);
 
   const thumbSource = useMemo(
     () => ({
-      loaded: LAUNCH_REEL_MODULE,
+      loaded: stripsReady ? LAUNCH_REEL_MODULE : null,
       project: LAUNCH_REEL_PROJECT,
       variant: VARIANT,
       slug: LAUNCH_REEL_SLUG,
       assetBase: LAUNCH_REEL_ASSETS,
     }),
-    [],
+    [stripsReady],
   );
 
   // Scale the full-size studio to the frame's width.

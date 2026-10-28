@@ -1,6 +1,8 @@
-// The built-in talking-head clip for style demos (public/studio/style-demo.mp4, 9.7 s at 30 fps)
-// and its words, in frames from the clip start (transcribed, then checked by ear).
-export const DEMO_CLIP = "/studio/style-demo.mp4";
+// The built-in talking-head clip for style demos (9.7 s at 30 fps) and its words, in frames from
+// the clip start (transcribed, then checked by ear). It's the launch reel's footage: one URL, so
+// the landing page downloads it once (public/studio/style-demo.mp4 is the same file, kept for
+// older links).
+export const DEMO_CLIP = "/demo/launch-reel/assets/footage.mp4";
 
 export interface DemoWord {
   text: string;

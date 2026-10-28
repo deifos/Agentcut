@@ -1,7 +1,13 @@
 import Image from "next/image";
+import { preload } from "react-dom";
+
+const RIBBONS = "/hero/motion-ribbons-sharp.webp";
 
 /** Motion-design posters leave a clear paper surface behind the headline. */
 export function HeroBackground() {
+  // The paper strip's CSS background is the page's largest paint: fetch it with the HTML instead
+  // of after the stylesheet.
+  preload(RIBBONS, { as: "image", fetchPriority: "high" });
   return (
     <div aria-hidden="true" className="hero-collage">
       <div className="hero-brush hero-brush-top" />
@@ -17,7 +23,7 @@ export function HeroBackground() {
       </div>
       <div className="hero-photo hero-photo-bottom">
         <Image
-          src="/hero/motion-ribbons-sharp.webp"
+          src={RIBBONS}
           alt=""
           fill
           sizes="500px"

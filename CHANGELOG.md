@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- The landing page loads faster: the hero draws its timeline film strips once the page is idle, the styles carousel loads as you scroll to it, the demo clip downloads once instead of twice, and the hero media is smaller and cached.
+
 ## [0.2.13] - 2026-10-27
 
 Update the helper with `npx -y agentcut@latest` to use model and thinking-level selection.

@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ScanEye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { SpeechTextarea } from "@/components/studio/SpeakButton";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +108,8 @@ export function StyleSpy({
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [topic, setTopic] = useState("");
+  const [dictatingTopic, setDictatingTopic] = useState(false);
+  const [dictatingNotes, setDictatingNotes] = useState(false);
   const [selected, setSelected] = useState("");
   const [job, setJob] = useState<ReferenceJob | null>(null);
   const [browsers, setBrowsers] = useState<string[]>([]);
@@ -287,6 +289,7 @@ export function StyleSpy({
   // Closes right away; the request goes out in the background (after the import, if one is still
   // running) and the dialog reopens with the error if it fails.
   function copyStyle() {
+    if (dictatingTopic || dictatingNotes) return;
     setNotice("");
     if (newLink) void importUrl(url, true);
     else if (working) applyOnReady.current = true;
@@ -473,13 +476,15 @@ export function StyleSpy({
         )}
         {blank && (
           <div className="flex flex-col gap-1.5">
-            <Textarea
+            <SpeechTextarea
+              disabled={locked}
+              onDictatingChange={setDictatingTopic}
               aria-label="What's your video about?"
               placeholder="What's your video about? e.g. a 30-second launch video for my app, for indie founders"
               rows={2}
               className="min-h-0 resize-none text-sm"
               value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+              onValueChange={setTopic}
             />
             <p className="text-xs text-muted-foreground">
               Your project is empty, so your agent builds a new video in this
@@ -487,13 +492,16 @@ export function StyleSpy({
             </p>
           </div>
         )}
-        <Textarea
+        <SpeechTextarea
+          disabled={locked}
+          onDictatingChange={setDictatingNotes}
+          speechPriority="overlay"
           aria-label="Anything to change"
           placeholder="Anything to keep or change? (optional)"
           rows={2}
           className="min-h-0 resize-none text-sm"
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onValueChange={setNotes}
         />
         {error && (
           <p role="alert" className="text-sm text-destructive">
@@ -511,6 +519,7 @@ export function StyleSpy({
             busy ||
             running ||
             needsTopic ||
+            dictatingTopic || dictatingNotes ||
             (!newLink && !working && !preview)
           }
           onClick={copyStyle}

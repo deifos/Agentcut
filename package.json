@@ -18,7 +18,8 @@
     "helper": "npm run studio --workspace agentcut",
     "helper:build": "npm run build --workspace agentcut",
     "sync:skill": "npm run sync:skill --workspace agentcut",
-    "test:agents": "node --import tsx --test tests/agent-models.test.mjs"
+    "test:agents": "node --import tsx --test tests/agent-models.test.mjs",
+    "test:dictation": "node --test tests/dictation.test.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",

@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { SpeakButton, useSpeechInput } from "@/components/studio/SpeakButton";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -450,9 +451,10 @@ function QueuedBubble({
   const agentName = useAgentName();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.text ?? "");
+  const speech = useSpeechInput({ value: draft, onChange: setDraft, disabled: !editing });
   const save = async () => {
     const trimmed = draft.trim();
-    if (!trimmed) return;
+    if (!trimmed || speech.dictating) return;
     await onEdit(trimmed);
     setEditing(false);
   };
@@ -461,8 +463,10 @@ function QueuedBubble({
       {editing ? (
         <div className="w-full space-y-1.5">
           <Textarea
+            data-speech={speech.id}
             autoFocus
             value={draft}
+            readOnly={speech.dictating}
             rows={3}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
@@ -472,7 +476,7 @@ function QueuedBubble({
                 !event.nativeEvent.isComposing
               ) {
                 event.preventDefault();
-                void save();
+                if (!speech.handleEnter()) void save();
               } else if (event.key === "Escape") {
                 setEditing(false);
                 setDraft(message.text ?? "");
@@ -481,6 +485,7 @@ function QueuedBubble({
             className="min-h-16 resize-none text-[13px] md:text-[13px]"
           />
           <div className="flex justify-end gap-1">
+            <SpeakButton speech={speech} className="mr-auto" />
             <Button
               type="button"
               variant="ghost"
@@ -496,7 +501,7 @@ function QueuedBubble({
               type="button"
               size="xs"
               onClick={() => void save()}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || speech.dictating}
             >
               Save
             </Button>
@@ -798,11 +803,20 @@ export function ChatPanel({
   const [sending, setSending] = useState(false);
   const running = Boolean(chat.running);
 
+  // Speak instead of typing; Ctrl+Space comes here when no other prompt box has the focus.
+  const speech = useSpeechInput({
+    value: text,
+    onChange: setText,
+    disabled: disabled || sending || Boolean(agent && !agent.found),
+    priority: "chat",
+  });
+  const dictating = speech.dictating;
+
   const send = async (value = text) => {
     const trimmed = value.trim();
     // While the agent works, a new message waits in the queue and runs next.
     // Wait for dropped or pasted files to finish uploading, so they go with the message.
-    if (!trimmed || sending || disabled || uploading) return;
+    if (!trimmed || sending || disabled || uploading || dictating) return;
     setSending(true);
     // Only the chips sent with this message go; files attached while it sends wait for the next one.
     const sent = references;
@@ -1066,6 +1080,7 @@ export function ChatPanel({
               </InputGroupAddon>
             ) : null}
             <InputGroupTextarea
+              data-speech={speech.id}
               value={text}
               onChange={(event) => setText(event.target.value)}
               onPaste={(event) => {
@@ -1088,14 +1103,18 @@ export function ChatPanel({
                   !event.nativeEvent.isComposing
                 ) {
                   event.preventDefault();
-                  void send();
+                  // While speaking, Enter stops and keeps the words for a look before sending.
+                  if (!speech.handleEnter()) void send();
                 }
               }}
               rows={3}
               disabled={disabled || Boolean(agentMissing)}
+              readOnly={dictating}
               placeholder={
                 disabled
                   ? "Connect the studio helper to chat"
+                  : dictating
+                    ? "Listening… speak now"
                   : running
                     ? `${agentName} is working. Send the next request: it runs right after.`
                     : references.length
@@ -1115,6 +1134,7 @@ export function ChatPanel({
               >
                 <Camera /> {attachFrame ? "Frame attached" : "Attach frame"}
               </InputGroupButton>
+              <SpeakButton speech={speech} label />
               <ContextHint
                 frameStore={frameStore}
                 fps={fps}
@@ -1139,7 +1159,7 @@ export function ChatPanel({
                   variant="default"
                   size="icon-sm"
                   onClick={() => void send()}
-                  disabled={!text.trim() || sending || disabled || uploading > 0}
+                  disabled={!text.trim() || sending || disabled || uploading > 0 || dictating}
                   aria-label={running ? "Queue message" : "Send"}
                   title={
                     uploading

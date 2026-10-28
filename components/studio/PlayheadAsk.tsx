@@ -13,6 +13,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { SpeakButton, useSpeechInput } from "@/components/studio/SpeakButton";
 import { formatFrameTime } from "@/lib/studio/format";
 import type { FrameStore } from "@/lib/studio/frame-store";
 
@@ -45,10 +46,16 @@ export const PlayheadAsk = memo(function PlayheadAsk({
   // Freeze the time when the bubble opens, so scrubbing behind it doesn't change the target.
   const [at, setAt] = useState(() => frameStore.get());
   const blocked = disabled || sending;
+  const speech = useSpeechInput({
+    value: text,
+    onChange: setText,
+    disabled: !open || blocked,
+    priority: "overlay",
+  });
 
   const send = async (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || blocked) return;
+    if (!trimmed || blocked || speech.dictating) return;
     setSending(true);
     try {
       await onAsk(at, trimmed);
@@ -106,8 +113,10 @@ export const PlayheadAsk = memo(function PlayheadAsk({
           </span>
         </p>
         <Textarea
+          data-speech={speech.id}
           autoFocus
           value={text}
+          readOnly={speech.dictating}
           rows={2}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={(event) => {
@@ -117,7 +126,7 @@ export const PlayheadAsk = memo(function PlayheadAsk({
               !event.nativeEvent.isComposing
             ) {
               event.preventDefault();
-              void send(text);
+              if (!speech.handleEnter()) void send(text);
             }
           }}
           placeholder="What should happen here? e.g. “change the background to black and fade in”"
@@ -142,13 +151,14 @@ export const PlayheadAsk = memo(function PlayheadAsk({
           <span className="text-[11px] text-muted-foreground">
             {busy
               ? `${agentName} is working: this runs right after.`
-              : "Enter to send"}
+              : "Enter to send · hold Ctrl+Space to speak"}
           </span>
+          <SpeakButton speech={speech} className="ml-auto" />
           <Button
             type="button"
             size="icon-sm"
             className="rounded-full"
-            disabled={!text.trim() || blocked}
+            disabled={!text.trim() || blocked || speech.dictating}
             onClick={() => void send(text)}
             aria-label={busy ? "Queue" : "Send"}
           >

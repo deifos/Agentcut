@@ -14,6 +14,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { SpeakButton, useSpeechInput } from "@/components/studio/SpeakButton";
 import {
   ComponentPlayer,
   ComponentThumb,
@@ -99,6 +100,7 @@ function ComponentItem({
   const [example, setExample] = useState(0);
   const [text, setText] = useState("");
   const [sending, setSending] = useState<string | null>(null);
+  const speech = useSpeechInput({ value: text, onChange: setText, disabled: !open || chatDisabled || sending !== null });
   const variant =
     doc.project?.variants?.mobile && !doc.project?.variants?.wide
       ? "mobile"
@@ -131,7 +133,7 @@ function ComponentItem({
 
   const send = async (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || chatDisabled || sending) return;
+    if (!trimmed || chatDisabled || sending || speech.dictating) return;
     setSending(trimmed);
     try {
       await onAsk(
@@ -244,7 +246,9 @@ function ComponentItem({
           </div>
           <div className="flex items-end gap-1.5">
             <Textarea
+              data-speech={speech.id}
               value={text}
+              readOnly={speech.dictating}
               rows={2}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={(event) => {
@@ -254,17 +258,18 @@ function ComponentItem({
                   !event.nativeEvent.isComposing
                 ) {
                   event.preventDefault();
-                  void send(text);
+                  if (!speech.handleEnter()) void send(text);
                 }
               }}
               placeholder={`Ask ${agentName} to use the ${meta.name}…`}
               className="min-h-12 resize-none bg-background text-[13px] md:text-[13px]"
             />
+            <SpeakButton speech={speech} />
             <Button
               type="button"
               size="icon-sm"
               className="shrink-0 rounded-full"
-              disabled={!text.trim() || chatDisabled || sending !== null}
+              disabled={!text.trim() || chatDisabled || sending !== null || speech.dictating}
               onClick={() => void send(text)}
               aria-label={chatBusy ? "Queue" : "Send"}
             >

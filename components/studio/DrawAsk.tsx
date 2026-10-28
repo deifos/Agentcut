@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { SpeakButton, useSpeechInput } from "@/components/studio/SpeakButton";
 import {
   badgePositions,
   DRAW_COLOR,
@@ -56,6 +57,7 @@ export function DrawAsk({
   const [sending, setSending] = useState(false);
   const surfaceRef = useRef<SVGSVGElement>(null);
   const blocked = disabled || sending;
+  const speech = useSpeechInput({ value: text, onChange: setText, disabled: blocked, priority: "overlay" });
   const scale = rect.width / size.width || 1;
 
   // The studio's shortcuts (space plays, ⌘Z undoes the edit) would act behind the drawing:
@@ -118,7 +120,7 @@ export function DrawAsk({
 
   const send = async () => {
     const trimmed = text.trim();
-    if (!trimmed || !strokes.length || blocked) return;
+    if (!trimmed || !strokes.length || blocked || speech.dictating) return;
     setSending(true);
     try {
       await onSend(strokes, trimmed);
@@ -180,8 +182,10 @@ export function DrawAsk({
         <div className="w-full max-w-xl rounded-2xl border border-border/70 bg-popover/95 p-2 shadow-xl backdrop-blur">
           <div className="flex items-end gap-1.5">
             <Textarea
+              data-speech={speech.id}
               autoFocus
               value={text}
+              readOnly={speech.dictating}
               rows={1}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={(event) => {
@@ -191,16 +195,19 @@ export function DrawAsk({
                   !event.nativeEvent.isComposing
                 ) {
                   event.preventDefault();
-                  void send();
+                  if (!speech.handleEnter()) void send();
                 }
               }}
               placeholder={
-                strokes.length
-                  ? `What should ${agentName} do with this?`
-                  : "Draw on the video, then say what you want"
+                speech.dictating
+                  ? "Listening… speak now"
+                  : strokes.length
+                    ? `What should ${agentName} do with this?`
+                    : "Draw on the video, then say or type what you want"
               }
               className="max-h-28 min-h-9 resize-none border-0 bg-transparent text-[13px] shadow-none focus-visible:ring-0 md:text-[13px] dark:bg-transparent"
             />
+            <SpeakButton speech={speech} />
             <Button
               type="button"
               variant="ghost"
@@ -239,7 +246,7 @@ export function DrawAsk({
               className="rounded-full"
               title={busy ? `${agentName} is working: this runs right after` : "Send (Enter)"}
               aria-label={busy ? "Queue" : "Send"}
-              disabled={!text.trim() || !strokes.length || blocked}
+              disabled={!text.trim() || !strokes.length || blocked || speech.dictating}
               onClick={() => void send()}
             >
               {sending ? <Spinner /> : busy ? <Clock /> : <ArrowUp />}

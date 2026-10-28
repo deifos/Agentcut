@@ -28,6 +28,7 @@ import { audioPeaks } from "@/lib/studio/audio/peaks";
 import { fileName, formatBytes } from "@/lib/studio/format";
 import type { AssetEntry } from "@/lib/studio/types";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { SpeakButton, useSpeechInput } from "@/components/studio/SpeakButton";
 
 const FONT_RE = /\.(woff2?|ttf|otf)$/i;
 const TEXT_RE = /\.(json|md|txt|srt|vtt|csv|svg)$/i;
@@ -458,9 +459,10 @@ function AskClaude({
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const blocked = disabled || sending;
+  const speech = useSpeechInput({ value: text, onChange: setText, disabled: blocked });
   const send = async (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || blocked) return;
+    if (!trimmed || blocked || speech.dictating) return;
     setSending(true);
     try {
       await onAsk(trimmed);
@@ -498,7 +500,9 @@ function AskClaude({
       </div>
       <div className="flex items-end gap-1.5">
         <Textarea
+          data-speech={speech.id}
           value={text}
+          readOnly={speech.dictating}
           rows={1}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={(event) => {
@@ -508,18 +512,19 @@ function AskClaude({
               !event.nativeEvent.isComposing
             ) {
               event.preventDefault();
-              void send(text);
+              if (!speech.handleEnter()) void send(text);
             }
           }}
           disabled={disabled}
           placeholder="Or say it your way… e.g. “start this at the drop, fade it out at the end card”"
           className="max-h-24 min-h-8 min-w-0 flex-1 resize-none bg-background px-2 py-1.5 text-[12px] md:text-[12px]"
         />
+        <SpeakButton speech={speech} />
         <Button
           type="button"
           size="icon-sm"
           onClick={() => void send(text)}
-          disabled={!text.trim() || blocked}
+          disabled={!text.trim() || blocked || speech.dictating}
           aria-label={`Send to ${agentName}`}
           className="rounded-full"
         >

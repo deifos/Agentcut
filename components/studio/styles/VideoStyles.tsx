@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
+import { SpeechTextarea } from "@/components/studio/SpeakButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAgentName } from "@/components/studio/StudioAgent";
@@ -158,6 +158,7 @@ export function VideoStyles({
   const [values, setValues] = useState<Record<string, string | string[]>>({});
   const [target, setTarget] = useState<"new" | "this">("new");
   const [saveName, setSaveName] = useState("");
+  const [dictatingFields, setDictatingFields] = useState<string[]>([]);
   const preset = presets?.find((p) => p.id === selectedId) ?? presets?.[0] ?? null;
 
   const audio = [...assets, ...library].filter((a) => a.kind === "audio" && !a.path.startsWith("library:presets/"));
@@ -167,7 +168,7 @@ export function VideoStyles({
   const missing = preset?.fields.filter((f) => f.required && !(Array.isArray(values[f.id]) ? values[f.id].length : String(values[f.id] ?? "").trim())) ?? [];
 
   const make = () => {
-    if (!preset) return;
+    if (!preset || dictatingFields.length) return;
     const lines = preset.fields.map((field) => {
       const v = values[field.id];
       const text = Array.isArray(v) ? v.join(", ") : String(v ?? "").trim();
@@ -244,7 +245,17 @@ export function VideoStyles({
                     {field.required ? <span className="text-muted-foreground"> *</span> : null}
                   </Label>
                   {field.type === "longtext" ? (
-                    <Textarea value={String(value(field.id))} onChange={(e) => set(field.id, e.target.value)} placeholder={field.placeholder} className="min-h-16 text-[12px]" />
+                    <SpeechTextarea
+                      value={String(value(field.id))}
+                      onValueChange={(next) => set(field.id, next)}
+                      disabled={readOnly || chatDisabled}
+                      onDictatingChange={(active) => setDictatingFields((fields) => {
+                        const rest = fields.filter((id) => id !== field.id);
+                        return active ? [...rest, field.id] : rest;
+                      })}
+                      placeholder={field.placeholder}
+                      className="min-h-16 text-[12px]"
+                    />
                   ) : field.type === "audio" ? (
 <Select value={String(value(field.id)) || undefined} onValueChange={(next) => set(field.id, next)}>
                       <SelectTrigger size="sm" className="w-full text-[12px]">
@@ -303,7 +314,7 @@ export function VideoStyles({
           ) : null}
         </ScrollArea>
         <div className="space-y-3 border-t border-border/60 p-4">
-          <Button type="button" disabled={!preset || readOnly || chatDisabled || missing.length > 0} onClick={make} className="h-9 w-full gap-1.5">
+          <Button type="button" disabled={!preset || readOnly || chatDisabled || missing.length > 0 || dictatingFields.length > 0} onClick={make} className="h-9 w-full gap-1.5">
             <Sparkles className="size-4" />
             {missing.length ? `Add the ${missing[0].label.toLowerCase()} first` : `Make it with ${agentName}`}
           </Button>

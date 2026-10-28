@@ -13,6 +13,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Speak instead of typing anywhere you prompt the agent: the chat, the pencil on the preview, the ask
+  bubble on the timeline playhead, file and component asks, Cinematic, Style Spy and video style forms. Click
+  the mic, or hold Ctrl+Space (tap it to keep listening, tap again to stop); it goes to the box you're in, else
+  the open pencil or ask bubble, else the chat. Words appear while you talk. Speech is recognized in the
+  browser with Moonshine (English), so no audio leaves your computer; the model (about 150 MB) downloads on
+  first use.
+
+### Fixed
+
+- Stop voice capture when a prompt closes or becomes unavailable, including while microphone permission
+  is pending. Recover from speech worker failures, use CPU recognition if GPU setup fails, and prevent
+  overlapping model requests when switching prompts. Wait for dictation to finish before sending forms.
+
 ## [0.2.14] - 2026-10-28
 
 ### Fixed

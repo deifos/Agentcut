@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { Check, Clapperboard, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { SpeechTextarea } from "@/components/studio/SpeakButton";
 import {
   Dialog,
   DialogContent,
@@ -165,6 +165,7 @@ export function Cinematic({
   const [direction, setDirection] = useState<Direction>(() => roll());
   const [picked, setPicked] = useState<string[] | null>(null);
   const [about, setAbout] = useState("");
+  const [dictating, setDictating] = useState(false);
   const [length, setLength] = useState<(typeof LENGTHS)[number]>(15);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -238,6 +239,7 @@ export function Cinematic({
   }
 
   async function send() {
+    if (dictating) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -405,13 +407,16 @@ export function Cinematic({
           ))}
         </div>
 
-        <Textarea
+        <SpeechTextarea
+          disabled={locked}
+          onDictatingChange={setDictating}
+          speechPriority="overlay"
           aria-label="What's it about?"
           placeholder="What's it about? (optional) e.g. Jolt, ordering for coffee shops: show the live orders, the sign-up chart, the domain offer"
           rows={2}
           className="min-h-0 resize-none text-sm"
           value={about}
-          onChange={(e) => setAbout(e.target.value)}
+          onValueChange={setAbout}
         />
 
         {error && (
@@ -425,7 +430,7 @@ export function Cinematic({
           </p>
         )}
         <Button
-          disabled={locked || Boolean(blocked)}
+          disabled={locked || Boolean(blocked) || dictating}
           onClick={() => void send()}
           aria-describedby={blocked && !busy ? blockedId : undefined}
           className="gap-2"

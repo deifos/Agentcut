@@ -1,11 +1,15 @@
 import { copyFileSync, existsSync, linkSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { availableParallelism } from "node:os";
 import type { ChildProcess } from "node:child_process";
 import { debugLog } from "../log.js";
 import { projectDir, StudioError, uniquePath } from "./projects.js";
 import { killTree, resolveCommand, spawnCommand } from "./proc.js";
 import type { StudioProject } from "./schema.js";
 import { missingManagedDependencies, type WorkspacePaths } from "./workspace.js";
+import { renderLines, renderPolicy, renderProgress } from "./render-policy.js";
+import { availableRenderMemory } from "./render-memory.js";
+import { saveRenderDuration } from "./render-metadata.js";
 
 export interface LocalRenderOptions {
   paths: WorkspacePaths;
@@ -57,18 +61,20 @@ function run(
     });
     child = proc;
     let tail = "";
-    const onData = (chunk: Buffer) => {
-      // No terminal colors in what the page shows.
-      const text = chunk.toString("utf8").replace(/\u001b\[[0-9;]*m/g, "");
-      tail = (tail + text).slice(-6000);
-      for (const line of text.split(/\r?\n|\r/)) if (line.trim()) onLine(line.trim());
+    const recordLine = (line: string) => {
+      tail = (tail + line + "\n").slice(-6000);
+      onLine(line);
     };
-    proc.stdout?.on("data", onData);
-    proc.stderr?.on("data", onData);
+    const stdout = renderLines(recordLine);
+    const stderr = renderLines(recordLine);
+    proc.stdout?.on("data", stdout.write);
+    proc.stderr?.on("data", stderr.write);
     proc.on("error", (error) => {
       tail += `\n${error.message}`;
     });
     proc.on("close", (code) => {
+      stdout.end();
+      stderr.end();
       if (child === proc) child = null;
       resolve({ code, tail });
     });
@@ -120,6 +126,7 @@ Config.overrideWebpackConfig((config) => ({
  */
 export async function runLocalRender(options: LocalRenderOptions) {
   if (running) throw new StudioError("A local render is already running.", "busy");
+  const exportStarted = performance.now();
   cancelled = false;
   let outPath = "";
   const work = (async () => {
@@ -177,16 +184,57 @@ export async function runLocalRender(options: LocalRenderOptions) {
       "--audio-codec=aac",
     ];
     if (process.platform === "win32") args.push("--gl=angle");
-    const render = (extra: string[]) => {
-      options.onProgress({ stage: "rendering", progress: 0 });
-      return run("npx", [...args, ...extra], root, (line) => {
-        const match = /Rendered\s+(\d+)\/(\d+)/i.exec(line) ?? /(\d+)\/(\d+)\s+frames/i.exec(line);
-        if (match) {
-          options.onProgress({ stage: "rendering", progress: Number(match[1]) / Math.max(1, Number(match[2])) });
-        } else if (/Encoded|Stitch/i.test(line)) {
-          options.onProgress({ stage: "encoding", message: line.slice(0, 200) });
-        }
-      });
+    const render = async (extra: string[]) => {
+      const memory = await availableRenderMemory();
+      if (cancelled) return { code: null, tail: "" };
+      const freeBytes = memory.availableBytes;
+      const policy = renderPolicy(freeBytes, availableParallelism(), process.env.AGENTCUT_RENDER_CONCURRENCY);
+      const started = Date.now();
+      let lastAdvance = started;
+      let lastLog = started;
+      let state = { stage: "preparing", progress: 0, message: `Starting ${policy.workers} render workers` };
+      let lastCount = "";
+      debugLog(`local render start ${slug}/${variant} ${JSON.stringify({ ...policy, freeBytes, memory, extra })}`);
+      options.onProgress(state);
+      const heartbeat = setInterval(() => {
+        const idle = Math.floor((Date.now() - lastAdvance) / 1000);
+        if (idle < 30) return;
+        const message = `${state.message} · No frame progress for ${idle}s`;
+        options.onProgress({ ...state, message });
+        debugLog(`local render waiting ${slug}/${variant}: ${message}`);
+      }, 15_000);
+      try {
+        const result = await run("npx", [...args,
+          `--concurrency=${policy.workers}`,
+          `--media-cache-size-in-bytes=${policy.cacheBytes}`,
+          `--offthreadvideo-cache-size-in-bytes=${policy.cacheBytes}`,
+          ...extra,
+        ], root, (line) => {
+          const progress = renderProgress(line);
+          if (progress) {
+            const count = `${progress.stage}:${progress.done}`;
+            if (count !== lastCount) lastAdvance = Date.now();
+            lastCount = count;
+            state = {
+              stage: progress.stage,
+              progress: Math.max(state.progress, progress.progress),
+              message: `${progress.done}/${progress.total} frames · ${Math.floor((performance.now() - exportStarted) / 60_000)}m ${Math.floor((performance.now() - exportStarted) / 1000) % 60}s elapsed · ${policy.workers} workers`,
+            };
+            options.onProgress(state);
+            if (Date.now() - lastLog >= 15_000) {
+              debugLog(`local render ${slug}/${variant}: ${line}`);
+              lastLog = Date.now();
+            }
+          } else if (/Encoded|Encoding|Stitch/i.test(line)) {
+            state = { stage: "encoding", progress: state.progress, message: line.slice(0, 200) };
+            options.onProgress(state);
+          }
+        });
+        debugLog(`local render exit ${slug}/${variant} code=${result.code} elapsedMs=${Date.now() - started}\n${result.tail}`);
+        return result;
+      } finally {
+        clearInterval(heartbeat);
+      }
     };
     // The lightweight headless shell can crash partway through some projects (seen with @remotion/media
     // videos); the full Chrome for Testing build renders them. Downloaded by Remotion on first use.
@@ -205,8 +253,15 @@ export async function runLocalRender(options: LocalRenderOptions) {
       throw new StudioError(`Local render failed:\n${result.tail.slice(-1500)}`);
     }
     const rel = outPath.slice(projectDir(paths, slug).length + 1).split(/[\\/]/).join("/");
-    options.onProgress({ stage: "done", path: rel });
-    return { path: rel, absolutePath: outPath };
+    const renderDurationMs = Math.round(performance.now() - exportStarted);
+    try {
+      saveRenderDuration(outPath, renderDurationMs);
+    } catch (error) {
+      // A timing record must never turn a completed video into a failed render.
+      debugLog(`Could not save render time: ${String(error)}`);
+    }
+    options.onProgress({ stage: "done", progress: 1, path: rel });
+    return { path: rel, absolutePath: outPath, renderDurationMs };
   })();
   running = work;
   try {

@@ -306,6 +306,8 @@ export interface AssetEntry {
   size: number;
   kind: "audio" | "video" | "image" | "other";
   updatedAt: number;
+  /** Total export time, when recorded by the renderer. */
+  renderDurationMs?: number;
 }
 
 /** A coding agent CLI the helper can drive for the chat (Claude Code, Codex, …). */

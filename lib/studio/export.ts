@@ -115,6 +115,7 @@ export interface BrowserExportResult {
 
 /** Render one variant to MP4 (H.264/AAC, mastered to −14 LUFS) in the browser and save it to renders/. */
 export async function exportInBrowser(options: BrowserExportOptions): Promise<BrowserExportResult> {
+  const exportStarted = performance.now();
   const { doc, loaded, variant, signal } = options;
   if (!doc.project || !doc.layers) throw new Error("The project files are invalid; fix them before exporting.");
   const { canRenderMediaOnWeb, renderMediaOnWeb } = await import("@remotion/web-renderer");
@@ -197,5 +198,12 @@ export async function exportInBrowser(options: BrowserExportOptions): Promise<Br
   }
   options.onProgress?.("uploading", 1);
   const measured = await measureExportedAudio(blob);
+  try {
+    await uploadToProject(doc.slug, `${path}.render.json`, new Blob([
+      JSON.stringify({ version: 1, durationMs: Math.round(performance.now() - exportStarted) }),
+    ], { type: "application/json" }), signal);
+  } catch (error) {
+    console.warn("[studio] could not save render time", error);
+  }
   return { path, coverPath, size: blob.size, loudness, mastering: mastered?.report ?? null, measured, blob, fileName };
 }

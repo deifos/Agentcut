@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { studioFileUrl } from "@/lib/studio/bundle";
-import { fileName, formatBytes } from "@/lib/studio/format";
+import { fileName, formatBytes, formatRenderDuration } from "@/lib/studio/format";
 import type { StudioBridge } from "@/lib/studio/bridge";
 import type { AssetEntry } from "@/lib/studio/types";
 
@@ -210,6 +210,11 @@ function RenderRow({
         {item.size ? ` · ${formatBytes(item.size)}` : ""}
         {extra?.lufs != null ? ` · ${extra.lufs.toFixed(1)} LUFS` : ""}
       </p>
+      {item.renderDurationMs != null && (
+        <p className="text-[11px] text-muted-foreground tabular-nums">
+          Render time: {formatRenderDuration(item.renderDurationMs)}
+        </p>
+      )}
     </div>
   );
   const actions = (

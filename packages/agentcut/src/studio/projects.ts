@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readRenderDuration } from "./render-metadata.js";
 import { componentCatalog, styleIds } from "./components.js";
 import {
   existsSync,
@@ -376,6 +377,7 @@ export interface AssetEntry {
   size: number;
   kind: "audio" | "video" | "image" | "other";
   updatedAt: number;
+  renderDurationMs?: number;
 }
 
 function walk(root: string, dir: string, out: AssetEntry[], limit: number) {
@@ -387,7 +389,7 @@ function walk(root: string, dir: string, out: AssetEntry[], limit: number) {
   }
   for (const entry of entries) {
     if (out.length >= limit) return;
-    if (entry.name.startsWith(".")) continue;
+    if (entry.name.startsWith(".") || (entry.isFile() && /\.mp4\.render\.json$/i.test(entry.name))) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       walk(root, full, out, limit);
@@ -399,6 +401,7 @@ function walk(root: string, dir: string, out: AssetEntry[], limit: number) {
           size: stat.size,
           kind: mediaKind(entry.name),
           updatedAt: stat.mtimeMs,
+          ...(/\.mp4$/i.test(entry.name) ? { renderDurationMs: readRenderDuration(full) } : {}),
         });
       } catch {}
     }

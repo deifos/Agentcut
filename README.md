@@ -111,6 +111,17 @@ npm run test:share     # share Worker and helper regression tests; no Cloudflare
 - Motion component library: `motion/components` (see its README). After changing it or `skills/agentcut`,
   run `npm run sync:skill` so the helper ships the new copy.
 
+### Local render performance
+
+Local renders use up to two workers by default, with fewer workers when free memory is low.
+Media caches are bounded independently; these limits do not cap Chrome's total graphics memory.
+To compare worker counts, set `AGENTCUT_RENDER_CONCURRENCY` before starting the helper. It must
+be a positive integer no greater than the available CPU count; available memory can reduce it.
+Use the same short frame range when comparing settings, since more workers can increase memory
+pressure and make complex scenes slower. The helper log records settings, progress, and elapsed time.
+
+Run `node --import tsx --test tests/render-policy.test.mjs` to check worker selection and progress parsing.
+
 ### Releasing
 
 1. Add the changes under **Unreleased** in `CHANGELOG.md`, then move them to a new version heading.

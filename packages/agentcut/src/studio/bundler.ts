@@ -100,7 +100,9 @@ export async function buildProjectBundle(
   const esbuild = await import("esbuild");
   const scenes = listSceneNames(projectDir(paths, slug));
   const started = Date.now();
-  const revision = (previous?.revision ?? 0) + 1;
+  // Time-based so it keeps rising across helper restarts: an open studio tab only loads a bundle whose
+  // revision is higher than the one it has, so a counter that restarts at 1 would leave it on stale code.
+  const revision = Math.max((previous?.revision ?? 0) + 1, started);
   try {
     await ensurePreviewDependencies(paths.root);
     const result = await esbuild.build({

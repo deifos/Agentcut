@@ -15,6 +15,14 @@ export function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
+export function formatRenderDuration(milliseconds: number) {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return hours > 0 ? `${hours}h ${minutes}m ${seconds % 60}s`
+    : minutes > 0 ? `${minutes}m ${seconds % 60}s` : `${seconds}s`;
+}
+
 export function fileName(path: string) {
   const clean = path.replace(/^library:/, "");
   return clean.slice(clean.lastIndexOf("/") + 1);

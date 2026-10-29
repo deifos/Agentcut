@@ -254,6 +254,9 @@ export function Stage({ camera, float = 0, motionBlur = 0, seed = 1, background,
   // flicker under memory pressure. Captures and exports draw exactly as before.
   const steady = motionBlur > 0 && env.isPlayer && !env.isRendering;
   const blurStyle = blurred || steady ? { filter: `blur(${blurred ? blur.toFixed(2) : 0}px)` } : undefined;
+  // Keep the export tree stable when the camera stops, so videos and stateful scenes stay mounted.
+  const clipExport = env.isRendering && motionBlur > 0;
+  const gutter = blurred ? Math.ceil(blur * 3 + 2) : 0;
 
   return (
     <AbsoluteFill style={{ overflow: "hidden", background, ...style }}>
@@ -262,7 +265,13 @@ export function Stage({ camera, float = 0, motionBlur = 0, seed = 1, background,
           {/* Clip projected planes BEFORE the stage filter. A plane near the lens can project to
               thousands of pixels outside the frame; clipping only the filter's output still makes
               Chromium allocate that enormous intermediate surface and can blank the editor. */}
-          {steady ? (
+          {clipExport ? (
+            // Keep a blur-sized gutter so off-screen pixels still contribute at the frame edge.
+            // Clip BEFORE filtering: a plane near the camera can otherwise allocate a huge surface.
+            <div style={{ position: "absolute", inset: -gutter, overflow: "hidden", contain: "paint" }}>
+              <div style={{ position: "absolute", inset: gutter }}>{children}</div>
+            </div>
+          ) : steady ? (
             <AbsoluteFill style={{ overflow: "hidden", contain: "paint" }}>{children}</AbsoluteFill>
           ) : children}
         </AbsoluteFill>
@@ -611,7 +620,7 @@ function PlaneBody({
     const projected = mul(ctx.project, m, translate(-o.pad, -o.pad, 0));
     // Keep content mounted (especially video), but don't allocate filtered surfaces outside the shot.
     // The padded box includes lens blur; the margin also covers Stage's motion blur.
-    const hidden = lightPreview && outsideViewport(projected, width + o.pad * 2, height + o.pad * 2, ctx.width, ctx.height, 32 * ctx.u);
+    const hidden = outsideViewport(projected, width + o.pad * 2, height + o.pad * 2, ctx.width, ctx.height, 96 * ctx.u);
     return (
     <div
       key={key}

@@ -13,7 +13,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.15] - 2026-10-29
+
 ### Added
+
+- Show saved render times in Latest renders and the Renders tab for new local and browser exports.
+  Show local render elapsed time in minutes and seconds. Existing videos without timing records remain unchanged.
 
 - Speak instead of typing anywhere you prompt the agent: the chat, the pencil on the preview, the ask
   bubble on the timeline playhead, file and component asks, Cinematic, Style Spy and video style forms. Click
@@ -23,6 +28,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   first use.
 
 ### Fixed
+
+- Keep cinematic scene content mounted when export motion blur starts or stops.
+- Keep local render progress compatible with frame-count output, and hide timing records for uppercase MP4 filenames.
+- Reload preview bundles after a helper restart instead of keeping stale scene code.
+
+- Bound cinematic motion-blur surfaces during export and skip off-screen plane copies, reducing
+  graphics memory use during camera moves without lowering the output resolution.
+- Limit local render workers using available memory (two by default) and bound media caches. Show
+  frame counts, elapsed time, and warnings when frame progress stops; keep diagnostic progress in
+  the helper log. Correctly read progress split across process output chunks.
+- On Windows, include available virtual memory when choosing render workers and cache sizes;
+  free physical RAM alone can hide an exhausted system memory limit.
 
 - Draw cinematic preview floors as screen-space grids clipped to the video frame, replacing
   transformed SVG mask tiles that triggered black bars across the editor. Preview floors use a

@@ -8,6 +8,8 @@ import { Video } from "@remotion/media";
 import { createContext, useContext, useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, useRemotionEnvironment, useVideoConfig } from "remotion";
 import { alpha, glowStyle } from "../lib";
+import { outsideViewport } from "./visibility";
+import { PreviewFloor } from "./PreviewFloor";
 import {
   apply,
   EASES,
@@ -256,7 +258,14 @@ export function Stage({ camera, float = 0, motionBlur = 0, seed = 1, background,
   return (
     <AbsoluteFill style={{ overflow: "hidden", background, ...style }}>
       <StageCtx.Provider value={ctx}>
-        <AbsoluteFill style={blurStyle}>{children}</AbsoluteFill>
+        <AbsoluteFill style={blurStyle}>
+          {/* Clip projected planes BEFORE the stage filter. A plane near the lens can project to
+              thousands of pixels outside the frame; clipping only the filter's output still makes
+              Chromium allocate that enormous intermediate surface and can blank the editor. */}
+          {steady ? (
+            <AbsoluteFill style={{ overflow: "hidden", contain: "paint" }}>{children}</AbsoluteFill>
+          ) : children}
+        </AbsoluteFill>
       </StageCtx.Provider>
     </AbsoluteFill>
   );
@@ -598,7 +607,12 @@ function PlaneBody({
     key: string,
     m: M4,
     o: { blur: number; pad: number; mask?: CSSProperties; opacity: number; copy: boolean; body?: ReactNode },
-  ) => (
+  ) => {
+    const projected = mul(ctx.project, m, translate(-o.pad, -o.pad, 0));
+    // Keep content mounted (especially video), but don't allocate filtered surfaces outside the shot.
+    // The padded box includes lens blur; the margin also covers Stage's motion blur.
+    const hidden = lightPreview && outsideViewport(projected, width + o.pad * 2, height + o.pad * 2, ctx.width, ctx.height, 32 * ctx.u);
+    return (
     <div
       key={key}
       style={{
@@ -608,7 +622,8 @@ function PlaneBody({
         width: width + o.pad * 2,
         height: height + o.pad * 2,
         transformOrigin: "0 0",
-        transform: matrix(mul(m, translate(-o.pad, -o.pad, 0))),
+        transform: toCss(projected),
+        display: hidden ? "none" : undefined,
         ...o.mask,
       }}
     >
@@ -618,7 +633,8 @@ function PlaneBody({
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const layers: ReactNode[] = [];
 
@@ -1181,6 +1197,10 @@ export function Floor({
   glow?: string;
 }) {
   const id = `floor${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const ctx = useStageContext("Floor");
+  const env = useRemotionEnvironment();
+  const lightPreview = env.isPlayer && !env.isRendering;
+  if (lightPreview) return <PreviewFloor ctx={ctx} y={y} size={size} near={near} spacing={spacing} color={color} opacity={opacity} />;
   // Tiles of at most ~1250 px: each one blurs with its own depth, the part at the lens drops out alone,
   // and no layer gets bigger than a GPU texture.
   const n = Math.max(1, Math.ceil(size / 1250));
@@ -1199,16 +1219,17 @@ export function Floor({
         if (p >= y0 - 2 && p <= y0 + tile + 2) lines.push(<line key={`h${l}`} x1={x0} y1={p} x2={x0 + tile} y2={p} />);
       }
       const tid = `${id}-${i}-${j}`;
+      const x = x0 + tile / 2 - size / 2;
+      const z = z0 + y0 + tile / 2 - size / 2;
       tiles.push(
         <Plane
           key={tid}
-          x={x0 + tile / 2 - size / 2}
+          x={x}
           y={y}
-          z={z0 + y0 + tile / 2 - size / 2}
+          z={z}
           tilt={90}
           width={tile}
           height={tile}
-          dof
         >
           <svg width={tile} height={tile} viewBox={`${x0} ${y0} ${tile} ${tile}`} style={{ position: "absolute", inset: 0 }}>
             <defs>

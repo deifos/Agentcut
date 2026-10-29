@@ -24,6 +24,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Draw cinematic preview floors as screen-space grids clipped to the video frame, replacing
+  transformed SVG mask tiles that triggered black bars across the editor. Preview floors use a
+  simplified grid without floor glow or depth blur; exports retain the full-quality floor.
+- Reduce graphics load by skipping off-screen plane copies while keeping their content mounted,
+  containing timeline thumbnail painting, and clipping stage content before motion blur.
+
 - Stop voice capture when a prompt closes or becomes unavailable, including while microphone permission
   is pending. Recover from speech worker failures, use CPU recognition if GPU setup fails, and prevent
   overlapping model requests when switching prompts. Wait for dictation to finish before sending forms.

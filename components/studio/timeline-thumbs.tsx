@@ -95,6 +95,9 @@ function SceneStrip({
         <div
           key={i}
           className="relative h-full flex-1 overflow-hidden border-r border-black/20 last:border-r-0"
+          // A still can contain the same expensive filters as the main player. Keep its paint
+          // inside the tile and let the browser skip tiles outside the timeline's scroll viewport.
+          style={{ contain: "strict", contentVisibility: "auto" }}
         >
           <Thumbnail
             component={loaded.module.StudioComposition}

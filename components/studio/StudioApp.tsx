@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import type { MusicChoice } from "@/components/studio/MusicPicker";
 import {
   ChevronsUpDown,
   Download,
@@ -63,6 +65,9 @@ import { StylesGallery } from "@/components/studio/styles/StylesGallery";
 import { StyleSpy, StyleSpyTab } from "@/components/studio/StyleSpy";
 import { Cinematic, CinematicTab } from "@/components/studio/Cinematic";
 import { Recorder } from "@/components/studio/Recorder";
+import { VideoFormatPicker } from "@/components/studio/VideoFormatPicker";
+import { CreativeIdeas, CreativeStart } from "@/components/studio/CreativeStart";
+import { SimpleVideoInput } from "@/components/studio/SimpleVideoInput";
 import {
   APP_VERSION,
   CHANGELOG_URL,
@@ -116,7 +121,7 @@ import type {
   ProjectSummary,
   StudioLayers,
 } from "@/lib/studio/types";
-import { referenceFromAsset } from "@/components/studio/ChatReferences";
+import { referenceFromAsset, uploadChatFiles, uploadFailureMessage } from "@/components/studio/ChatReferences";
 import { formatFrameTime } from "@/lib/studio/format";
 import { TimelineThumbs } from "@/components/studio/timeline-thumbs";
 import {
@@ -132,6 +137,10 @@ import {
 } from "@/lib/studio/agents";
 
 const TIMELINE_HEIGHT_KEY = "agentcut.timelineHeight";
+const MusicPicker = dynamic(() => import("@/components/studio/MusicPicker").then((module) => module.MusicPicker), {
+  ssr: false,
+  loading: () => <aside className="music-library-panel" role="status" aria-busy="true">Loading music library…</aside>,
+});
 
 function isTypingTarget(target: EventTarget | null) {
   const element = target as HTMLElement | null;
@@ -191,6 +200,16 @@ export function StudioApp() {
   const efforts = agentPickable ? effortsFor(agent, model) : [];
   const effort = agentPickable ? pickEffort(agent, model, effortChoices) : null;
   const [playing, setPlaying] = useState(false);
+  const [drawingOpen, setDrawingOpen] = useState(false);
+  const [simple, setSimple] = useState(true);
+  const [stylesBySlug, setStylesBySlug] = useState<Record<string, MotionStyle | null>>({});
+  const selectedStyle = stylesBySlug[doc?.slug ?? ""] ?? null;
+  const selectStyle = (style: MotionStyle | null) => setStylesBySlug((all) => ({ ...all, [doc?.slug ?? ""]: style }));
+  const [musicOpen, setMusicOpen] = useState(false);
+  const [uploadCounts, setUploadCounts] = useState<Record<string, number>>({});
+  const [musicBySlug, setMusicBySlug] = useState<Record<string, MusicChoice | null>>({});
+  const selectedMusic = musicBySlug[doc?.slug ?? ""] ?? null;
+  const selectMusic = (music: MusicChoice | null) => setMusicBySlug((all) => ({ ...all, [doc?.slug ?? ""]: music }));
   const [chatOpen, setChatOpen] = useState(true);
   // Files attached to the next chat message, per project.
   const [referencesBySlug, setReferencesBySlug] = useState<
@@ -233,6 +252,7 @@ export function StudioApp() {
   // Before the helper reports its version and features, don't claim it's too old.
   const shareSupported = info ? Boolean(info.features?.includes("share")) : true;
   const [stylesOpen, setStylesOpen] = useState(false);
+  const [stagingStyle, setStagingStyle] = useState(false);
   const [styleSpyOpen, setStyleSpyOpen] = useState(false);
   const [cinematicOpen, setCinematicOpen] = useState(false);
   // An export in progress (browser or this computer) stays visible on the Export button and the
@@ -455,6 +475,13 @@ export function StudioApp() {
       };
       if (info.frames && Number.isFinite(info.frames)) total = info.frames;
     } catch {}
+    // Metadata can finish after a project switch or another timeline edit.
+    if (studio.getDoc()?.slug !== doc.slug || studio.getDoc()?.layers !== doc.layers) {
+      throw new Error("File saved. The project changed during upload. Add the file from Assets when ready.");
+    }
+    if (!Number.isFinite(total) || total <= trimStart) {
+      throw new Error("File saved, but its video duration could not be read.");
+    }
     const duration = Math.max(1, total - trimStart);
     const footage =
       doc.layers.tracks.find(
@@ -600,10 +627,11 @@ export function StudioApp() {
   }
 
   const variants = Object.entries(doc?.project?.variants ?? {});
+  const blankVideo = Boolean(doc?.layers && !doc.layers.tracks.some((track) => track.clips.length));
 
   return (
     <StudioAgentContext.Provider value={agent}>
-      <div className="studio-app flex h-dvh min-h-0 flex-col overflow-hidden bg-muted text-foreground">
+      <div className={cn("studio-app flex h-dvh min-h-0 flex-col overflow-hidden bg-muted text-foreground", simple && "studio-simple")}>
         <header className="flex shrink-0 flex-wrap items-center gap-2 px-3 py-2">
           <Link
             href="/"
@@ -707,7 +735,7 @@ export function StudioApp() {
           </Button>
 
           {variants.length > 1 ? (
-            <div className="ml-2 flex items-center rounded-full bg-background p-0.5 shadow-sm">
+            <div className="studio-variants ml-2 flex items-center rounded-full bg-background p-0.5 shadow-sm">
               {variants.map(([name, size]) => {
                 const Icon = size.height > size.width ? Smartphone : Monitor;
                 return (
@@ -729,6 +757,10 @@ export function StudioApp() {
           ) : null}
 
           <div className="ml-auto flex items-center gap-1.5">
+            <Button type="button" variant="outline" size="sm" onClick={() => setSimple((value) => !value)}>
+              {simple ? "Advanced editor" : "Simple view"}
+            </Button>
+            <div className="studio-header-tools flex items-center gap-1.5">
             <HeaderButton
               label="Undo (Ctrl+Z)"
               onClick={studio.undo}
@@ -767,6 +799,7 @@ export function StudioApp() {
               className="size-9 rounded-full"
               placeholderClassName="size-9"
             />
+            </div>
             <ConnectionBadge
               helperVersion={info?.version ?? null}
               status={status}
@@ -818,17 +851,34 @@ export function StudioApp() {
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 gap-2 px-2">
-          {chatOpen ? (
+        <div className={cn("studio-body flex min-h-0 flex-1", musicOpen && doc && "studio-body-with-music")}>
+        <div className="studio-workspace flex min-h-0 min-w-0 flex-1 gap-2 px-2">
+          {simple && blankVideo && !chat.running ? <div className="empty-project-scene" aria-hidden="true"><CreativeIdeas scene /></div> : null}
             <aside
               className={cn(
                 PANEL,
-                "flex w-[340px] shrink-0 flex-col lg:w-[380px]",
+                "studio-chat-panel flex w-[340px] shrink-0 flex-col lg:w-[380px]",
+                !simple && !chatOpen && "hidden",
+                simple && !doc && "hidden",
               )}
             >
               <ChatPanel
                 // Each project keeps its own draft.
                 key={chatSlug}
+                simple={simple}
+                externalUploading={uploadCounts[chatSlug] ?? 0}
+                hasVideo={Boolean(doc?.layers?.tracks.some((track) => track.clips.length > 0))}
+                onDraw={() => { playerRef.current?.pause(); setDrawingOpen((open) => !open); }}
+                drawingOpen={drawingOpen}
+                drawingAvailable={Boolean(loaded && !blankVideo)}
+                onRecord={() => setRecordOpen(true)}
+                selectedStyle={selectedStyle}
+                selectedMusic={selectedMusic}
+                onClearMusic={() => selectMusic(null)}
+                onOpenMusic={() => setMusicOpen(true)}
+                onClearStyle={() => selectStyle(null)}
+                onOpenStyles={() => { setStagingStyle(true); setStylesOpen(true); }}
+                onOpenStyleSpy={() => setStyleSpyOpen(true)}
                 slug={doc?.slug ?? null}
                 chat={chat}
                 agent={agent}
@@ -845,7 +895,14 @@ export function StudioApp() {
                 frameStore={frameStore}
                 fps={doc?.project?.fps ?? 30}
                 selectionCount={selection.length}
-                onSend={sendChat}
+                onSend={async (text, options) => {
+                  const instructions = [text];
+                  if (selectedStyle) instructions.push(`Use the ${selectedStyle.name} style for this video. Follow STYLES.md for graphics, captions, and camera moves. Set the project style to ${selectedStyle.id}.`);
+                  if (selectedMusic) instructions.push(selectedMusic.id === "auto" ? "Choose suitable background music from the Agentcut music catalog for this video. Use the music catalog and add catalog music tools, and balance the music under speech." : `Use the Agentcut catalog song \"${selectedMusic.name}\" (id: ${selectedMusic.id}) as background music for this video. Import it with the add catalog music tool and balance it under speech.`);
+                  await sendChat(instructions.join("\n\n"), options);
+                  setStylesBySlug((all) => all[chatSlug] === selectedStyle ? { ...all, [chatSlug]: null } : all);
+                  setMusicBySlug((all) => all[chatSlug] === selectedMusic ? { ...all, [chatSlug]: null } : all);
+                }}
                 onCancel={() => void studio.cancelChat()}
                 onReset={() => void studio.resetChat()}
                 onEditQueued={studio.editQueued}
@@ -853,8 +910,7 @@ export function StudioApp() {
                 onRunQueuedNow={(id) => void studio.runQueuedNow(id)}
               />
             </aside>
-          ) : null}
-          {doc?.project ? (
+          {!simple && doc?.project ? (
             // Zero-width slot on the seam: the tab hangs off the chat panel over the preview's edge.
             <div className="relative -mx-1 w-0 shrink-0">
               <div className="absolute top-12 -left-[5px] z-20 flex flex-col gap-2">
@@ -867,8 +923,14 @@ export function StudioApp() {
               </div>
             </div>
           ) : null}
-          <main className={cn(PANEL, "flex min-w-0 flex-1 flex-col")}>
-            <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 px-2">
+          <main className={cn(PANEL, "studio-stage flex min-w-0 flex-1 flex-col", simple && blankVideo && !chat.running && "studio-stage-empty")}>
+            {simple && doc?.project ? <VideoFormatPicker key={doc.slug} project={doc.project} variant={variant} disabled={status !== "connected" || Boolean(chat.running)} onSave={async (project) => {
+              const bridge = studio.getBridge();
+              if (!bridge) throw new Error("The studio helper is not connected.");
+              await bridge.request("studio.project.write", { slug: doc.slug, project });
+              await studio.syncProject();
+            }} onChange={(next) => { if (studio.getDoc()?.slug === doc.slug) studio.setVariant(next); }} /> : null}
+            <div className="studio-stage-toolbar flex h-8 shrink-0 items-center gap-1 border-b border-border/60 px-2">
               <HeaderButton
                 label={chatOpen ? "Hide chat" : "Show chat"}
                 onClick={() => setChatOpen((v) => !v)}
@@ -911,8 +973,29 @@ export function StudioApp() {
               />
             ) : null}
             <div className="min-h-0 flex-1">
-              {doc ? (
+              {simple && doc && blankVideo && !chat.running ? (
+                <SimpleVideoInput key={doc.slug} disabled={status !== "connected"} onRecord={() => setRecordOpen(true)} onFiles={async (files) => {
+                  setUploadCounts((counts) => ({ ...counts, [doc.slug]: (counts[doc.slug] ?? 0) + 1 }));
+                  try {
+                  const { added, failed } = await uploadChatFiles(doc.slug, files);
+                  setChatReferences((current) => [...current.filter((r) => !added.some((a) => a.path === r.path)), ...added]);
+                  if (failed.length) toast.error(uploadFailureMessage(files.length, failed));
+                  await studio.refreshAssets();
+                  const video = added.find((item) => item.kind === "video");
+                  if (video && studio.getDoc()?.slug === doc.slug) {
+                    try {
+                      const { mediaInfo } = await import("@/lib/studio/audio/media-info");
+                      const media = await mediaInfo(studioFileUrl(doc.slug, video.path), video.path, doc.project?.fps ?? 30);
+                      if ("frames" in media && typeof media.frames === "number") await addTake(video.path, { seconds: media.frames / (doc.project?.fps ?? 30), startSeconds: 0 });
+                    } catch (error) { toast.error(`File saved. Preview could not load: ${error instanceof Error ? error.message : String(error)}`); }
+                  }
+                  } finally {
+                    setUploadCounts((counts) => ({ ...counts, [doc.slug]: Math.max(0, (counts[doc.slug] ?? 1) - 1) }));
+                  }
+                }} />
+              ) : doc ? (
                 <StudioPreview
+                  simple={simple}
                   doc={doc}
                   loaded={loaded}
                   bundle={studio.bundle}
@@ -929,6 +1012,8 @@ export function StudioApp() {
                     readOnly
                       ? undefined
                       : {
+                          open: drawingOpen,
+                          onOpenChange: setDrawingOpen,
                           busy: Boolean(chat.running),
                           disabled: status !== "connected",
                           onSend: askWithDrawing,
@@ -943,7 +1028,7 @@ export function StudioApp() {
               )}
             </div>
           </main>
-          {inspectorOpen && doc ? (
+          {!simple && inspectorOpen && doc ? (
             <aside className={cn(PANEL, "w-[340px] shrink-0 xl:w-[360px]")}>
               <StudioInspector
                 doc={doc}
@@ -984,12 +1069,14 @@ export function StudioApp() {
             </aside>
           ) : null}
         </div>
+        {musicOpen && doc ? <MusicPicker key={doc.slug} selected={selectedMusic} onClose={() => setMusicOpen(false)} onSelect={selectMusic} /> : null}
+        </div>
 
         <div
           role="separator"
           aria-orientation="horizontal"
           aria-label="Resize timeline"
-          className="group flex h-2 shrink-0 cursor-row-resize items-center justify-center"
+          className={cn("group flex h-2 shrink-0 cursor-row-resize items-center justify-center", simple && "hidden")}
           onPointerDown={(event) => {
             (event.currentTarget as HTMLElement).setPointerCapture(
               event.pointerId,
@@ -1024,7 +1111,7 @@ export function StudioApp() {
           <span className="h-1 w-12 rounded-full bg-border transition-colors group-hover:bg-primary/60" />
         </div>
         <div
-          className={cn(PANEL, "mx-2 mb-2 shrink-0")}
+          className={cn(PANEL, "mx-2 mb-2 shrink-0", simple && "hidden")}
           style={{ height: timelineHeight }}
         >
           {doc?.layers && doc.project ? (
@@ -1140,8 +1227,9 @@ export function StudioApp() {
         ) : null}
         {doc?.project ? (
           <StylesGallery
+            onSelect={simple || stagingStyle ? selectStyle : undefined}
             open={stylesOpen}
-            onOpenChange={setStylesOpen}
+            onOpenChange={(open) => { setStylesOpen(open); if (!open) setStagingStyle(false); }}
             currentStyle={doc.project.style}
             supported={stylesSupported}
             readOnly={readOnly}
@@ -1339,22 +1427,11 @@ function PreviewRequestBar({
 }
 
 function EmptyState({ opening, onNew }: { opening: boolean; onNew(): void }) {
+  if (!opening) return <CreativeStart onNew={onNew} />;
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-      {opening ? (
         <Loader2 className="size-5 animate-spin" />
-      ) : (
-        <>
-          <p>No project open.</p>
-          <button
-            type="button"
-            onClick={onNew}
-            className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground"
-          >
-            <FilePlus2 className="size-4" /> New project
-          </button>
-        </>
-      )}
+        <span>Opening your project…</span>
     </div>
   );
 }

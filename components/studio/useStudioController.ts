@@ -593,6 +593,7 @@ export function useStudioController() {
         assets: AssetEntry[];
         library: AssetEntry[];
       }>("studio.assets.list", { slug });
+      if (latest.current.doc?.slug !== slug) return;
       setAssets(result.assets);
       setLibrary(result.library);
     } catch {}
@@ -1045,11 +1046,13 @@ export function useStudioController() {
 
   const reconnect = useCallback(() => bridgeRef.current?.connect(), []);
   const getBridge = useCallback(() => bridgeRef.current, []);
+  const getDoc = useCallback(() => latest.current.doc, []);
 
   return {
     frameStore,
     playerRef,
     getBridge,
+    getDoc,
     status,
     info,
     projects,

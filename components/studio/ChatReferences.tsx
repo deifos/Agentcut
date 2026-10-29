@@ -6,6 +6,8 @@ import { AudioLines, File as FileIcon, Film, Image as ImageIcon, Type, X } from 
 import { cn } from "@/lib/utils";
 import { fileName } from "@/lib/studio/format";
 import { exportStamp, uploadToProject } from "@/lib/studio/export";
+import { AttachmentMedia } from "@/components/studio/AttachmentMedia";
+import { studioFileUrl } from "@/lib/studio/bundle";
 import type { AssetEntry, ChatReference } from "@/lib/studio/types";
 
 export const ASSET_DRAG_TYPE = "application/x-agentcut-asset";
@@ -119,23 +121,35 @@ export function ReferenceChip({
   reference,
   onRemove,
   className,
+  slug,
+  showPreview = false,
 }: {
   reference: ChatReference;
   onRemove?(): void;
   className?: string;
+  slug?: string | null;
+  /** Composer attachments get previews; sent-message chips stay compact. */
+  showPreview?: boolean;
 }) {
+  const preview = showPreview && slug && ["image", "video"].includes(reference.kind);
+  const url = preview ? studioFileUrl(slug, reference.path) : null;
+  if (url) return <AttachmentMedia key={`${reference.kind}:${url}`} reference={reference} url={url} onRemove={onRemove} className={className} />;
   return (
     <span
       title={reference.path}
       className={cn(
         "inline-flex max-w-full items-center gap-1 rounded-md border border-border/80 bg-muted/70 px-1.5 py-0.5 text-[11px] font-medium",
+        preview && "w-64 gap-2.5 rounded-xl bg-background/40 p-2",
         className,
       )}
     >
       <ReferenceIcon kind={reference.kind} />
-      <span className="min-w-0 truncate">{fileName(reference.path)}</span>
+      <span className={cn("min-w-0 truncate", preview && "flex flex-1 flex-col gap-1")}>
+        <span className="truncate text-foreground">{fileName(reference.path)}</span>
+        {preview ? <span className="text-[10px] text-muted-foreground">{reference.kind === "video" ? "Video" : "Image"}</span> : null}
+      </span>
       {onRemove ? (
-        <button type="button" onClick={onRemove} aria-label={`Remove ${fileName(reference.path)}`} className="-mr-0.5 rounded p-px text-muted-foreground hover:bg-background hover:text-foreground">
+        <button type="button" onClick={onRemove} aria-label={`Remove ${fileName(reference.path)}`} className={cn("-mr-0.5 rounded p-px text-muted-foreground hover:bg-background hover:text-foreground", preview && "m-0 flex size-7 shrink-0 items-center justify-center self-start rounded-full p-1")}>
           <X className="size-3" />
         </button>
       ) : null}

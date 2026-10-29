@@ -103,6 +103,11 @@ function DemoStill({ inputProps }: { inputProps: StyleDemoProps }) {
   );
 }
 
+/** The same paused gallery frame, reused for the composer's selected style. */
+export function StylePoster({ styleId }: { styleId: string }) {
+  return <DemoStill inputProps={{ styleId, src: DEMO_CLIP, words: DEMO_WORDS }} />;
+}
+
 /** A user clip: an object URL plus its words once the browser has transcribed it. */
 interface OwnClip {
   url: string;
@@ -124,6 +129,7 @@ export function StylesGallery({
   library,
   assets,
   onSend,
+  onSelect,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
@@ -140,6 +146,8 @@ export function StylesGallery({
   assets: AssetEntry[];
   /** Send a chat message to the agent (video styles hand it their recipe). */
   onSend(text: string): void;
+  /** Stage a style in the composer. Selection does not edit or send. */
+  onSelect?(style: MotionStyle): void;
 }) {
   const agentName = useAgentName();
   const styles = Object.values(MOTION_STYLES);
@@ -207,6 +215,26 @@ export function StylesGallery({
     src: clip?.url ?? DEMO_CLIP,
     words: clip ? (clip.words ?? []) : DEMO_WORDS,
   });
+
+  if (onSelect) return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[min(820px,88dvh)] flex-col overflow-hidden sm:max-w-4xl">
+        <DialogTitle>Choose a style</DialogTitle>
+        <DialogDescription>Choose a look for your video. Review the request, then press Send.</DialogDescription>
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain">
+        <div className="grid grid-cols-2 gap-4 p-1 pr-3 sm:grid-cols-3 lg:grid-cols-4">
+          {styles.map((item) => (
+            <button key={item.id} type="button" onClick={() => { onSelect(item); onOpenChange(false); }} className="group flex flex-col gap-2 rounded-xl border border-border p-2 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
+              <div className="aspect-[9/16] overflow-hidden rounded-lg"><DemoStill inputProps={demo(item.id)} /></div>
+              <span className="text-sm font-semibold">{item.name}</span>
+              <span className="text-xs leading-relaxed text-muted-foreground">{item.description}</span>
+            </button>
+          ))}
+        </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -316,7 +344,8 @@ export function StylesGallery({
           />
         ) : (
           <div className="flex min-h-0 flex-1">
-            <div className="grid shrink-0 grid-cols-4 content-center gap-3 p-4">
+            <ScrollArea className="min-h-0 shrink-0" viewportClassName="overscroll-contain">
+            <div className="grid grid-cols-4 content-start gap-3 p-4">
               {styles.map((s) => {
                 const active = s.id === style.id;
                 const current = s.id === currentStyle;
@@ -365,6 +394,8 @@ export function StylesGallery({
                 );
               })}
             </div>
+
+            </ScrollArea>
 
             {style ? (
               <>

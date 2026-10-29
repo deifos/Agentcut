@@ -41,7 +41,8 @@ projects/<slug>/
   look, fonts, palette, text animation, camera moves, captions and texture. Read
   `.agentcut/components/STYLES.md` when the project has a `"style"`, when the user names a style
   ("use the Snipwork style", "make it attention grabbing"), or when a message asks you to restyle.
-  Applying one = set `style` in project.json, then follow "Applying a style" there. With a style
+  Applying one = read `references/style-editing.md`, then follow "Applying a style" there.
+  A style sets visual defaults. Speech cleanup, B-roll and shot-level framing require timeline edits. With a style
   set, leave style-driven props out of clips, and make your own scene files match its tokens.
 - **Video style presets** are recipes for whole videos that aren't talking heads (music and lyric videos, …), kept in
   `library/presets/<id>/` with a PROMPT.md. When a message names one, or asks to save the open video's style as a

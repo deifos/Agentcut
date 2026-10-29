@@ -15,6 +15,14 @@ import {
   Eye,
   FilePen,
   Film,
+  Paperclip,
+  Palette,
+  ScanEye,
+  Scissors,
+  Captions,
+  WandSparkles,
+  Music2,
+  Video,
   RotateCcw,
   Search,
   Square,
@@ -58,6 +66,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { StylePoster } from "@/components/studio/styles/StylesGallery";
 import { SpeakButton, useSpeechInput } from "@/components/studio/SpeakButton";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -579,12 +588,14 @@ function AgentPicker({
   onChange,
   model,
   onModelChange,
+  separateModel = false,
 }: {
   agent: AgentInfo | null;
   agents: AgentInfo[];
   onChange(id: string): void;
   model: string | null;
   onModelChange(agentId: string, model: string | null): void;
+  separateModel?: boolean;
 }) {
   const models = agent?.found ? (agent.models ?? []) : [];
   const modelLabel = models.find((m) => m.id === model)?.label;
@@ -598,9 +609,9 @@ function AgentPicker({
         <span className="truncate text-[11px] font-normal text-muted-foreground">
           {!agent?.found
             ? "not installed"
-            : modelLabel
+            : separateModel ? "" : modelLabel
               ? `· ${modelLabel}`
-              : (agent.version ?? "")}
+              : defaultLabel}
         </span>
         <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
@@ -631,7 +642,7 @@ function AgentPicker({
             </DropdownMenuRadioGroup>
           </>
         )}
-        {agent && models.length > 0 && (
+        {!separateModel && agent && models.length > 0 && (
           <>
             {agents.length > 1 && <DropdownMenuSeparator />}
             <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
@@ -661,6 +672,25 @@ function AgentPicker({
   );
 }
 
+function ModelPicker({ agent, model, onChange }: {
+  agent: AgentInfo;
+  model: string | null;
+  onChange(agentId: string, model: string | null): void;
+}) {
+  const models = agent.models ?? [];
+  const current = models.find((item) => item.id === (model ?? agent.defaultModel));
+  return <DropdownMenu>
+    <DropdownMenuTrigger className="flex min-w-0 items-center gap-1 rounded-md px-2 py-1 text-xs" aria-label="Model for next request">Model: {current?.label ?? "Default"}<ChevronDown className="size-3" /></DropdownMenuTrigger>
+    <DropdownMenuContent align="start">
+      <DropdownMenuLabel>Model for next request</DropdownMenuLabel>
+      <DropdownMenuRadioGroup value={model ?? ""} onValueChange={(id) => onChange(agent.id, id || null)}>
+        <DropdownMenuRadioItem value="">Default</DropdownMenuRadioItem>
+        {models.map((item) => <DropdownMenuRadioItem key={item.id} value={item.id}>{item.label}</DropdownMenuRadioItem>)}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuContent>
+  </DropdownMenu>;
+}
+
 const EFFORT_LABELS: Record<string, string> = { xhigh: "Extra high" };
 const effortLabel = (effort: string) =>
   EFFORT_LABELS[effort] ?? effort.charAt(0).toUpperCase() + effort.slice(1);
@@ -677,14 +707,14 @@ function EffortPicker({
   effort: string | null;
   onChange(agentId: string, effort: string | null): void;
 }) {
-  const fallback = agent.defaultEffort ? effortLabel(agent.defaultEffort) : null;
+  const fallback = agent.defaultEffort && efforts.includes(agent.defaultEffort) ? effortLabel(agent.defaultEffort) : null;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
         title="Thinking level"
       >
-        {effort ? effortLabel(effort) : (fallback ?? "Thinking")}
+        Thinking: {effort ? effortLabel(effort) : (fallback ?? "Default")}
         <ChevronDown className="size-3" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
@@ -711,6 +741,21 @@ function EffortPicker({
 }
 
 export interface ChatPanelProps {
+  externalUploading?: number;
+  simple?: boolean;
+  selectedStyle?: { id: string; name: string } | null;
+  onClearStyle?(): void;
+  onOpenStyles?(): void;
+  onOpenStyleSpy?(): void;
+  selectedMusic?: { id: string; name: string } | null;
+  onClearMusic?(): void;
+  onOpenMusic?(): void;
+  onDraw?(): void;
+  drawingAvailable?: boolean;
+  drawingOpen?: boolean;
+  onRecord?(): void;
+  /** The project already has footage or composition content to edit. */
+  hasVideo?: boolean;
   chat: ChatHistory;
   /** The agent that answers the next message. */
   agent: AgentInfo | null;
@@ -773,9 +818,26 @@ export function ChatPanel({
   onRemoveQueued,
   onRunQueuedNow,
   slug,
+  simple = false,
+  externalUploading = 0,
+  selectedStyle,
+  onClearStyle,
+  onOpenStyles,
+  onOpenStyleSpy,
+  selectedMusic,
+  onClearMusic,
+  onOpenMusic,
+  onDraw,
+  drawingAvailable,
+  drawingOpen,
+  onRecord,
+  hasVideo = false,
 }: ChatPanelProps) {
+  const [conversationOpen, setConversationOpen] = useState(false);
+  const attachmentInput = useRef<HTMLInputElement>(null);
   const [dropping, setDropping] = useState(false);
-  const [uploading, setUploading] = useState(0);
+  const [localUploading, setUploading] = useState(0);
+  const uploading = localUploading + externalUploading;
   // Files from the computer (dropped or pasted) go into the project's assets and attach to the message.
   const attachFiles = async (files: File[]) => {
     if (!slug || !files.length) return;
@@ -811,12 +873,19 @@ export function ChatPanel({
     priority: "chat",
   });
   const dictating = speech.dictating;
+  const videoContext = hasVideo || references.some((reference) => reference.kind === "video");
+  const inferredRequest = videoContext
+    ? selectedStyle
+      ? `Apply the ${selectedStyle.name} style to this video${selectedMusic ? " and add the selected background music" : ""}.`
+      : selectedMusic ? "Add the selected background music to this video." : ""
+    : "";
+  const requestReady = Boolean(text.trim() || inferredRequest);
 
   const send = async (value = text) => {
-    const trimmed = value.trim();
+    const trimmed = value.trim() || inferredRequest;
     // While the agent works, a new message waits in the queue and runs next.
     // Wait for dropped or pasted files to finish uploading, so they go with the message.
-    if (!trimmed || sending || disabled || uploading || dictating) return;
+    if (!trimmed || sending || disabled || uploading || dictating || Boolean(agent && !agent.found)) return;
     setSending(true);
     // Only the chips sent with this message go; files attached while it sends wait for the next one.
     const sent = references;
@@ -836,17 +905,31 @@ export function ChatPanel({
 
   const agentName = agent?.name ?? "Agent";
   const agentMissing = agent && !agent.found;
+  const sendAction = running ? "Press Send to queue this request." : "Press Send to start.";
+  const musicSummary = selectedMusic ? selectedMusic.id === "auto" ? "choose suitable music" : `add ${selectedMusic.name}` : "";
+  const readiness = disabled ? "Open a project and connect the helper to start."
+    : agentMissing ? `Install ${agent.product} before you send a request.`
+    : uploading ? "Adding your files. Wait for the upload to finish."
+    : dictating ? "Stop voice input to review your request before you send."
+    : sending ? "Sending your request…"
+    : !requestReady ? selectedStyle || selectedMusic
+      ? "Add footage or describe your video before you send."
+      : videoContext ? "Choose a style or describe what to change."
+        : "Describe a video, or add footage and choose a style."
+    : !text.trim() && selectedStyle ? `Ready to apply ${selectedStyle.name} to your video${musicSummary ? ` and ${musicSummary}` : ""}. ${sendAction}`
+    : !text.trim() && selectedMusic ? `Ready to ${musicSummary} for your video. ${sendAction}`
+    : selectedStyle || selectedMusic ? `Your request will ${[selectedStyle ? `use ${selectedStyle.name}` : "", musicSummary].filter(Boolean).join(" and ")}. ${sendAction}`
+    : `Your request is ready. ${sendAction}`;
   const queuedIds = chat.messages
     .filter((m) => m.role === "user" && m.status === "queued")
     .map((m) => m.id);
 
-  return (
-    <ChatSlugContext.Provider value={slug}>
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/60 px-3">
+  const agentControls = (
+    <div className="chat-agent-controls flex min-h-10 shrink-0 flex-wrap items-center gap-2 border-b border-border/60 px-3">
           <Bot className="size-4" />
           {agents.length > 1 || (agent?.found && agent.models?.length) ? (
             <AgentPicker
+              separateModel={simple}
               agent={agent}
               agents={agents}
               onChange={onAgentChange}
@@ -865,6 +948,7 @@ export function ChatPanel({
               </span>
             </>
           )}
+          {simple && agent?.found && agent.models?.length ? <ModelPicker agent={agent} model={model} onChange={onModelChange} /> : null}
           {agent?.found && efforts.length > 0 && (
             <EffortPicker
               agent={agent}
@@ -889,8 +973,20 @@ export function ChatPanel({
             </TooltipTrigger>
             <TooltipContent>New conversation</TooltipContent>
           </Tooltip>
+          {simple ? (
+            <Button type="button" size="sm" variant="ghost" aria-expanded={conversationOpen} aria-controls="studio-conversation" onClick={() => setConversationOpen((open) => !open)}>
+              {conversationOpen ? "Hide conversation" : `Conversation${chat.messages.length ? ` (${chat.messages.length})` : ""}`}
+            </Button>
+          ) : null}
         </div>
+  );
 
+  return (
+    <ChatSlugContext.Provider value={slug}>
+      <div className={cn("studio-chat flex h-full min-h-0 flex-col", simple && "studio-chat-simple")}>
+        {!simple ? agentControls : null}
+
+        <div id="studio-conversation" className="chat-history min-h-0 flex-1" hidden={simple && !conversationOpen}>
         <MessageScrollerProvider autoScroll>
           <MessageScroller className="min-h-0 flex-1">
             <MessageScrollerViewport>
@@ -1010,13 +1106,18 @@ export function ChatPanel({
             <MessageScrollerButton />
           </MessageScroller>
         </MessageScrollerProvider>
+        </div>
 
         {running ? (
           <WorkingBar
             message={chat.messages.find((m) => m.id === chat.running)}
           />
         ) : null}
-        <div className="shrink-0 border-t border-border/60 p-2">
+        <div className="chat-composer shrink-0 border-t border-border/60 p-2">
+          <input ref={attachmentInput} type="file" multiple className="hidden" aria-label="Attach files" accept="image/*,video/*,audio/*,.ttf,.otf,.woff,.woff2" onChange={(event) => {
+            if (event.target.files) void attachFiles(Array.from(event.target.files));
+            event.target.value = "";
+          }} />
           <InputGroup
             className={cn(
               "h-auto rounded-xl",
@@ -1056,15 +1157,32 @@ export function ChatPanel({
               addReferences([reference]);
             }}
           >
+            {selectedStyle ? (
+              <InputGroupAddon align="block-start" className="gap-1 pb-0">
+                <span className="inline-flex w-64 max-w-full items-start gap-2 rounded-xl border border-border/80 bg-background/40 p-2">
+                  <button type="button" onClick={onOpenStyles} aria-label={`Change style: ${selectedStyle.name}`} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <span className="pointer-events-none flex size-16 shrink-0 justify-center overflow-hidden rounded-lg bg-muted" aria-hidden="true"><span className="block h-16 w-9"><StylePoster styleId={selectedStyle.id} /></span></span>
+                    <span className="flex min-w-0 flex-col gap-1"><span className="truncate text-[11px] font-medium text-foreground">{selectedStyle.name}</span><span className="text-[10px] text-muted-foreground">Style · change</span></span>
+                  </button>
+                  <button type="button" onClick={onClearStyle} aria-label="Remove selected style" className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><X className="size-3.5" /></button>
+                </span>
+              </InputGroupAddon>
+            ) : null}
+            {selectedMusic ? <InputGroupAddon align="block-start" className="gap-1 pb-0"><Badge variant="secondary" className="gap-1">
+              <button type="button" onClick={onOpenMusic} aria-label={`Change music: ${selectedMusic.name}`}>Music: {selectedMusic.name}</button>
+              <button type="button" onClick={onClearMusic} aria-label="Remove selected music" className="rounded p-1"><X className="size-3" /></button>
+            </Badge></InputGroupAddon> : null}
             {references.length || uploading ? (
               <InputGroupAddon
                 align="block-start"
-                className="flex-wrap gap-1 pb-0"
+                className="flex-wrap gap-2 pb-0"
               >
                 {references.map((reference) => (
                   <ReferenceChip
                     key={reference.path}
                     reference={reference}
+                    slug={slug}
+                    showPreview
                     onRemove={() =>
                       onReferencesChange((current) =>
                         current.filter((r) => r.path !== reference.path),
@@ -1080,6 +1198,7 @@ export function ChatPanel({
               </InputGroupAddon>
             ) : null}
             <InputGroupTextarea
+              aria-label="Video request"
               data-speech={speech.id}
               value={text}
               onChange={(event) => setText(event.target.value)}
@@ -1108,7 +1227,7 @@ export function ChatPanel({
                 }
               }}
               rows={3}
-              disabled={disabled || Boolean(agentMissing)}
+              disabled={disabled || sending || Boolean(agentMissing)}
               readOnly={dictating}
               placeholder={
                 disabled
@@ -1119,31 +1238,37 @@ export function ChatPanel({
                     ? `${agentName} is working. Send the next request: it runs right after.`
                     : references.length
                       ? `What should ${agentName} do with this? (Enter to send)`
-                      : "Describe a change… drop or paste images and files to show them"
+                      : simple ? "Describe your video or what to change. Add a product link or files…" : "Describe a change… drop or paste images and files to show them"
               }
               className="max-h-48 min-h-[4.5rem] text-[13px]"
             />
-            <InputGroupAddon align="block-end" className="gap-1">
+            <InputGroupAddon align="block-end" className={cn("chat-action-controls gap-1", simple && "gap-3")}>
+              {simple ? <SpeakButton speech={speech} className="simple-voice" /> : null}
+              <InputGroupButton type="button" size="icon-sm" aria-label="Attach files" title="Attach files" disabled={disabled || uploading > 0} onClick={() => attachmentInput.current?.click()}><Paperclip /></InputGroupButton>
               <InputGroupButton
                 type="button"
-                size="xs"
+                size={simple ? "icon-sm" : "xs"}
+                aria-label={simple ? "Attach current frame" : undefined}
                 variant={attachFrame ? "secondary" : "ghost"}
                 onClick={() => setAttachFrame((value) => !value)}
                 disabled={disabled}
                 title={`Attach the current frame so ${agentName} can see what you mean`}
               >
-                <Camera /> {attachFrame ? "Frame attached" : "Attach frame"}
+                <Camera /> {simple ? null : attachFrame ? "Frame attached" : "Attach frame"}
               </InputGroupButton>
-              <SpeakButton speech={speech} label />
-              <ContextHint
+              {simple ? <>
+                <InputGroupButton type="button" size="icon-sm" aria-label="Record yourself" title="Record yourself" onClick={onRecord} disabled={disabled}><Video /></InputGroupButton>
+                <InputGroupButton type="button" size="icon-sm" aria-label="Draw on video" title="Draw on video" aria-pressed={drawingOpen} onClick={onDraw} disabled={disabled || !drawingAvailable}><Pencil /></InputGroupButton>
+              </> : <SpeakButton speech={speech} label />}
+              {!simple ? <ContextHint
                 frameStore={frameStore}
                 fps={fps}
                 selectionCount={selectionCount}
-              />
+              /> : null}
               {running ? (
                 <InputGroupButton
                   type="button"
-                  variant={text.trim() ? "outline" : "default"}
+                  variant={requestReady ? "outline" : "default"}
                   size="icon-sm"
                   onClick={onCancel}
                   aria-label={`Stop ${agentName}`}
@@ -1153,13 +1278,13 @@ export function ChatPanel({
                   <Square className="fill-current" />
                 </InputGroupButton>
               ) : null}
-              {!running || text.trim() ? (
+              {!running || requestReady ? (
                 <InputGroupButton
                   type="button"
                   variant="default"
                   size="icon-sm"
                   onClick={() => void send()}
-                  disabled={!text.trim() || sending || disabled || uploading > 0 || dictating}
+                  disabled={!requestReady || sending || disabled || Boolean(agentMissing) || uploading > 0 || dictating}
                   aria-label={running ? "Queue message" : "Send"}
                   title={
                     uploading
@@ -1175,7 +1300,23 @@ export function ChatPanel({
               ) : null}
             </InputGroupAddon>
           </InputGroup>
+          {simple ? <p className="chat-readiness px-1 pt-1 pb-2 text-xs leading-relaxed text-muted-foreground" role="status" aria-live="polite">{readiness}</p> : null}
+          {simple ? agentControls : null}
         </div>
+        {simple ? (
+          <div className="simple-quick-actions flex flex-wrap justify-center gap-2" aria-label="Prepare a video request">
+            <Button variant="outline" size="sm" onClick={onOpenStyles} disabled={disabled}><Palette data-icon="inline-start" /> Styles</Button>
+            <Button variant="outline" size="sm" onClick={onOpenStyleSpy} disabled={disabled}><ScanEye data-icon="inline-start" /> Style Spy</Button>
+            <Button variant="outline" size="sm" onClick={onOpenMusic} disabled={disabled}><Music2 data-icon="inline-start" /> Add music</Button>
+            {[
+              { label: "Remove filler words", text: "Remove filler words and long pauses from this video.", icon: Scissors },
+              { label: "Add captions", text: "Add clear word-by-word captions to this video.", icon: Captions },
+              { label: "Make it shorter", text: "Make this video shorter. Keep the main points and a clear ending.", icon: WandSparkles },
+            ].map((action) => (
+              <Button key={action.label} variant="outline" size="sm" disabled={disabled} onClick={() => { setText(text.trim() ? `${text.trim()}\n${action.text}` : action.text); }}><action.icon data-icon="inline-start" />{action.label}</Button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </ChatSlugContext.Provider>
   );

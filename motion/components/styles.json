@@ -521,15 +521,17 @@
       "Captions carry the video: huge, uppercase, centered, one or two words at a time, the key word in yellow.",
       "Explain every idea with a black full-frame Line Diagram (venn, one to many, growth, cycle, small vs big, stairs) while it is said.",
       "Jump-cut punch-ins every ~2 s; no texture, no color besides the yellow.",
-      "Open with the speaker in a thin white frame under a bold title (Hook Card frame)."
+      "Open with a centered full-frame title in the line-art look. Use centered diagrams for the explanation, then return to the speaker. Do not use a split header for this opening."
     ],
     "shots": [
       {
         "job": "Hook",
         "component": "hook-card",
         "props": {
-          "layout": "frame",
-          "tagline": ""
+          "layout": "full",
+          "tagline": "",
+          "position": "center",
+          "align": "center"
         }
       },
       {
@@ -755,6 +757,355 @@
         "component": "quote-card",
         "props": {
           "layout": "card"
+        }
+      }
+    ]
+  },
+  {
+    "id": "signal",
+    "name": "Signal",
+    "description": "Direct business advice: charcoal, lime emphasis, bold captions and clear proof.",
+    "look": "clean",
+    "tokens": {
+      "look": "clean",
+      "font": "heavy,condensed",
+      "weight": "800",
+      "text": "#ffffff",
+      "accent": "#cbef59",
+      "onAccent": "#ffffff",
+      "panel": "#171b18",
+      "panelText": "#ffffff",
+      "line": "#455241",
+      "theme": "dark",
+      "backdrop": "#101511"
+    },
+    "camera": {
+      "mode": "still",
+      "zoom": 1,
+      "every": 150,
+      "shake": 0,
+      "grade": "contrast(1.02)"
+    },
+    "overlay": {
+      "kind": "none",
+      "amount": 0
+    },
+    "captions": {
+      "fontFamily": "Montserrat",
+      "fontWeight": 800,
+      "color": "#ffffff",
+      "highlight": "#cbef59",
+      "preset": "pop",
+      "position": "bottom",
+      "wordsPerLine": 3
+    },
+    "text": {
+      "fontFamily": "Montserrat",
+      "fontWeight": 800,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "First transcribe the source with agentcut_transcribe. Review word timings and listen before removing dead air, repeated takes or filler words. Keep breaths, intentional pauses and the meaning of each sentence. Do not remove speech from transcript guesses alone.",
+      "Build the speech edit first with source trims and split clips. Close the resulting gaps and remap captions, B-roll and audio to the edited timeline. Keep the source files unchanged.",
+      "Review the picture about every 4–6 seconds for a useful change at a new idea, example or emphasis. Use a modest punch-in, wider reset or relevant B-roll only when it helps. Never insert cuts on a fixed five-second timer. The preset leaves the camera still so shot-level edits control the framing.",
+      "Use only supplied or approved B-roll and licensed audio. If footage is missing, use a useful text or diagram insert. Keep speech clear above music; measure the mix and check cuts for clicks. A color filter does not restore missing detail or upscale footage.",
+      "Lead with one useful claim, support it with an example, then give the next action. Keep the speaker prominent. Avoid decorative transitions and constant stickers.",
+      "Use short three-word caption groups, with lime on the key word. Use one stat counter for a real number and a compact list for actionable steps. Prefer straight cuts; return to the wider shot after an emphasis.",
+      "Keep skin tones neutral and the backdrop quiet. Use a low, steady music bed only if it helps; silence is valid for direct advice.",
+      "Open over full-frame footage with a compact left-aligned title card in the lower third (hook-card layout:card, position:lower, align:left). Keep it below the face and above the bottom safe zone; hide captions during this title."
+    ],
+    "shots": [
+      {
+        "job": "Opening promise",
+        "component": "hook-card",
+        "props": {
+          "layout": "card",
+          "size": 15,
+          "position": "lower",
+          "align": "left"
+        }
+      },
+      {
+        "job": "Evidence",
+        "component": "stat-counter",
+        "props": {
+          "suffix": "%",
+          "label": "verified result"
+        }
+      },
+      {
+        "job": "Steps",
+        "component": "list-card",
+        "props": {
+          "layout": "card"
+        }
+      },
+      {
+        "job": "Next action",
+        "component": "word-pop",
+        "props": {
+          "position": "lower",
+          "tilt": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "studyroom",
+    "name": "Studyroom",
+    "description": "Warm lessons: cream pages, teal notes, calm type and clear chapter cards.",
+    "look": "clean",
+    "tokens": {
+      "look": "clean",
+      "font": "display,sans",
+      "weight": "600",
+      "text": "#ffffff",
+      "accent": "#1b766b",
+      "onAccent": "#202b28",
+      "panel": "#fff8e8",
+      "panelText": "#202b28",
+      "line": "#b7c9b6",
+      "theme": "light",
+      "backdrop": "#f2e8d4"
+    },
+    "camera": {
+      "mode": "still",
+      "zoom": 1,
+      "every": 150,
+      "shake": 0,
+      "grade": "saturate(0.95) sepia(0.04)"
+    },
+    "overlay": {
+      "kind": "none",
+      "amount": 0
+    },
+    "captions": {
+      "fontFamily": "Inter",
+      "fontWeight": 600,
+      "color": "#ffffff",
+      "highlight": "#1b766b",
+      "preset": "plain",
+      "position": "bottom",
+      "wordsPerLine": 6
+    },
+    "text": {
+      "fontFamily": "Inter",
+      "fontWeight": 600,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "First transcribe the source with agentcut_transcribe. Review word timings and listen before removing dead air, repeated takes or filler words. Keep breaths, intentional pauses and the meaning of each sentence. Do not remove speech from transcript guesses alone.",
+      "Build the speech edit first with source trims and split clips. Close the resulting gaps and remap captions, B-roll and audio to the edited timeline. Keep the source files unchanged.",
+      "Review the picture about every 4–6 seconds for a useful change at a new idea, example or emphasis. Use a modest punch-in, wider reset or relevant B-roll only when it helps. Never insert cuts on a fixed five-second timer. The preset leaves the camera still so shot-level edits control the framing.",
+      "Use only supplied or approved B-roll and licensed audio. If footage is missing, use a useful text or diagram insert. Keep speech clear above music; measure the mix and check cuts for clicks. A color filter does not restore missing detail or upscale footage.",
+      "Organize the lesson into a question, a worked example and a short recap. Keep natural thinking pauses; remove only delays that do not help comprehension.",
+      "Use warm cream chapter cards with teal emphasis, a rounded speaker inset and six-word caption lines. Show screen recordings or diagrams during the explanation, then return to the face.",
+      "Apply only a slight warm grade after checking white balance. Use soft music and sparse, quiet reveal sounds. Let each example stay visible long enough to read."
+    ],
+    "shots": [
+      {
+        "job": "Opening promise",
+        "component": "hook-card",
+        "props": {
+          "layout": "inset",
+          "size": 20
+        }
+      },
+      {
+        "job": "Chapter",
+        "component": "list-card",
+        "props": {
+          "layout": "card"
+        }
+      },
+      {
+        "job": "Worked example",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Takeaway",
+        "component": "quote-card",
+        "props": {
+          "layout": "card"
+        }
+      }
+    ]
+  },
+  {
+    "id": "afterglow",
+    "name": "Afterglow",
+    "description": "Product stories: dark plum, copper titles, detail shots and restrained motion.",
+    "look": "clean",
+    "tokens": {
+      "look": "clean",
+      "font": "serif,display",
+      "weight": "400",
+      "text": "#fff5ec",
+      "accent": "#efa879",
+      "onAccent": "#ffffff",
+      "panel": "#211923",
+      "panelText": "#ffffff",
+      "line": "#71545d",
+      "theme": "dark",
+      "backdrop": "#130f16"
+    },
+    "camera": {
+      "mode": "still",
+      "zoom": 1,
+      "every": 150,
+      "shake": 0,
+      "grade": "contrast(1.08) saturate(0.9)"
+    },
+    "overlay": {
+      "kind": "vignette",
+      "amount": 0.18
+    },
+    "captions": {
+      "fontFamily": "Inter",
+      "fontWeight": 400,
+      "color": "#fff5ec",
+      "highlight": "#efa879",
+      "preset": "plain",
+      "position": "bottom",
+      "wordsPerLine": 6
+    },
+    "text": {
+      "fontFamily": "Inter",
+      "fontWeight": 400,
+      "color": "#fff5ec"
+    },
+    "guide": [
+      "First transcribe the source with agentcut_transcribe. Review word timings and listen before removing dead air, repeated takes or filler words. Keep breaths, intentional pauses and the meaning of each sentence. Do not remove speech from transcript guesses alone.",
+      "Build the speech edit first with source trims and split clips. Close the resulting gaps and remap captions, B-roll and audio to the edited timeline. Keep the source files unchanged.",
+      "Review the picture about every 4–6 seconds for a useful change at a new idea, example or emphasis. Use a modest punch-in, wider reset or relevant B-roll only when it helps. Never insert cuts on a fixed five-second timer. The preset leaves the camera still so shot-level edits control the framing.",
+      "Use only supplied or approved B-roll and licensed audio. If footage is missing, use a useful text or diagram insert. Keep speech clear above music; measure the mix and check cuts for clicks. A color filter does not restore missing detail or upscale footage.",
+      "Build a short product story: reveal, useful detail, demonstration, payoff. Keep the voice edit clean and use supplied close-ups to show the claim.",
+      "Alternate wide, detail and action shots at meaningful beats. Use match cuts where the source supports them. Use a brief light leak only at a scene change; avoid a transition on every cut.",
+      "Use large copper serif titles with generous empty space. Reserve captions for spoken explanation. Keep highlights below clipping and avoid heavy orange skin tones.",
+      "Place music hits and subtle source-backed Foley on actual actions. Do not add fake product sounds or claim speed ramps without source frames and an explicit timeline edit."
+    ],
+    "shots": [
+      {
+        "job": "Opening promise",
+        "component": "hook-card",
+        "props": {
+          "layout": "frame",
+          "size": 20
+        }
+      },
+      {
+        "job": "Reveal",
+        "component": "light-leak",
+        "props": {
+          "strength": 0.35,
+          "hueShift": 20
+        }
+      },
+      {
+        "job": "Product contrast",
+        "component": "before-after",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Payoff",
+        "component": "word-pop",
+        "props": {
+          "position": "center",
+          "tilt": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "fieldnote",
+    "name": "Fieldnote",
+    "description": "Documentary notes: ivory serif titles, rust markers, source cards and light grain.",
+    "look": "clean",
+    "tokens": {
+      "look": "clean",
+      "font": "serif,fraunces",
+      "weight": "400",
+      "text": "#ffffff",
+      "accent": "#b94d32",
+      "onAccent": "#24251f",
+      "panel": "#f4f0e5",
+      "panelText": "#24251f",
+      "line": "#41463e",
+      "theme": "light",
+      "backdrop": "#e8e2d4"
+    },
+    "camera": {
+      "mode": "still",
+      "zoom": 1,
+      "every": 150,
+      "shake": 0,
+      "grade": "contrast(1.02)"
+    },
+    "overlay": {
+      "kind": "grain",
+      "amount": 0.06
+    },
+    "captions": {
+      "fontFamily": "Instrument Serif",
+      "fontWeight": 400,
+      "color": "#ffffff",
+      "highlight": "#b94d32",
+      "preset": "plain",
+      "position": "bottom",
+      "wordsPerLine": 6
+    },
+    "text": {
+      "fontFamily": "Inter",
+      "fontWeight": 400,
+      "color": "#ffffff"
+    },
+    "guide": [
+      "First transcribe the source with agentcut_transcribe. Review word timings and listen before removing dead air, repeated takes or filler words. Keep breaths, intentional pauses and the meaning of each sentence. Do not remove speech from transcript guesses alone.",
+      "Build the speech edit first with source trims and split clips. Close the resulting gaps and remap captions, B-roll and audio to the edited timeline. Keep the source files unchanged.",
+      "Review the picture about every 4–6 seconds for a useful change at a new idea, example or emphasis. Use a modest punch-in, wider reset or relevant B-roll only when it helps. Never insert cuts on a fixed five-second timer. The preset leaves the camera still so shot-level edits control the framing.",
+      "Use only supplied or approved B-roll and licensed audio. If footage is missing, use a useful text or diagram insert. Keep speech clear above music; measure the mix and check cuts for clicks. A color filter does not restore missing detail or upscale footage.",
+      "Build a setup, a question or conflict, and a supported resolution. Preserve pauses that carry emotion. Use captions as access to the speech, not as invented narration.",
+      "Use ivory serif chapter titles, rust markers and source labels. Show evidence as supplied images or screen recordings, with a clear source caption. Never invent a quote, date, map or statistic.",
+      "Use a wider speaker frame for context and a modest closer crop for a personal point. Hold on documents long enough to read. Use light grain and neutral color; preserve natural room tone.",
+      "Use quote cards only for exact verified words. Keep music sparse under testimony, and finish with the answer to the opening question rather than an unrelated call to action.",
+      "Open with a centered, full-frame ivory serif chapter card, not torn paper, tape or collage. Cut to the speaker once the question is clear. Keep rust markers small and evidence cards square and quiet."
+    ],
+    "shots": [
+      {
+        "job": "Opening promise",
+        "component": "hook-card",
+        "props": {
+          "layout": "full",
+          "position": "center",
+          "align": "center",
+          "size": 18
+        }
+      },
+      {
+        "job": "Verified quote",
+        "component": "quote-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Evidence summary",
+        "component": "list-card",
+        "props": {
+          "layout": "full"
+        }
+      },
+      {
+        "job": "Chapter marker",
+        "component": "word-pop",
+        "props": {
+          "position": "lower",
+          "tilt": false
         }
       }
     ]

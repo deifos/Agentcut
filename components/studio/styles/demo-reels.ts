@@ -22,6 +22,38 @@ export interface Reel {
 }
 
 export const REELS: Record<string, Reel> = {
+  signal: {
+    hook: { kicker: "The useful part", lines: ["Build it.", "*Share* *it.*"], tagline: "One clear next step", size: 15 }, hookEnd: 86,
+    captions: [[86,106],[178,250]],
+    parts: [
+      { id: "stat-counter", from: 106, to: 178, props: { value: 100, suffix: "%", label: "open source", countFrames: 18 } },
+      { id: "word-pop", from: 256, to: 291, props: { lines: ["clone the *repo*"], position: "lower", tilt: false, size: 8 } },
+    ],
+  },
+  studyroom: {
+    hook: { kicker: "A small lesson", lines: ["Learn by", "*building*"], tagline: "Notes from the process", size: 18 }, hookEnd: 104,
+    captions: [[104,176],[246,291]],
+    parts: [
+      { id: "list-card", from: 178, to: 246, props: { layout: "card", kicker: "Lesson 01", title: "Build together", subtitle: "", rows: ["Read | the code", "Try | an idea", "Share | what works"], footer: "Keep learning" } },
+    ],
+  },
+  afterglow: {
+    hook: { kicker: "A closer look", lines: ["Made to", "be *shared*"], tagline: "From idea to release", size: 17 }, hookEnd: 106,
+    captions: [[116,176],[202,252]],
+    parts: [
+      { id: "light-leak", from: 96, to: 122, props: { strength: 0.35, hueShift: 20 } },
+      { id: "word-pop", from: 178, to: 202, props: { lines: ["The *details*"], position: "center", tilt: false, size: 7 } },
+      { id: "word-pop", from: 256, to: 291, props: { lines: ["Make it *yours*"], position: "center", tilt: false, size: 8 } },
+    ],
+  },
+  fieldnote: {
+    hook: { kicker: "Field notes / 001", lines: ["Why build", "in *public?*"], tagline: "A story in progress", size: 18 }, hookEnd: 100,
+    captions: [[100,178],[248,291]],
+    parts: [
+      { id: "list-card", from: 178, to: 248, props: { layout: "full", kicker: "The evidence", title: "An open process", subtitle: "", rows: ["Source | public repo", "Method | build together", "Next | clone and try"], footer: "Notes from the speaker" } },
+    ],
+  },
+
   voltrox: {
     hook: { kicker: "", lines: ["Building", "in *public*"], tagline: "every step, *open*", size: 21 },
     hookEnd: 84,

@@ -11,6 +11,7 @@ type Props = MotionBaseProps &
     sub: string;
     tagline: string;
     layout: string;
+    position?: string;
     split: number;
     align: string;
     size: number;
@@ -405,6 +406,11 @@ export function HookCard(props: Props) {
   const align = centered ? "center" : "left";
   const headSize = (props.size / 100) * Math.min(width, height) * (layout === "card" ? 0.72 : box && !vertical ? 0.8 : 1);
   const pad = (vertical ? 70 : 110) * u;
+  const placement: CSSProperties = {
+    justifyContent: props.position === "top" ? "flex-start" : props.position === "lower" ? "flex-end" : "center",
+    paddingTop: props.position === "top" ? height * 0.1 : 0,
+    paddingBottom: props.position === "lower" ? height * 0.18 : 0,
+  };
 
   const content = (
     <div
@@ -425,16 +431,16 @@ export function HookCard(props: Props) {
 
   if (layout === "full") {
     return (
-      <AbsoluteFill style={{ opacity: out }}>
+      <AbsoluteFill style={{ opacity: out, background: kit.backdrop }}>
         <Backdrop kit={kit} width={width} height={height} />
-        <AbsoluteFill style={{ justifyContent: "center" }}>{content}</AbsoluteFill>
+        <AbsoluteFill style={placement}>{content}</AbsoluteFill>
       </AbsoluteFill>
     );
   }
   if (!box) {
     const e = enter(kit, frame, fps, 0, kit.look === "ink" || kit.look === "paper" ? -2 : 0);
     return (
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", opacity: out }}>
+      <AbsoluteFill style={{ ...placement, alignItems: centered ? "center" : "flex-start", paddingLeft: centered ? 0 : pad, opacity: out }}>
         <div style={{ opacity: e.opacity, transform: e.transform, maxWidth: width * (vertical ? 0.88 : 0.62) }}>
           <Panel kit={kit} title="~/hook.txt">
             {content}

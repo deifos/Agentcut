@@ -24,6 +24,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LabeledSlider } from "@/components/ui/labeled-slider";
 import { cn } from "@/lib/utils";
 import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
 import { findClip } from "@/lib/studio/edit";
@@ -49,6 +50,8 @@ import type {
 } from "@/lib/studio/types";
 
 export interface StudioPreviewProps {
+  /** Compact playback seeking while the advanced timeline is hidden. */
+  simple?: boolean;
   doc: StudioDoc;
   loaded: LoadedModule | null;
   bundle: BundleSummary | null;
@@ -67,6 +70,8 @@ export interface StudioPreviewProps {
   assetBase?: string;
   /** The pencil: draw on the video and send the drawing with a prompt (left out where there's no agent). */
   draw?: {
+    open?: boolean;
+    onOpenChange?(open: boolean): void;
     busy: boolean;
     disabled: boolean;
     onSend(strokes: DrawStroke[], text: string): Promise<void>;
@@ -140,6 +145,8 @@ function SelectionOutline({
 }
 
 function Transport({
+  simple = false,
+  seekDisabled = false,
   frameStore,
   fps,
   durationInFrames,
@@ -154,6 +161,8 @@ function Transport({
   onDraw,
   slow,
 }: {
+  simple?: boolean;
+  seekDisabled?: boolean;
   editing?: boolean;
   /** Clips the preview can't play at full speed (playback only: exports are unaffected). */
   slow?: string;
@@ -172,19 +181,29 @@ function Transport({
 }) {
   const agentName = useAgentName();
   const frame = useFrame(frameStore);
+  const lastFrame = Math.max(0, Math.floor(durationInFrames) - 1);
+  const currentFrame = Math.max(0, Math.min(lastFrame, Number.isFinite(frame) ? Math.round(frame) : 0));
+  const disabled = Boolean(editing || seekDisabled);
+  const scrub = useRef<{ resume: boolean } | null>(null);
   const seek = (next: number) => {
-    const clamped = Math.max(0, Math.min(durationInFrames - 1, next));
+    if (disabled || !Number.isFinite(next)) return;
+    const clamped = Math.max(0, Math.min(lastFrame, Math.round(next)));
     playerRef.current?.seekTo(clamped);
     frameStore.set(clamped);
   };
+  const finishScrub = () => {
+    const resume = scrub.current?.resume;
+    scrub.current = null;
+    if (resume && !disabled) playerRef.current?.play();
+  };
   return (
-    <div className="flex h-11 shrink-0 items-center gap-1 border-t border-border/60 px-2">
-      <IconButton label="Go to start (Home)" onClick={() => seek(0)}>
+    <div className={cn("flex h-11 shrink-0 items-center gap-1 border-t border-border/60 px-2", simple && "preview-transport-simple h-auto min-h-11 flex-wrap gap-x-2 gap-y-1 py-2")}>
+      <IconButton label="Go to start (Home)" onClick={() => seek(0)} disabled={disabled}>
         <SkipBack className="size-4" />
       </IconButton>
-      <IconButton label="Previous frame (←)" onClick={() => seek(frame - 1)}>
+      {!simple ? <IconButton label="Previous frame (←)" onClick={() => seek(frame - 1)} disabled={disabled}>
         <StepBack className="size-4" />
-      </IconButton>
+      </IconButton> : null}
       <button
         type="button"
         aria-label={playing ? "Pause (Space)" : "Play (Space)"}
@@ -195,7 +214,7 @@ function Transport({
               ? "Pause (Space)"
               : "Play (Space)"
         }
-        disabled={editing}
+        disabled={disabled}
         onClick={() => playerRef.current?.toggle()}
         className="mx-1 flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -205,12 +224,25 @@ function Transport({
           <Play className="size-4 translate-x-px" />
         )}
       </button>
-      <IconButton label="Next frame (→)" onClick={() => seek(frame + 1)}>
+      {!simple ? <IconButton label="Next frame (→)" onClick={() => seek(frame + 1)} disabled={disabled}>
         <StepForward className="size-4" />
-      </IconButton>
-      <span className="ml-2 font-mono text-xs tabular-nums">
+      </IconButton> : null}
+      {simple ? <div className="preview-video-seek min-w-32 flex-1 px-2">
+        <LabeledSlider label="Video playback position" showLabel={false} showValue={false} min={0} max={lastFrame || 1} step={1} value={currentFrame} disabled={disabled || lastFrame === 0} onChange={seek} sliderProps={{
+          getThumbAriaValueText: (value) => `${formatFrameTime(value, fps)} of ${formatFrameTime(durationInFrames, fps)}`,
+          onPointerDown: () => {
+            if (disabled || lastFrame === 0) return;
+            scrub.current = { resume: playerRef.current?.isPlaying() ?? false };
+            playerRef.current?.pause();
+          },
+          onPointerUp: finishScrub,
+          onPointerCancel: finishScrub,
+          onValueCommit: finishScrub,
+        }} />
+      </div> : null}
+      <span className="preview-playback-time ml-2 whitespace-nowrap font-mono text-xs tabular-nums">
         <span className={cn(playing && "text-primary")}>
-          {formatFrameTime(frame, fps)}
+          {formatFrameTime(currentFrame, fps)}
         </span>
         <span className="text-muted-foreground">
           {" "}
@@ -264,6 +296,7 @@ function Transport({
 
 export function StudioPreview(props: StudioPreviewProps) {
   const {
+    simple,
     doc,
     loaded,
     bundle,
@@ -286,7 +319,9 @@ export function StudioPreview(props: StudioPreviewProps) {
   const container = useContainerRect(containerRef);
   const [loop, setLoop] = useState(true);
   const [muted, setMuted] = useState(false);
-  const [drawing, setDrawing] = useState(false);
+  const [localDrawing, setLocalDrawing] = useState(false);
+  const drawing = draw?.open ?? localDrawing;
+  const setDrawing = draw?.onOpenChange ?? setLocalDrawing;
   const toggleDrawing = () => {
     // The drawing is about one frame: hold the picture still under the pen.
     if (!drawing) playerRef.current?.pause();
@@ -590,6 +625,8 @@ export function StudioPreview(props: StudioPreviewProps) {
       </div>
       {project ? (
         <Transport
+          simple={simple}
+          seekDisabled={!ready || checking}
           frameStore={frameStore}
           fps={project.fps}
           durationInFrames={project.durationInFrames}
@@ -613,11 +650,13 @@ function IconButton({
   label,
   onClick,
   active,
+  disabled,
   children,
 }: {
   label: string;
   onClick(): void;
   active?: boolean;
+  disabled?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -626,8 +665,9 @@ function IconButton({
       title={label}
       aria-label={label}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
+        "flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
         active && "text-foreground",
       )}
     >

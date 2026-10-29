@@ -261,6 +261,26 @@
       "style": "text",
       "label": "Text on video",
       "default": "#ffffff"
+    },
+    "position": {
+      "type": "select",
+      "label": "Title position",
+      "default": "center",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "lower",
+          "label": "Lower third"
+        }
+      ],
+      "help": "Title position for full-frame and floating-card layouts. Framed speaker layouts keep the title beside their footage."
     }
   },
   "examples": [
@@ -298,6 +318,15 @@
         ],
         "sub": "",
         "tagline": ""
+      }
+    },
+    {
+      "name": "Lower title over footage",
+      "props": {
+        "layout": "card",
+        "position": "lower",
+        "align": "left",
+        "size": 14
       }
     }
   ]

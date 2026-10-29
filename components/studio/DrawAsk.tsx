@@ -179,8 +179,8 @@ export function DrawAsk({
           : null}
       </svg>
       <div className="absolute inset-x-0 bottom-0 z-20 flex justify-center px-3">
-        <div className="w-full max-w-xl rounded-2xl border border-border/70 bg-popover/95 p-2 shadow-xl backdrop-blur">
-          <div className="flex items-end gap-1.5">
+        <div className="drawing-prompt w-full max-w-xl rounded-2xl border border-border/70 bg-popover/95 p-2 text-popover-foreground shadow-xl backdrop-blur">
+          <div className="flex flex-wrap items-end gap-1.5 sm:flex-nowrap">
             <Textarea
               data-speech={speech.id}
               autoFocus
@@ -205,9 +205,9 @@ export function DrawAsk({
                     ? `What should ${agentName} do with this?`
                     : "Draw on the video, then say or type what you want"
               }
-              className="max-h-28 min-h-9 resize-none border-0 bg-transparent text-[13px] shadow-none focus-visible:ring-0 md:text-[13px] dark:bg-transparent"
+              className="max-h-28 min-h-9 min-w-0 basis-full resize-none border-0 bg-transparent text-[13px] shadow-none focus-visible:ring-0 sm:basis-auto md:text-[13px] dark:bg-transparent"
             />
-            <SpeakButton speech={speech} />
+            <SpeakButton speech={speech} className="ml-auto sm:ml-0" />
             <Button
               type="button"
               variant="ghost"

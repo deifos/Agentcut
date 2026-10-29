@@ -13,6 +13,36 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Add Signal, Studyroom, Afterglow, and Fieldnote styles with distinct preview reels and editing guides for speech cleanup, framing, B-roll, sound, and color. Sync the guides to the helper.
+- Use the existing shadcn ScrollArea in both style galleries. Add centered and lower-third title layouts, and separate Fieldnote's editorial cards from Snipwork's paper collage.
+- Open the studio in a simple view with a centered video preview and a shared request composer.
+  Switch to the advanced editor at any time without losing the project, draft, attachments, or selected options.
+- Upload footage or record yourself from an empty preview, or describe a new video with text, voice, files, or a product link.
+- Prepare edits with quick actions, select a style from a scrollable gallery, and preview songs from the existing music library.
+  Style and music selections remain visible and removable in the composer. Choose a song or let the agent choose.
+  Press Send to apply the request with the selected agent, model, and thinking level.
+- Access the existing drawing tool from the simple composer. File, frame, recording, and voice controls have separate spacing.
+  Choose landscape (16:9), portrait (9:16), square (1:1), or portrait (4:5) near the preview; custom project sizes remain available.
+- Welcome users without an open project with an animated idea box and a clear New project action, with a static reduced-motion version.
+  Empty projects use a compact frosted-glass upload panel over a large animated idea box, polished copper-and-gold creative illustrations, and moving warm light. Background motion stops when video content is present and has a static reduced-motion version.
+- Browse music in a non-blocking glass sidebar while writing a request. Play/Pause and a seek bar with elapsed time and duration let you audition songs; Use stages a selection until Send. Keep loading inside the sidebar to prevent the editor flashing when music opens.
+  A separate Now playing card stays visible while browsing other songs and slides beside the library on larger screens.
+  The seek control shares the timeline zoom slider's styling, and playback and selection controls stay inside padded card and row borders.
+  The idea-box lids stay attached to their hinge edges as they open.
+- Keep drawing toolbar controls visible before hover in Simple view by using matched popover background and text colors.
+- Seek through the Simple view video preview with a compact playback slider and current/total time. The slider uses the timeline zoom design, supports dragging and keyboard control, and is disabled while the agent edits.
+- Recognize attached images and recorded or uploaded videos from compact composer thumbnails, with filenames, remove controls, and file-icon fallbacks when a preview is unavailable.
+  Video thumbnails explicitly decode a small frame instead of waiting for metadata-only playback. Click a media card to inspect an image or play and seek a video without losing the draft. Selected styles show their real gallery preview beside the name.
+- Explain request readiness near Send. Footage with a selected style or music can use a clear prepared request without typed text; missing input is identified before sending.
+
+### Fixed
+
+- Keep delayed uploads and asset refreshes from changing a different project. Preserve timeline edits made while video metadata loads, and reject invalid video durations.
+- Wait for empty-preview uploads before sending a request. Keep format changes tied to their original project.
+- Keep the empty-project upload controls reachable on short screens, and remove conflicting opening instructions from the line-art style.
+
 ## [0.2.15] - 2026-10-29
 
 ### Added

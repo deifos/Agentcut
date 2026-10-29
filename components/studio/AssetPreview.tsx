@@ -137,6 +137,8 @@ export function MediaPlayer({
   onMeta,
   segment,
   volume,
+  poster,
+  onError,
 }: {
   url: string;
   kind: "audio" | "video";
@@ -145,6 +147,8 @@ export function MediaPlayer({
   segment?: { start: number; end: number };
   /** 0–1 (a clip's volume above 1 plays at 1 here). */
   volume?: number;
+  poster?: string;
+  onError?(): void;
 }) {
   const mediaRef = useRef<HTMLVideoElement & HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -232,6 +236,8 @@ export function MediaPlayer({
           <video
             ref={mediaRef}
             src={url}
+            poster={poster}
+            onError={onError}
             preload="metadata"
             playsInline
             muted={muted}

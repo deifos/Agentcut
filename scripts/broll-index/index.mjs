@@ -295,7 +295,8 @@ async function stepCut(film) {
   const fullSrc = betterOriginal ? original : indexSrc;
   film.fullSource = betterOriginal ? film.files.full.name : film.files.index.name;
   // Only when a full-quality cut is actually missing: a finished film never re-downloads its original.
-  const needsFull = shots.some((shot) => !existsSync(join(OUT_DIR, "shots", shot.id, "full.mp4")));
+  // A shot with recorded sizes was cut before (its local files may already be uploaded and removed).
+  const needsFull = shots.some((shot) => !shot.bytes);
   if (betterOriginal && needsFull && !existsSync(original)) {
     const { bytes, seconds } = await download(originalUrl, original);
     film.timings.originalDownload = { bytes, seconds, mbps: +((bytes * 8) / 1e6 / seconds).toFixed(2) };
@@ -306,6 +307,7 @@ async function stepCut(film) {
   let done = 0;
   const started = Date.now();
   for (const shot of shots) {
+    if (shot.bytes) continue;
     const dir = ensureDir(join(OUT_DIR, "shots", shot.id));
     const preview = join(dir, "preview.mp4");
     const full = join(dir, "full.mp4");

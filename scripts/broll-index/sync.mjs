@@ -5,7 +5,7 @@
 // The env file needs CLOUDFLARE_BUCKET_API, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY and
 // CLOUDFLARE_BUCKET_NAME (the CLOUDFARE_* spelling works too). Keys are read, never printed.
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { DATA, OUT_DIR, readJson, writeJson } from "./lib.mjs";
@@ -85,6 +85,18 @@ async function syncOnce() {
     if (Object.keys(ledger).length % 50 === 0) writeJson(LEDGER, ledger);
   });
   writeJson(LEDGER, ledger);
+  // The shot videos live on R2 now: drop the local copies so a long run doesn't fill the disk
+  // (thumbnails stay, they're tiny). The indexer knows a shot was cut from its recorded sizes.
+  let pruned = 0;
+  for (const rel of Object.keys(ledger)) {
+    if (!rel.endsWith(".mp4")) continue;
+    const path = join(OUT_DIR, rel);
+    if (existsSync(path)) {
+      rmSync(path, { force: true });
+      pruned++;
+    }
+  }
+  if (pruned) console.log(`sync: removed ${pruned} uploaded videos from disk`);
   // Vectors under a content name, then the index pointing at them: one switch, never half a catalog.
   const vectors = readFileSync(join(OUT_DIR, "vectors.i8"));
   // The indexer may be mid-build: only publish a matching pair.

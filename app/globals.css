@@ -47,8 +47,8 @@
   --border: oklch(0.8 0.025 60 / 20%);
   --input: oklch(0.8 0.025 60 / 25%);
   color-scheme: dark;
-  background: radial-gradient(ellipse at 55% -25%, oklch(0.37 0.065 39 / 38%), transparent 58%),
-    radial-gradient(ellipse at 16% 70%, oklch(0.34 0.06 37 / 18%), transparent 40%), oklch(0.13 0.007 50);
+  background: radial-gradient(ellipse at 0% 35%, oklch(0.37 0.065 39 / 38%), transparent 58%),
+    radial-gradient(ellipse at 0% 70%, oklch(0.34 0.06 37 / 18%), transparent 40%), oklch(0.13 0.007 50);
 }
 .studio-simple > header { padding: 18px 28px; gap: 12px; }
 .studio-simple .studio-header-tools, .studio-simple .studio-variants,

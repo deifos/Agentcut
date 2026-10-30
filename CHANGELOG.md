@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Move the soft, warm gradient in Simple view to the left chat area, with a gradual fade toward the preview.
+
 ## [0.2.16] - 2026-10-29
 
 ### Fixed

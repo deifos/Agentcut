@@ -13,6 +13,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Release decoded audio after computing timeline waveforms, and limit the video thumbnail cache without retaining object URLs.
+- Keep visible video thumbnails after cache eviction, and replace old thumbnails when a clip's video source changes.
+- Capture timeline scene previews as small still images, one at a time, instead of keeping many complex scenes mounted in Advanced view. Limit the still cache and cancel queued captures when their tiles close.
+
 ### Changed
 
 - Move the soft, warm gradient in Simple view to the left chat area, with a gradual fade toward the preview.

@@ -1,8 +1,9 @@
 // Small frame grabs from video files for the timeline's film strips. One hidden <video> does all
 // the work, one frame at a time (browsers cap how many media players a page may create), and
-// every frame is cached as an object URL for the session.
+// a bounded cache keeps small JPEG data URLs (no object URLs to leak or revoke while visible).
 
 const THUMB_HEIGHT = 90;
+const MAX_CACHED_FRAMES = 512;
 const cache = new Map<string, string>();
 const pending = new Map<string, Promise<string | null>>();
 
@@ -52,10 +53,7 @@ async function grab(
   canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
   canvas.height = THUMB_HEIGHT;
   canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", 0.72),
-  );
-  return blob ? URL.createObjectURL(blob) : null;
+  return canvas.toDataURL("image/jpeg", 0.72);
 }
 
 async function run() {
@@ -97,7 +95,7 @@ async function run() {
 /** A frame of `url` at `time` seconds (rounded to the cache step), or null if it can't be read. */
 export function videoFrame(url: string, time: number): Promise<string | null> {
   const k = key(url, time);
-  const hit = cache.get(k);
+  const hit = cachedVideoFrame(url, time);
   if (hit) return Promise.resolve(hit);
   const inFlight = pending.get(k);
   if (inFlight) return inFlight;
@@ -107,7 +105,11 @@ export function videoFrame(url: string, time: number): Promise<string | null> {
       time,
       resolve: (value) => {
         pending.delete(k);
-        if (value) cache.set(k, value);
+        if (value) {
+          if (cache.size >= MAX_CACHED_FRAMES)
+            cache.delete(cache.keys().next().value!);
+          cache.set(k, value);
+        }
         resolve(value);
       },
     });
@@ -119,5 +121,10 @@ export function videoFrame(url: string, time: number): Promise<string | null> {
 
 /** Already-grabbed frame, if any (for a synchronous first paint). */
 export function cachedVideoFrame(url: string, time: number) {
-  return cache.get(key(url, time)) ?? null;
+  const k = key(url, time);
+  const value = cache.get(k);
+  if (!value) return null;
+  cache.delete(k);
+  cache.set(k, value);
+  return value;
 }

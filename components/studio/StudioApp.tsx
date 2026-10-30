@@ -23,7 +23,6 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
-  Plus,
   Redo2,
   Share2,
   Smartphone,
@@ -727,15 +726,6 @@ export function StudioApp() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setNewProjectOpen(true)}
-            disabled={status !== "connected"}
-            className="gap-1.5"
-          >
-            <Plus /> New project
-          </Button>
 
           {variants.length > 1 ? (
             <div className="studio-variants ml-2 flex items-center rounded-full bg-background p-0.5 shadow-sm">

@@ -15,7 +15,7 @@ import {
 } from "@/lib/studio/preview-perf";
 import { findClip } from "@/lib/studio/edit";
 import type { StudioCursorTrack } from "@/lib/studio/cursor-track";
-import type { LoadedModule, StudioDoc } from "@/lib/studio/types";
+import type { LoadedModule, StudioDoc, StudioLayers } from "@/lib/studio/types";
 
 export interface StudioExportJobUpdate {
   slug: string;
@@ -51,6 +51,8 @@ export interface StudioToolContext {
   syncProject(): Promise<void>;
   setExportJob(job: StudioExportJobUpdate | null): void;
   bridge(): StudioBridge | null;
+  /** Commit one undoable tool edit, rejecting stale source state. */
+  applyToolLayers(layers: StudioLayers, base: StudioDoc): Promise<void>;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -556,12 +558,19 @@ export async function runStudioTool(
       return { fps, files: results };
     }
 
+    case "studio_frame_person": {
+      const doc = await ready(context, params);
+      const { runFaceFraming } = await import("@/lib/studio/framing-tool");
+      return runFaceFraming(params, doc, context);
+    }
+
     case "studio_transcribe": {
       const doc = await ready(context, params);
       const path = String(params.path ?? "");
       assertProjectPath(path);
       const { transcribeUrl } = await import("@/lib/studio/audio/transcribe");
       return transcribeUrl(studioFileUrl(doc.slug, path), {
+        job: typeof params.job === "string" ? params.job : undefined,
         fps: doc.project!.fps,
         language: typeof params.language === "string" ? params.language : "en",
         model:
@@ -569,6 +578,11 @@ export async function runStudioTool(
             ? params.model
             : "base",
       });
+    }
+
+    case "studio_cancel_local_transcription": {
+      const { cancelLocalTranscription } = await import("@/lib/studio/audio/transcribe");
+      return cancelLocalTranscription(String(params.job ?? ""));
     }
 
     case "studio_analyze_audio": {

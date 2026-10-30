@@ -50,6 +50,14 @@ projects/<slug>/
 
 ## Loop
 
+For an explicit request such as "center me in the frame", use `agentcut_frame_person`.
+Read `references/person-framing.md` first. Do not install a detector or write a face-detection script.
+Do not center footage just because the output format changes.
+
+For speech recognition use `agentcut_transcribe`, with provider discovery from
+`agentcut_transcription_options`. Read `references/transcription.md` before choosing a provider.
+Use the selected preference unless the user requests an override. Keys stay in settings.
+
 1. `agentcut_status` — confirms the page is connected, which project is open, and any
    build or validation errors. Use `agentcut_create_project` for a new video (it opens it).
 2. **Plan as a cue sheet** in `notes.md`: beats with frame ranges. When there's a voiceover, the voice
@@ -163,7 +171,9 @@ scripts from the project folder (e.g. composing music or fetching CC0 sounds, se
 | `agentcut_capture_frames` | look at specific frames (same renderer as export); `region` + `scale: 2` for a sharp crop |
 | `agentcut_contact_sheet` | stills sheet of the whole video before export |
 | `agentcut_media_info` | exact durations (frames) for clips |
-| `agentcut_transcribe` | word timings for voice / lyrics |
+| `agentcut_transcribe` | provider-based transcript and word timings (see `references/transcription.md`) |
+| `agentcut_transcription_options` / `_cancel_transcription` | configured capabilities, progress and cancellation |
+| `agentcut_frame_person` | explicit local face centering or crop reset (see `references/person-framing.md`) |
 | `agentcut_preview_check` | does the live preview keep up? dropped frames per clip (see `references/performance.md`) |
 | `agentcut_import_reference` | Style Spy: a reference video plus sampled frames (see `references/style-spy.md`) |
 | `agentcut_voice_options` / `_generate_voice` | voice-overs with the user's own provider (see `references/sound.md`) |

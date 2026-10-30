@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import {
   useEffect,
   useLayoutEffect,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LabeledSlider } from "@/components/ui/labeled-slider";
+import { PreviewWorkingStatus } from "@/components/studio/PreviewWorkingStatus";
 import { cn } from "@/lib/utils";
 import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
 import { findClip } from "@/lib/studio/edit";
@@ -50,6 +52,8 @@ import type {
 } from "@/lib/studio/types";
 
 export interface StudioPreviewProps {
+  /** Name from the running message, even if the next-request agent was changed. */
+  workingAgentName?: string;
   /** Compact playback seeking while the advanced timeline is hidden. */
   simple?: boolean;
   doc: StudioDoc;
@@ -204,26 +208,27 @@ function Transport({
       {!simple ? <IconButton label="Previous frame (←)" onClick={() => seek(frame - 1)} disabled={disabled}>
         <StepBack className="size-4" />
       </IconButton> : null}
-      <button
-        type="button"
-        aria-label={playing ? "Pause (Space)" : "Play (Space)"}
-        title={
+      <TooltipHint content={
           editing
             ? `${agentName} is editing: play when it's done`
             : playing
               ? "Pause (Space)"
               : "Play (Space)"
-        }
-        disabled={disabled}
-        onClick={() => playerRef.current?.toggle()}
-        className="mx-1 flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {playing ? (
-          <Pause className="size-4" />
-        ) : (
-          <Play className="size-4 translate-x-px" />
-        )}
-      </button>
+        }>
+        <button
+          type="button"
+          aria-label={playing ? "Pause (Space)" : "Play (Space)"}
+          disabled={disabled}
+          onClick={() => playerRef.current?.toggle()}
+          className="mx-1 flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {playing ? (
+            <Pause className="size-4" />
+          ) : (
+            <Play className="size-4 translate-x-px" />
+          )}
+        </button>
+      </TooltipHint>
       {!simple ? <IconButton label="Next frame (→)" onClick={() => seek(frame + 1)} disabled={disabled}>
         <StepForward className="size-4" />
       </IconButton> : null}
@@ -251,13 +256,14 @@ function Transport({
       </span>
       <div className="ml-auto flex items-center gap-1">
         {slow ? (
-          <span
-            title={`The preview can't draw ${slow} fast enough in this browser, so playback skips frames there. Exports render every frame at full quality. Ask ${agentName} to make the scene lighter to play (agentcut_preview_check).`}
-            className="mr-1 flex max-w-56 items-center gap-1 truncate rounded-md bg-amber-500/15 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300"
-          >
-            <AlertTriangle className="size-3 shrink-0" />
-            <span className="truncate">Preview drops frames in {slow}</span>
-          </span>
+          <TooltipHint content={`The preview can't draw ${slow} fast enough in this browser, so playback skips frames there. Exports render every frame at full quality. Ask ${agentName} to make the scene lighter to play (agentcut_preview_check).`}>
+            <span tabIndex={0}
+              className="mr-1 flex max-w-56 items-center gap-1 truncate rounded-md bg-amber-500/15 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300"
+            >
+              <AlertTriangle className="size-3 shrink-0" />
+              <span className="truncate">Preview drops frames in {slow}</span>
+            </span>
+          </TooltipHint>
         ) : null}
         {onDraw ? (
           <IconButton
@@ -296,6 +302,7 @@ function Transport({
 
 export function StudioPreview(props: StudioPreviewProps) {
   const {
+    workingAgentName,
     simple,
     doc,
     loaded,
@@ -566,16 +573,7 @@ export function StudioPreview(props: StudioPreviewProps) {
               )}
             </div>
           )}
-          {(editing || checking) && ready ? (
-            <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
-              <span className="flex items-center gap-2 rounded-full border border-white/15 bg-black/75 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur">
-                <Loader2 className="size-3.5 animate-spin text-primary" />
-                {checking
-                  ? `${agentName} is checking how smoothly this plays`
-                  : `${agentName} is editing · play when it's done`}
-              </span>
-            </div>
-          ) : null}
+          {editing || checking ? <PreviewWorkingStatus agentName={workingAgentName ?? agentName} checking={checking} /> : null}
           {selectedBox && ready ? (
             <SelectionOutline box={selectedBox} rect={rect} />
           ) : null}
@@ -660,18 +658,19 @@ function IconButton({
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
-        active && "text-foreground",
-      )}
-    >
-      {children}
-    </button>
+    <TooltipHint content={label}>
+      <button
+        type="button"
+        aria-label={label}
+        onClick={onClick}
+        disabled={disabled}
+        className={cn(
+          "flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
+          active && "text-foreground",
+        )}
+      >
+        {children}
+      </button>
+    </TooltipHint>
   );
 }

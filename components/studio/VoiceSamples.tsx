@@ -2,6 +2,7 @@
 
 // Free demo clips for every voice (generated once by scripts/generate-studio-voice-samples.ts
 // and hosted on our R2), so people can pick a provider and a voice before adding a key.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -149,33 +150,34 @@ export function SampleButton({
   if (!sample) return null;
   const isPlaying = playing === sample.url;
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="icon"
-      onClick={() => toggle(sample.url)}
-      aria-label={
-        isPlaying ? `Stop ${sample.name} sample` : `Play ${sample.name} sample`
-      }
-      title="Listen to a sample (free)"
-      className={cn("shrink-0", className)}
-    >
-      {isPlaying ? <Pause /> : <Play />}
-    </Button>
+    <TooltipHint content="Listen to a sample (free)">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={() => toggle(sample.url)}
+        aria-label={
+          isPlaying ? `Stop ${sample.name} sample` : `Play ${sample.name} sample`
+        }
+        className={cn("shrink-0", className)}
+      >
+        {isPlaying ? <Pause /> : <Play />}
+      </Button>
+    </TooltipHint>
   );
 }
 
 export function VoiceSamples({
   initialProvider,
 }: {
-  initialProvider?: ProviderId;
+  initialProvider?: string;
 }) {
   const available = (Object.keys(PROVIDER_NAMES) as ProviderId[]).filter(
     (id) => (samples[id]?.length ?? 0) > 0,
   );
   const [tab, setTab] = useState<ProviderId | undefined>(
-    initialProvider && available.includes(initialProvider)
-      ? initialProvider
+    initialProvider && available.includes(initialProvider as ProviderId)
+      ? initialProvider as ProviderId
       : available[0],
   );
   const { playing, toggle } = useSamplePlayer();
@@ -211,30 +213,30 @@ export function VoiceSamples({
           {voices.map((voice) => {
             const isPlaying = playing === voice.url;
             return (
-              <Button
-                key={voice.id}
-                type="button"
-                variant={isPlaying ? "secondary" : "outline"}
-                onClick={() => toggle(voice.url)}
-                className="h-auto justify-start gap-2 px-2 py-1.5 text-left"
-                title={
+              <TooltipHint content={
                   voice.description
                     ? `${voice.name}: ${voice.description}`
                     : voice.name
-                }
-              >
-                {isPlaying ? <Pause className="text-primary" /> : <Play />}
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-semibold">
-                    {voice.name}
-                  </span>
-                  {voice.description ? (
-                    <span className="block truncate text-[10px] font-normal text-muted-foreground">
-                      {voice.description}
+                } key={voice.id}>
+                <Button
+                  type="button"
+                  variant={isPlaying ? "secondary" : "outline"}
+                  onClick={() => toggle(voice.url)}
+                  className="h-auto justify-start gap-2 px-2 py-1.5 text-left"
+                >
+                  {isPlaying ? <Pause className="text-primary" /> : <Play />}
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-semibold">
+                      {voice.name}
                     </span>
-                  ) : null}
-                </span>
-              </Button>
+                    {voice.description ? (
+                      <span className="block truncate text-[10px] font-normal text-muted-foreground">
+                        {voice.description}
+                      </span>
+                    ) : null}
+                  </span>
+                </Button>
+              </TooltipHint>
             );
           })}
         </div>

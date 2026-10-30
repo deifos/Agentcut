@@ -3,8 +3,8 @@ import packageJson from "@/package.json";
 /** The studio page's version (package.json at the repo root). See CHANGELOG.md. */
 export const APP_VERSION: string = packageJson.version;
 
-/** Oldest helper (`npx agentcut`) this page works with: Style Spy and Record need 0.2.0. */
-export const MIN_HELPER_VERSION = "0.2.0";
+/** Person framing and transcription providers need the matching helper/runtime. */
+export const MIN_HELPER_VERSION = "0.2.16";
 
 /**
  * Oldest helper Cinematic Mode works with: the workspace needs its skill references (cinematic.md,

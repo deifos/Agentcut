@@ -180,16 +180,30 @@ export function registerStudioTools(server: McpServer) {
 
   defineTool(
     server,
+    "agentcut_frame_person",
+    "On explicit request only, keep one visible person centered in a target variant. Default mode=follow samples the full trimmed source range at 2 Hz, associates faces by position/size continuity, smooths a bounded crop path with a dead zone, and holds brief face loss (up to 1.5 s). mode=static requests a fixed crop. Uses built-in local MediaPipe on upright source frames; no frames go to an LLM or image service. Applies the same persisted source-time path to preview and export as one undoable edit. clipIds defaults to the current selection, or the sole visible video clip. Multiple candidates, multiple faces, weak detection, large motion, unsupported sources, locked tracks or changed files return structured status and next steps without choosing a person. This is sampled face-based talking-head following, not identity recognition, arbitrary-object detection or frame-by-frame tracking. Long loss, scene/subject changes and ambiguity stop the operation; split the shot instead. Maximum 10 source minutes per clip and 1800 samples per call; no partial paths. Existing clip box, timing, scale and other variants are preserved; style camera motion is suspended while framing is set. action=reset restores prior crop overrides for these clips/variant, preserving later unrelated edits. Requires an up-to-date helper/runtime and open studio page. Never auto-call just because the aspect ratio changes.",
+    { project, variant, clipIds: z.array(z.string().min(1)).min(1).max(8).optional(), action: z.enum(["center", "reset"]).default("center"), mode: z.enum(["follow", "static"]).default("follow") },
+    async (args) => page("studio_frame_person", args, 10 * MINUTE),
+  );
+
+  defineTool(
+    server,
     "agentcut_transcribe",
-    "Word timings for a voice or song file with Whisper running in the user's browser. Returns words with start/end seconds and frames. model: tiny | base (default) | small (slower, better).",
+    "Transcribe project audio/video with the user's preferred provider, or an explicit provider override. Call agentcut_transcription_options to discover configured capabilities. Local Whisper is the initial default; AssemblyAI sends locally extracted audio to the user's paid provider account. Returns text, word times in seconds and project frames, segments/speaker labels when supported, and provider/model/options/source provenance. Requests filler words for editing; recognition still needs a listening check. A cleaned transcript does not edit audio. No automatic cloud or local fallback. Keys stay helper-side. Pass job to identify progress/cancellation; model options come from provider metadata.",
     {
       path: projectPath,
-      language: z.string().optional().describe('Whisper language code, default "en".'),
-      model: z.enum(["tiny", "base", "small"]).optional(),
+      language: z.string().optional().describe('Language code, default en. auto only for providers that support detection.'),
+      model: z.string().optional(),
+      provider: z.string().optional().describe('Omit for the selected preference; local forces local Whisper for this request.'),
+      speakerLabels: z.boolean().optional(),
+      job: z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/).optional(),
       project,
     },
-    async (args) => page("studio_transcribe", args, 20 * MINUTE),
+    async (args) => callEditor("studio.local.transcribe", args, { timeoutMs: 21 * MINUTE }),
   );
+
+  defineTool(server, "agentcut_transcription_options", "Discover transcription providers, configured status, preferred default, models, capabilities and job progress. Never returns secret keys.", {}, async () => callEditor("studio.local.transcription_options", {}, { timeoutMs: 15_000 }));
+  defineTool(server, "agentcut_cancel_transcription", "Cancel a transcription job by its ID. Stops local processing/polling; cloud work may already have incurred charges.", { job: z.string().min(1) }, async args => callEditor("studio.local.cancel_transcription", args, { timeoutMs: 15_000 }));
 
   defineTool(
     server,

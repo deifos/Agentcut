@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { Monitor, Smartphone, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export function VideoFormatPicker({ project, variant, disabled, onSave, onChange
     finally { setSaving(false); }
   };
   return <div className="flex shrink-0 flex-wrap items-center justify-center gap-1 pb-2" role="group" aria-label="Video format">
-    {FORMATS.map((format) => <Button key={format.id} variant={current && sameRatio(current, format) ? "secondary" : "ghost"} size="sm" aria-pressed={Boolean(current && sameRatio(current, format))} disabled={disabled || saving} onClick={() => void choose(format)} title={`${format.label} ${format.ratio}`}><format.icon />{format.ratio}<span className="hidden sm:inline">{format.label}</span></Button>)}
+    {FORMATS.map((format) => <TooltipHint content={`${format.label} ${format.ratio}`} key={format.id}><Button variant={current && sameRatio(current, format) ? "secondary" : "ghost"} size="sm" aria-pressed={Boolean(current && sameRatio(current, format))} disabled={disabled || saving} onClick={() => void choose(format)}><format.icon />{format.ratio}<span className="hidden sm:inline">{format.label}</span></Button></TooltipHint>)}
     {variants.filter(([, size]) => !FORMATS.some((format) => sameRatio(size, format))).map(([key, size]) => <Button key={key} variant={variant === key ? "secondary" : "ghost"} size="sm" aria-pressed={variant === key} disabled={disabled || saving} onClick={() => onChange(key)}>{key} {size.width}×{size.height}</Button>)}
     {saving ? <Loader2 className="size-4 animate-spin" aria-label="Saving video format" /> : null}
   </div>;

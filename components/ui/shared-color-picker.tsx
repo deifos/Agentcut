@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import {
   useCallback,
   useEffect,
@@ -314,19 +315,20 @@ export function SharedColorPicker({
                         const selected = savedColor === draftColor;
                         return (
                           <div key={savedColor} className="relative">
-                            <button
-                              type="button"
-                              onClick={() => applyColor(savedColor)}
-                              className={cn(
-                                "h-7 w-7 rounded-sm border-2 transition-transform hover:scale-105",
-                                selected
-                                  ? "border-foreground shadow-sm"
-                                  : "border-border",
-                              )}
-                              style={{ backgroundColor: savedColor }}
-                              aria-label={`Use saved color ${savedColor.toUpperCase()}`}
-                              title={savedColor.toUpperCase()}
-                            />
+                            <TooltipHint content={savedColor.toUpperCase()}>
+                              <button
+                                type="button"
+                                onClick={() => applyColor(savedColor)}
+                                className={cn(
+                                  "h-7 w-7 rounded-sm border-2 transition-transform hover:scale-105",
+                                  selected
+                                    ? "border-foreground shadow-sm"
+                                    : "border-border",
+                                )}
+                                style={{ backgroundColor: savedColor }}
+                                aria-label={`Use saved color ${savedColor.toUpperCase()}`}
+                              />
+                            </TooltipHint>
                             <button
                               type="button"
                               onClick={(event) => {

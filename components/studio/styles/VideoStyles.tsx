@@ -5,6 +5,7 @@
 // [blanks]), preset.json (name, description, the blanks as form fields), preview.mp4 + poster.jpg, and
 // the scenes and assets the recipe copies. Picking one fills the blanks from the form and hands the
 // recipe to the agent; "Save this video's style" asks the agent to make a new preset from the project.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
 import { Bookmark, Clapperboard, Film, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -277,15 +278,17 @@ export function VideoStyles({
                           const picked = (values[field.id] as string[] | undefined) ?? [];
                           const on = picked.includes(img.path);
                           return (
-                            <label key={img.path} title={fileName(img.path)} className={cn("relative cursor-pointer overflow-hidden rounded-md border", on ? "border-foreground" : "border-border/60")}>
-                              {/* eslint-disable-next-line @next/next/no-img-element -- a local helper file */}
-                              <img src={studioFileUrl(slug, img.path)} alt="" loading="lazy" className="block aspect-square w-full bg-muted object-cover" />
-                              <Checkbox
-                                checked={on}
-                                onCheckedChange={(checked) => set(field.id, checked ? [...picked, img.path] : picked.filter((p) => p !== img.path))}
-                                className="absolute right-0.5 bottom-0.5 size-3.5 bg-background"
-                              />
-                            </label>
+                            <TooltipHint content={fileName(img.path)} key={img.path}>
+                              <label tabIndex={0} className={cn("relative cursor-pointer overflow-hidden rounded-md border", on ? "border-foreground" : "border-border/60")}>
+                                {/* eslint-disable-next-line @next/next/no-img-element -- a local helper file */}
+                                <img src={studioFileUrl(slug, img.path)} alt="" loading="lazy" className="block aspect-square w-full bg-muted object-cover" />
+                                <Checkbox
+                                  checked={on}
+                                  onCheckedChange={(checked) => set(field.id, checked ? [...picked, img.path] : picked.filter((p) => p !== img.path))}
+                                  className="absolute right-0.5 bottom-0.5 size-3.5 bg-background"
+                                />
+                              </label>
+                            </TooltipHint>
                           );
                         })}
                       </div>
@@ -320,10 +323,12 @@ export function VideoStyles({
           </Button>
           <div className="flex items-center gap-1.5">
             <Input value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Name this project's style…" className="h-8 text-[12px]" />
-            <Button type="button" variant="outline" size="sm" disabled={readOnly || chatDisabled} onClick={savePreset} className="h-8 shrink-0 gap-1.5 text-[12px]" title={`Ask ${agentName} to save this video's style as a preset`}>
-              <Bookmark className="size-3.5" />
-              Save style
-            </Button>
+            <TooltipHint content={`Ask ${agentName} to save this video's style as a preset`}>
+              <Button type="button" variant="outline" size="sm" disabled={readOnly || chatDisabled} onClick={savePreset} className="h-8 shrink-0 gap-1.5 text-[12px]">
+                <Bookmark className="size-3.5" />
+                Save style
+              </Button>
+            </TooltipHint>
           </div>
         </div>
       </div>

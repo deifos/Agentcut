@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import {
   memo,
   useCallback,
@@ -329,76 +330,77 @@ const ClipView = memo(function ClipView({
   const isAudio = track.kind === "audio";
   const Icon = style.icon;
   return (
-    <div
-      data-clip-id={clip.id}
-      className={cn(
-        "group absolute top-1 overflow-hidden rounded-lg border text-[11px] font-semibold",
-        style.clip,
-        selected &&
-          "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-        flash && "animate-pulse",
-        track.hidden && "opacity-40",
-        locked ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-      )}
-      style={{ left, width, height: height - 8 }}
-      title={`${clipLabel(track, clip)} · ${formatFrameTime(clip.from, fps)} → ${formatFrameTime(clipEnd(clip), fps)} (${clip.duration}f)${clip.note ? `\n${clip.note}` : ""}`}
-      onPointerDown={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const zone =
-          width > EDGE_PX * 3 && x < EDGE_PX
-            ? "start"
-            : width > EDGE_PX * 3 && x > rect.width - EDGE_PX
-              ? "end"
-              : "body";
-        onPointerDown(event, clip, track, zone);
-      }}
-    >
-      {filmstrip ? (
-        <ClipFilmstrip
-          track={track}
-          clip={clip}
-          fps={fps}
-          width={width}
-          height={height - 8}
-        />
-      ) : null}
-      {isAudio && "src" in clip && width > 6 ? (
-        <Waveform
-          slug={slug}
-          clip={clip as AudioClip}
-          fps={fps}
-          width={width}
-          height={height - 8}
-        />
-      ) : null}
-      {width > 24 ? (
-        filmstrip ? (
-          // Over pictures, the name sits on a dark chip so it stays readable.
-          <span className="pointer-events-none absolute left-1 top-1 flex max-w-[calc(100%-8px)] items-center gap-1 truncate rounded bg-black/60 px-1.5 text-[10px] leading-4 text-white backdrop-blur-sm">
-            {clipLabel(track, clip)}
-          </span>
-        ) : (
-          <span
-            className={cn(
-              "pointer-events-none relative flex items-center gap-1 truncate leading-4",
-              isAudio
-                ? "ml-1 mt-1 w-fit max-w-[calc(100%-8px)] rounded bg-background/80 px-1.5 text-[10px]"
-                : "px-2 pt-0.5",
-            )}
-          >
-            <Icon className="size-3 shrink-0 opacity-70" />
-            <span className="truncate">{clipLabel(track, clip)}</span>
-          </span>
-        )
-      ) : null}
-      {!locked ? (
-        <>
-          <span className="absolute inset-y-0 left-0 w-1.5 cursor-ew-resize bg-current/0 group-hover:bg-current/20" />
-          <span className="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize bg-current/0 group-hover:bg-current/20" />
-        </>
-      ) : null}
-    </div>
+    <TooltipHint content={`${clipLabel(track, clip)} · ${formatFrameTime(clip.from, fps)} → ${formatFrameTime(clipEnd(clip), fps)} (${clip.duration}f)${clip.note ? `\n${clip.note}` : ""}`}>
+      <div tabIndex={0}
+        data-clip-id={clip.id}
+        className={cn(
+          "group absolute top-1 overflow-hidden rounded-lg border text-[11px] font-semibold",
+          style.clip,
+          selected &&
+            "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+          flash && "animate-pulse",
+          track.hidden && "opacity-40",
+          locked ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+        )}
+        style={{ left, width, height: height - 8 }}
+        onPointerDown={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const zone =
+            width > EDGE_PX * 3 && x < EDGE_PX
+              ? "start"
+              : width > EDGE_PX * 3 && x > rect.width - EDGE_PX
+                ? "end"
+                : "body";
+          onPointerDown(event, clip, track, zone);
+        }}
+      >
+        {filmstrip ? (
+          <ClipFilmstrip
+            track={track}
+            clip={clip}
+            fps={fps}
+            width={width}
+            height={height - 8}
+          />
+        ) : null}
+        {isAudio && "src" in clip && width > 6 ? (
+          <Waveform
+            slug={slug}
+            clip={clip as AudioClip}
+            fps={fps}
+            width={width}
+            height={height - 8}
+          />
+        ) : null}
+        {width > 24 ? (
+          filmstrip ? (
+            // Over pictures, the name sits on a dark chip so it stays readable.
+            <span className="pointer-events-none absolute left-1 top-1 flex max-w-[calc(100%-8px)] items-center gap-1 truncate rounded bg-black/60 px-1.5 text-[10px] leading-4 text-white backdrop-blur-sm">
+              {clipLabel(track, clip)}
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "pointer-events-none relative flex items-center gap-1 truncate leading-4",
+                isAudio
+                  ? "ml-1 mt-1 w-fit max-w-[calc(100%-8px)] rounded bg-background/80 px-1.5 text-[10px]"
+                  : "px-2 pt-0.5",
+              )}
+            >
+              <Icon className="size-3 shrink-0 opacity-70" />
+              <span className="truncate">{clipLabel(track, clip)}</span>
+            </span>
+          )
+        ) : null}
+        {!locked ? (
+          <>
+            <span className="absolute inset-y-0 left-0 w-1.5 cursor-ew-resize bg-current/0 group-hover:bg-current/20" />
+            <span className="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize bg-current/0 group-hover:bg-current/20" />
+          </>
+        ) : null}
+      </div>
+    </TooltipHint>
   );
 });
 
@@ -454,27 +456,28 @@ function PlayheadHead({
     >
       <div className="absolute -left-px top-[20px] bottom-0 w-[2px] bg-brand" />
       {/* Drag the head to scrub. */}
-      <div
-        className="pointer-events-auto absolute -left-[9px] -top-px h-[22px] w-[18px] cursor-grab active:cursor-grabbing"
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          onGrab(event);
-        }}
-        title="Drag to scrub"
-      >
-        <svg
-          viewBox="0 0 18 22"
-          className="size-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]"
-          aria-hidden
+      <TooltipHint content="Drag to scrub">
+        <div tabIndex={0}
+          className="pointer-events-auto absolute -left-[9px] -top-px h-[22px] w-[18px] cursor-grab active:cursor-grabbing"
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            onGrab(event);
+          }}
         >
-          <path
-            d="M9 21.5 C 9 21.5 1 13.2 1 8.4 A 8 7.6 0 0 1 17 8.4 C 17 13.2 9 21.5 9 21.5 Z"
-            className="fill-brand stroke-background"
-            strokeWidth="1.25"
-          />
-          <circle cx="9" cy="8.2" r="2.4" className="fill-background" />
-        </svg>
-      </div>
+          <svg
+            viewBox="0 0 18 22"
+            className="size-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]"
+            aria-hidden
+          >
+            <path
+              d="M9 21.5 C 9 21.5 1 13.2 1 8.4 A 8 7.6 0 0 1 17 8.4 C 17 13.2 9 21.5 9 21.5 Z"
+              className="fill-brand stroke-background"
+              strokeWidth="1.25"
+            />
+            <circle cx="9" cy="8.2" r="2.4" className="fill-background" />
+          </svg>
+        </div>
+      </TooltipHint>
       {ask ? (
         <div className="pointer-events-auto absolute -top-px left-[11px]">
           <PlayheadAsk
@@ -957,44 +960,44 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 }}
               />
               {layers.markers.map((marker) => (
-                <div
-                  key={marker.id}
-                  className={cn(
-                    "absolute bottom-0 flex flex-col",
-                    marker.frame * ppf < 40
-                      ? "items-start"
-                      : "-translate-x-1/2 items-center",
-                  )}
-                  style={{ left: marker.frame * ppf }}
-                  title={`${marker.label} · f${marker.frame}`}
-                >
-                  <span
+                <TooltipHint content={`${marker.label} · f${marker.frame}`} key={marker.id}>
+                  <div tabIndex={0}
                     className={cn(
-                      "max-w-28 truncate rounded px-1 text-[9px] font-bold leading-3",
-                      marker.kind === "section"
-                        ? "bg-primary text-primary-foreground"
-                        : marker.kind === "beat"
-                          ? "bg-sky-500/80 text-white"
-                          : "bg-amber-400 text-black",
+                      "absolute bottom-0 flex flex-col",
+                      marker.frame * ppf < 40
+                        ? "items-start"
+                        : "-translate-x-1/2 items-center",
                     )}
+                    style={{ left: marker.frame * ppf }}
                   >
-                    {marker.kind === "beat" ? "♪" : marker.label}
-                  </span>
-                  <span className="h-1.5 w-px bg-foreground/60" />
-                </div>
+                    <span
+                      className={cn(
+                        "max-w-28 truncate rounded px-1 text-[9px] font-bold leading-3",
+                        marker.kind === "section"
+                          ? "bg-primary text-primary-foreground"
+                          : marker.kind === "beat"
+                            ? "bg-sky-500/80 text-white"
+                            : "bg-amber-400 text-black",
+                      )}
+                    >
+                      {marker.kind === "beat" ? "♪" : marker.label}
+                    </span>
+                    <span className="h-1.5 w-px bg-foreground/60" />
+                  </div>
+                </TooltipHint>
               ))}
               {(props.pendingAsks ?? []).map((pending, index) => (
-                <div
-                  key={`ask-${index}-${pending.frame}`}
-                  className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
-                  style={{ left: pending.frame * ppf }}
-                  title={`${agentName} is working on: ${pending.text}`}
-                >
-                  <span className="flex size-3.5 animate-pulse items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white shadow">
-                    ✦
-                  </span>
-                  <span className="h-2 w-px bg-rose-500" />
-                </div>
+                <TooltipHint content={`${agentName} is working on: ${pending.text}`} key={`ask-${index}-${pending.frame}`}>
+                  <div tabIndex={0}
+                    className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+                    style={{ left: pending.frame * ppf }}
+                  >
+                    <span className="flex size-3.5 animate-pulse items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white shadow">
+                      ✦
+                    </span>
+                    <span className="h-2 w-px bg-rose-500" />
+                  </div>
+                </TooltipHint>
               ))}
               <PlayheadHead
                 frameStore={frameStore}
@@ -1046,12 +1049,13 @@ export function StudioTimeline(props: StudioTimelineProps) {
                   style={{ width: HEADER_WIDTH }}
                 >
                   <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span
-                    className="min-w-0 flex-1 truncate text-[11px] font-bold"
-                    title={`${track.name} (${track.id})`}
-                  >
-                    {track.name}
-                  </span>
+                  <TooltipHint content={`${track.name} (${track.id})`}>
+                    <span tabIndex={0}
+                      className="min-w-0 flex-1 truncate text-[11px] font-bold"
+                    >
+                      {track.name}
+                    </span>
+                  </TooltipHint>
                   {visual ? (
                     <TrackToggle
                       label={track.hidden ? "Show track" : "Hide track"}
@@ -1245,15 +1249,16 @@ function TrackToggle({
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-    >
-      {children}
-    </button>
+    <TooltipHint content={label}>
+      <button
+        type="button"
+        aria-label={label}
+        onClick={onClick}
+        disabled={disabled}
+        className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+      >
+        {children}
+      </button>
+    </TooltipHint>
   );
 }

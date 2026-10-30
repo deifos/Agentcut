@@ -25,3 +25,7 @@ npm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated from the pinned MediaPipe npm package before dev/build.
+/public/vision/wasm/
+/public/vision/face-detector.js

@@ -2,6 +2,7 @@
 
 // Draw on the preview, then say what you want: "a line coming from here, to here". The agent gets
 // the frame with the drawing on it and every stroke's path in composition pixels.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { ArrowUp, Clock, Trash2, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -208,49 +209,53 @@ export function DrawAsk({
               className="max-h-28 min-h-9 min-w-0 basis-full resize-none border-0 bg-transparent text-[13px] shadow-none focus-visible:ring-0 sm:basis-auto md:text-[13px] dark:bg-transparent"
             />
             <SpeakButton speech={speech} className="ml-auto sm:ml-0" />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              title="Undo stroke (⌘Z)"
-              aria-label="Undo stroke"
-              disabled={!strokes.length}
-              onClick={() => setStrokes((list) => list.slice(0, -1))}
-            >
-              <Undo2 />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              title="Clear the drawing"
-              aria-label="Clear the drawing"
-              disabled={!strokes.length}
-              onClick={() => setStrokes([])}
-            >
-              <Trash2 />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              title="Close (Esc)"
-              aria-label="Close the pencil"
-              onClick={onClose}
-            >
-              <X />
-            </Button>
-            <Button
-              type="button"
-              size="icon-sm"
-              className="rounded-full"
-              title={busy ? `${agentName} is working: this runs right after` : "Send (Enter)"}
-              aria-label={busy ? "Queue" : "Send"}
-              disabled={!text.trim() || !strokes.length || blocked || speech.dictating}
-              onClick={() => void send()}
-            >
-              {sending ? <Spinner /> : busy ? <Clock /> : <ArrowUp />}
-            </Button>
+            <TooltipHint content="Undo stroke (⌘Z)">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Undo stroke"
+                disabled={!strokes.length}
+                onClick={() => setStrokes((list) => list.slice(0, -1))}
+              >
+                <Undo2 />
+              </Button>
+            </TooltipHint>
+            <TooltipHint content="Clear the drawing">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Clear the drawing"
+                disabled={!strokes.length}
+                onClick={() => setStrokes([])}
+              >
+                <Trash2 />
+              </Button>
+            </TooltipHint>
+            <TooltipHint content="Close (Esc)">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Close the pencil"
+                onClick={onClose}
+              >
+                <X />
+              </Button>
+            </TooltipHint>
+            <TooltipHint content={busy ? `${agentName} is working: this runs right after` : "Send (Enter)"}>
+              <Button
+                type="button"
+                size="icon-sm"
+                className="rounded-full"
+                aria-label={busy ? "Queue" : "Send"}
+                disabled={!text.trim() || !strokes.length || blocked || speech.dictating}
+                onClick={() => void send()}
+              >
+                {sending ? <Spinner /> : busy ? <Clock /> : <ArrowUp />}
+              </Button>
+            </TooltipHint>
           </div>
         </div>
       </div>

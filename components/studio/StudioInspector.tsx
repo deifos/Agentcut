@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AudioLines,
@@ -118,22 +119,23 @@ function Row({
   badge?: string;
 }) {
   return (
-    <label
-      className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 text-[11px]"
-      title={hint}
-    >
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate font-semibold text-muted-foreground">
-          {label}
-        </span>
-        {badge ? (
-          <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">
-            {badge}
+    <TooltipHint content={hint}>
+      <label tabIndex={0}
+        className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 text-[11px]"
+      >
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate font-semibold text-muted-foreground">
+            {label}
           </span>
-        ) : null}
-      </span>
-      <span className="min-w-0">{children}</span>
-    </label>
+          {badge ? (
+            <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">
+              {badge}
+            </span>
+          ) : null}
+        </span>
+        <span className="min-w-0">{children}</span>
+      </label>
+    </TooltipHint>
   );
 }
 
@@ -826,21 +828,22 @@ function ComponentFields({
       title={meta.name}
       right={
         overridden.length > 0 ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={disabled}
-            title={`Drop this clip's own ${overridden.join(", ")} so it follows ${motionStyle?.name}`}
-            onClick={() => {
-              const next = { ...stored };
-              for (const key of overridden) delete next[key];
-              patch({ props: next } as Partial<StudioClip>);
-            }}
-            className="h-5 px-1.5 text-[10px]"
-          >
-            Use style
-          </Button>
+          <TooltipHint content={`Drop this clip's own ${overridden.join(", ")} so it follows ${motionStyle?.name}`}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              disabled={disabled}
+              onClick={() => {
+                const next = { ...stored };
+                for (const key of overridden) delete next[key];
+                patch({ props: next } as Partial<StudioClip>);
+              }}
+              className="h-5 px-1.5 text-[10px]"
+            >
+              Use style
+            </Button>
+          </TooltipHint>
         ) : changed ? (
           <Button
             type="button"
@@ -964,9 +967,11 @@ function ComponentFields({
         // Sliders carry their own label inside the fill.
         if (spec.type === "number" && spec.max - spec.min <= 400)
           return (
-            <div key={key} title={spec.help}>
-              {field}
-            </div>
+            <TooltipHint content={spec.help} key={key}>
+              <div tabIndex={0}>
+                {field}
+              </div>
+            </TooltipHint>
           );
         const fromStyle = styled.includes(key) && !(key in stored);
         return (
@@ -1305,12 +1310,13 @@ function MediaVisualFields({
 }) {
   return (
     <Section title={kind === "image" ? "Image" : "Video"}>
-      <p
-        className="truncate font-mono text-[10px] text-muted-foreground"
-        title={clip.src}
-      >
-        {clip.src}
-      </p>
+      <TooltipHint content={clip.src}>
+        <p tabIndex={0}
+          className="truncate font-mono text-[10px] text-muted-foreground"
+        >
+          {clip.src}
+        </p>
+      </TooltipHint>
       <Row label="Fit">
         <SelectField
           value={clip.fit ?? "cover"}
@@ -1549,12 +1555,13 @@ function AudioFields({
     <Section title="Sound">
       {kind === "audio" ? (
         <>
-          <p
-            className="truncate font-mono text-[10px] text-muted-foreground"
-            title={clip.src}
-          >
-            {clip.src}
-          </p>
+          <TooltipHint content={clip.src}>
+            <p tabIndex={0}
+              className="truncate font-mono text-[10px] text-muted-foreground"
+            >
+              {clip.src}
+            </p>
+          </TooltipHint>
           {/* Listen to the part of the file this clip plays, at the clip's volume. */}
           <MediaPlayer
             key={clip.src}
@@ -1952,7 +1959,6 @@ function AssetsPanel({
                 );
                 event.dataTransfer.effectAllowed = "copy";
               }}
-              title={`Click to preview and ask ${agentName} · drag into the chat to point at it`}
               onClick={(event) => {
                 // The whole row opens the preview, except its own buttons (play, add, ask).
                 if ((event.target as HTMLElement).closest("button")) return;
@@ -1964,23 +1970,24 @@ function AssetsPanel({
               )}
             >
               {asset.kind === "audio" ? (
-                <button
-                  type="button"
-                  title={previewing === asset.path ? "Stop" : "Play"}
-                  aria-label={
-                    previewing === asset.path
-                      ? `Stop ${fileName(asset.path)}`
-                      : `Play ${fileName(asset.path)}`
-                  }
-                  onClick={() => togglePreview(asset)}
-                  className={`shrink-0 rounded p-0.5 hover:bg-background hover:text-foreground ${previewing === asset.path ? "text-primary" : "text-muted-foreground"}`}
-                >
-                  {previewing === asset.path ? (
-                    <Pause className="size-3.5" />
-                  ) : (
-                    <Play className="size-3.5" />
-                  )}
-                </button>
+                <TooltipHint content={previewing === asset.path ? "Stop" : "Play"}>
+                  <button
+                    type="button"
+                    aria-label={
+                      previewing === asset.path
+                        ? `Stop ${fileName(asset.path)}`
+                        : `Play ${fileName(asset.path)}`
+                    }
+                    onClick={() => togglePreview(asset)}
+                    className={`shrink-0 rounded p-0.5 hover:bg-background hover:text-foreground ${previewing === asset.path ? "text-primary" : "text-muted-foreground"}`}
+                  >
+                    {previewing === asset.path ? (
+                      <Pause className="size-3.5" />
+                    ) : (
+                      <Play className="size-3.5" />
+                    )}
+                  </button>
+                </TooltipHint>
               ) : asset.kind === "image" ? (
                 // eslint-disable-next-line @next/next/no-img-element -- thumbnail of a local helper file
                 <img
@@ -1993,45 +2000,48 @@ function AssetsPanel({
                 <Icon className="size-3.5 shrink-0 text-muted-foreground" />
               )}
               <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="min-w-0 flex-1 truncate text-left text-[12px] hover:underline"
-                  title={`Preview ${asset.path}`}
-                >
-                  {fileName(asset.path)}
-                </button>
+                <TooltipHint content={`Preview ${asset.path}. Drag into the chat to point at it.`}>
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 truncate text-left text-[12px] hover:underline"
+                  >
+                    {fileName(asset.path)}
+                  </button>
+                </TooltipHint>
               </PopoverTrigger>
               <span className="shrink-0 text-[10px] text-muted-foreground">
                 {formatBytes(asset.size)}
               </span>
-              <button
-                type="button"
-                title={`Ask ${agentName} to use this`}
-                aria-label={`Ask ${agentName} about ${fileName(asset.path)}`}
-                onClick={() => setOpenPreview(isOpen ? null : asset.path)}
-                className={cn(
-                  "rounded p-0.5 text-primary hover:bg-primary/10",
-                  isOpen
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                )}
-              >
-                <MessageSquarePlus className="size-3.5" />
-              </button>
-              {canAdd ? (
+              <TooltipHint content={`Ask ${agentName} to use this`}>
                 <button
                   type="button"
-                  title="Add at the playhead"
-                  disabled={readOnly || adding !== null}
-                  onClick={() => void addToTimeline(asset)}
-                  className="rounded p-0.5 text-muted-foreground opacity-0 hover:bg-background hover:text-foreground group-hover:opacity-100 disabled:opacity-30"
-                >
-                  {adding === asset.path ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Plus className="size-3.5" />
+                  aria-label={`Ask ${agentName} about ${fileName(asset.path)}`}
+                  onClick={() => setOpenPreview(isOpen ? null : asset.path)}
+                  className={cn(
+                    "rounded p-0.5 text-primary hover:bg-primary/10",
+                    isOpen
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
                   )}
+                >
+                  <MessageSquarePlus className="size-3.5" />
                 </button>
+              </TooltipHint>
+              {canAdd ? (
+                <TooltipHint content="Add at the playhead">
+                  <button aria-label="Add at the playhead"
+                    type="button"
+                    disabled={readOnly || adding !== null}
+                    onClick={() => void addToTimeline(asset)}
+                    className="rounded p-0.5 text-muted-foreground opacity-0 hover:bg-background hover:text-foreground group-hover:opacity-100 disabled:opacity-30"
+                  >
+                    {adding === asset.path ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="size-3.5" />
+                    )}
+                  </button>
+                </TooltipHint>
               ) : null}
             </div>
           </PopoverAnchor>

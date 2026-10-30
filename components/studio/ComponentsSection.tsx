@@ -3,6 +3,7 @@
 // The component library in the Assets tab: a grid of stills (playing on hover); click one to
 // preview it, add it at the playhead, or ask the agent to use it. Everything here goes through
 // layers.json like a scene clip.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { ArrowUp, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -151,37 +152,38 @@ function ComponentItem({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
-        <button
-          ref={tileRef}
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-          title={`${meta.name} · ${meta.category}`}
-          className="group flex w-full min-w-0 flex-col gap-1 text-left"
-        >
-          <span
-            className={cn(
-              "relative block w-full overflow-hidden rounded-lg bg-[#0b0d10] ring-1 ring-border transition-shadow group-hover:ring-2 group-hover:ring-foreground/40",
-              open && "ring-2 ring-foreground",
-            )}
+        <TooltipHint content={`${meta.name} · ${meta.category}`}>
+          <button
+            ref={tileRef}
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            className="group flex w-full min-w-0 flex-col gap-1 text-left"
           >
-            {/* A still until it's on screen; plays while hovered. */}
-            {hovered && !open ? (
-              <ComponentPlayer id={meta.id} props={props} />
-            ) : inView ? (
-              <ComponentThumb id={meta.id} props={props} />
-            ) : (
-              <span className="block aspect-video" />
-            )}
-            <span className="pointer-events-none absolute bottom-1 right-1 rounded bg-black/60 px-1 font-mono text-[9px] leading-4 text-white tabular-nums">
-              {formatSeconds(meta.durationInFrames / 30)}
+            <span
+              className={cn(
+                "relative block w-full overflow-hidden rounded-lg bg-[#0b0d10] ring-1 ring-border transition-shadow group-hover:ring-2 group-hover:ring-foreground/40",
+                open && "ring-2 ring-foreground",
+              )}
+            >
+              {/* A still until it's on screen; plays while hovered. */}
+              {hovered && !open ? (
+                <ComponentPlayer id={meta.id} props={props} />
+              ) : inView ? (
+                <ComponentThumb id={meta.id} props={props} />
+              ) : (
+                <span className="block aspect-video" />
+              )}
+              <span className="pointer-events-none absolute bottom-1 right-1 rounded bg-black/60 px-1 font-mono text-[9px] leading-4 text-white tabular-nums">
+                {formatSeconds(meta.durationInFrames / 30)}
+              </span>
             </span>
-          </span>
-          <span className="truncate text-[11px] font-medium leading-tight">
-            {meta.name}
-          </span>
-        </button>
+            <span className="truncate text-[11px] font-medium leading-tight">
+              {meta.name}
+            </span>
+          </button>
+        </TooltipHint>
       </PopoverAnchor>
       <PopoverContent
         side="left"

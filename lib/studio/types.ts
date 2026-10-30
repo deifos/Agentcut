@@ -108,6 +108,8 @@ export interface ColorGrade {
   hue?: number;
 }
 
+export interface FramingKeyframe { seconds: number; crop: Box }
+
 export interface VideoClipFields {
   src: string;
   trimStart?: number;
@@ -123,6 +125,8 @@ export interface VideoClipFields {
   cursor?: VideoCursor;
   /** "none" keeps the project style's camera moves off this clip. */
   camera?: "style" | "none";
+  /** Stable crop in upright source fractions, shared by preview and export. */
+  framing?: { crop: Box; path?: FramingKeyframe[]; before?: Box | null; beforePath?: FramingKeyframe[] };
 }
 
 export const VIDEO_CURSOR_STYLES = [

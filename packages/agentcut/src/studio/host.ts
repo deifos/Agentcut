@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, watch, writeFileSync, type FSWatcher } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join, sep } from "node:path";
-import { getEditorSession, sendToEditor, type BridgeExtension } from "../bridge.js";
+import { callEditor, getEditorSession, sendToEditor, type BridgeExtension } from "../bridge.js";
+import { TranscriptionService, transcriptionSettings, saveTranscriptionKey, removeTranscriptionKey, preferTranscription } from "./transcription/service.js";
+import type { TranscriptionInput } from "./transcription/types.js";
 import { PACKAGE_VERSION } from "../config.js";
 import { generateMusic, musicOptions, type GenerateMusicInput } from "./music.js";
 import { debugLog } from "../log.js";
@@ -79,10 +81,12 @@ export class StudioHost implements BridgeExtension {
   private pageSession: PageSession | null = null;
   readonly chat: ChatEngine;
   readonly references: ReferenceImports;
+  readonly transcription: TranscriptionService;
 
   constructor(options: StudioHostOptions) {
     this.options = options;
     this.paths = options.paths;
+    this.transcription = new TranscriptionService(this.paths, (method, params) => callEditor(method, params, { timeoutMs: 20 * 60_000 }), event => this.emit("studio.transcription", event));
     this.chat = new ChatEngine({
       paths: this.paths,
       allowBash: options.allowBash,
@@ -375,6 +379,11 @@ export class StudioHost implements BridgeExtension {
         return result;
       }
       // Voice providers: the page sends a key once; it never comes back.
+      case "studio.transcription.settings": return { ...transcriptionSettings(), jobs: this.transcription.status() };
+      case "studio.transcription.saveKey": return saveTranscriptionKey(String(p.provider), p.key);
+      case "studio.transcription.removeKey": return removeTranscriptionKey(String(p.provider));
+      case "studio.transcription.setDefault": return preferTranscription(String(p.provider));
+      case "studio.transcription.cancel": return this.transcription.cancel(String(p.job));
       case "studio.voice.settings":
         return voiceSettings();
       case "studio.voice.saveKey":
@@ -400,6 +409,9 @@ export class StudioHost implements BridgeExtension {
   handleLocalCall(method: string, params: unknown): Promise<unknown> | undefined {
     const p = asRecord(params);
     switch (method) {
+      case "studio.local.transcription_options": return Promise.resolve({ ...transcriptionSettings(), jobs: this.transcription.status() });
+      case "studio.local.cancel_transcription": return Promise.resolve(this.transcription.cancel(String(p.job)));
+      case "studio.local.transcribe": return this.transcription.run(assertSlug(p.project ?? this.pageSession?.activeProject), p as unknown as TranscriptionInput);
       case "studio.local.workspace":
         return Promise.resolve(this.workspaceSummary());
       case "studio.local.create_project":
@@ -417,9 +429,9 @@ export class StudioHost implements BridgeExtension {
       case "studio.local.voice_options":
         return (async () => {
           const options = voiceOptions();
-          if (p.provider === "elevenlabs") {
-            const voices = await listVoices("elevenlabs");
-            return { ...options, elevenlabsVoices: voices.map((v) => ({ id: v.id, name: v.name, description: v.description })) };
+          if (typeof p.provider === "string") {
+            const voices = await listVoices(p.provider);
+            return { ...options, voices, [`${p.provider}Voices`]: voices.map((v) => ({ id: v.id, name: v.name, description: v.description })) };
           }
           return options;
         })();
@@ -496,6 +508,7 @@ export class StudioHost implements BridgeExtension {
     this.libraryWatcher?.close();
     this.chat.cancelAll();
     this.references.cancelAll();
+    this.transcription.close();
   }
 
   emit(event: string, data: unknown) {
@@ -721,7 +734,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["styles", "drawing", "share"],
+      features: ["styles", "drawing", "share", "person-framing", "transcription-providers"],
     };
   }
 

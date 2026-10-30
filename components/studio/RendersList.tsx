@@ -1,6 +1,7 @@
 "use client";
 
 // Finished videos in a project's renders/ folder: the Renders tab and the export dialog share this.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { Download, ExternalLink, FolderOpen, Play, X } from "lucide-react";
 import { toast } from "sonner";
@@ -195,59 +196,64 @@ function RenderRow({
     </div>
   );
   const info = (
-    <div className="min-w-0 flex-1" title={item.path}>
-      <p className="flex min-w-0 items-center gap-1.5 text-xs">
-        <span className="font-semibold">{variant ?? name}</span>
-        {fresh ? (
-          <span className="rounded bg-emerald-500/15 px-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
-            New
-          </span>
-        ) : null}
-        <span className="truncate text-muted-foreground">{when}</span>
-      </p>
-      <p className="truncate text-[11px] text-muted-foreground">
-        {local ? "Rendered on this computer" : "Exported in browser"}
-        {item.size ? ` · ${formatBytes(item.size)}` : ""}
-        {extra?.lufs != null ? ` · ${extra.lufs.toFixed(1)} LUFS` : ""}
-      </p>
-      {item.renderDurationMs != null && (
-        <p className="text-[11px] text-muted-foreground tabular-nums">
-          Render time: {formatRenderDuration(item.renderDurationMs)}
+    <TooltipHint content={item.path}>
+      <div tabIndex={0} className="min-w-0 flex-1">
+        <p className="flex min-w-0 items-center gap-1.5 text-xs">
+          <span className="font-semibold">{variant ?? name}</span>
+          {fresh ? (
+            <span className="rounded bg-emerald-500/15 px-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+              New
+            </span>
+          ) : null}
+          <span className="truncate text-muted-foreground">{when}</span>
         </p>
-      )}
-    </div>
+        <p className="truncate text-[11px] text-muted-foreground">
+          {local ? "Rendered on this computer" : "Exported in browser"}
+          {item.size ? ` · ${formatBytes(item.size)}` : ""}
+          {extra?.lufs != null ? ` · ${extra.lufs.toFixed(1)} LUFS` : ""}
+        </p>
+        {item.renderDurationMs != null && (
+          <p className="text-[11px] text-muted-foreground tabular-nums">
+            Render time: {formatRenderDuration(item.renderDurationMs)}
+          </p>
+        )}
+      </div>
+    </TooltipHint>
   );
   const actions = (
     <div className="flex shrink-0 items-center">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        title="Show in folder"
-        onClick={onReveal}
-      >
-        <FolderOpen className="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        title="Open in your video player"
-        onClick={onOpen}
-      >
-        <ExternalLink className="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        title="Download a copy"
-        asChild
-      >
-        <a href={src} download={name}>
-          <Download className="size-4" />
-        </a>
-      </Button>
+      <TooltipHint content="Show in folder">
+        <Button aria-label="Show in folder"
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={onReveal}
+        >
+          <FolderOpen className="size-4" />
+        </Button>
+      </TooltipHint>
+      <TooltipHint content="Open in your video player">
+        <Button aria-label="Open in your video player"
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={onOpen}
+        >
+          <ExternalLink className="size-4" />
+        </Button>
+      </TooltipHint>
+      <TooltipHint content="Download a copy">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          asChild
+        >
+          <a href={src} download={name} aria-label="Download a copy">
+            <Download className="size-4" />
+          </a>
+        </Button>
+      </TooltipHint>
     </div>
   );
 

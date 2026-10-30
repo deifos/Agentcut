@@ -14,6 +14,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { Audio, Video } from "@remotion/media";
+import { framingCropAt } from "./framing";
 // The Agentcut component library, provided by the studio page (and by a copy in
 // .agentcut/components for local renders).
 import * as ComponentLibrary from "agentcut/components";
@@ -362,13 +363,19 @@ function VideoClipView({
   const style = useClipStyle(clip);
   const frame = useCurrentFrame();
   // The project style's camera (punch-ins, drift, …) moves the footage inside its box.
+  const crop = clip.framing ? framingCropAt(clip.framing, (clip.trimStart ?? 0) / ctx.project.fps + frame / ctx.project.fps * (clip.playbackRate ?? 1)) : null;
   const camera =
     ctx.project.style && clip.camera !== "none" && styleLayer.styleCamera
       ? styleLayer.styleCamera(ctx.project.style, { frame, durationInFrames: clip.duration, width: ctx.width, height: ctx.height })
       : null;
   return (
     <div style={{ ...boxStyle(clip.box), ...style, overflow: "hidden", borderRadius: clip.radius }}>
-      <div style={{ position: "absolute", inset: 0, ...camera }}>
+      <div style={{ position: "absolute", inset: 0, ...(clip.framing ? { filter: camera?.filter } : camera) }}>
+      <div style={crop ? {
+        position: "absolute", left: `${-crop.x / crop.width * 100}%`,
+        top: `${-crop.y / crop.height * 100}%`,
+        width: `${100 / crop.width}%`, height: `${100 / crop.height}%`,
+      } : { position: "absolute", inset: 0 }}>
       <Video
         src={asset(clip.src)}
         trimBefore={clip.trimStart && clip.trimStart > 0 ? clip.trimStart : undefined}
@@ -376,10 +383,11 @@ function VideoClipView({
         muted={trackMuted || clip.muted}
         playbackRate={clip.playbackRate}
         // @remotion/media draws the frame itself: fit has to be its prop (CSS object-fit is ignored).
-        objectFit={clip.fit ?? "cover"}
+        objectFit={clip.framing ? "fill" : clip.fit ?? "cover"}
         style={{ width: "100%", height: "100%", filter: gradeFilter(clip.grade) }}
       />
       {clip.cursor ? <CursorOverlay cursor={clip.cursor} clip={clip} /> : null}
+      </div>
       </div>
     </div>
   );

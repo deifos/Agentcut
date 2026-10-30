@@ -2,6 +2,7 @@
 
 // The style gallery: every style playing live on a real talking-head clip (ours, or one the user
 // drops in), so people see the graphics, captions, camera and texture before they pick.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Player, Thumbnail, type PlayerRef } from "@remotion/player";
 import {
@@ -289,15 +290,16 @@ export function StylesGallery({
                   : clip.status === "no-captions"
                     ? "Your clip (no captions)"
                     : "Your clip"}
-                <button
-                  type="button"
-                  onClick={() => setClip(null)}
-                  className="rounded p-0.5 hover:bg-muted"
-                  title="Back to the sample clip"
-                  aria-label="Back to the sample clip"
-                >
-                  <X className="size-3" />
-                </button>
+                <TooltipHint content="Back to the sample clip">
+                  <button
+                    type="button"
+                    onClick={() => setClip(null)}
+                    className="rounded p-0.5 hover:bg-muted"
+                    aria-label="Back to the sample clip"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </TooltipHint>
               </span>
             ) : null}
             <input

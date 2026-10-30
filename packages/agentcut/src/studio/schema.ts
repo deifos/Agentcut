@@ -103,6 +103,10 @@ const videoCursorSchema = z
     smoothing: unit.optional(),
   })
   .strict();
+const normalizedCropSchema = z.object({ x: unit, y: unit, width: unit.positive(), height: unit.positive() }).strict()
+  .refine(crop => crop.x + crop.width <= 1.000001 && crop.y + crop.height <= 1.000001, "Crop must stay inside the source image.");
+const framingPathSchema = z.array(z.object({ seconds: finite.min(0), crop: normalizedCropSchema }).strict()).min(1).max(2400)
+  .refine(path => path.every((key, i) => i === 0 || key.seconds > path[i - 1].seconds), "Framing source times must increase.");
 const videoFields = {
   src: srcSchema,
   trimStart: frame.optional(),
@@ -116,6 +120,12 @@ const videoFields = {
   cursor: videoCursorSchema.optional(),
   /** "none" keeps the project style's camera moves off this clip. */
   camera: z.enum(["style", "none"]).optional(),
+  framing: z.object({
+    crop: normalizedCropSchema,
+    path: framingPathSchema.optional(),
+    before: normalizedCropSchema.nullable().optional(),
+    beforePath: framingPathSchema.optional(),
+  }).strict().optional(),
 };
 const imageFields = {
   src: srcSchema,

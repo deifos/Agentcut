@@ -6,6 +6,7 @@ import { debugLog } from "../log.js";
 import { EFFORT_ID, getAgent, MODEL_ID, type AgentAdapter, type AgentEvent, type AgentInfo, type AgentParser, type McpServerSpec } from "./agents/index.js";
 import { atomicWrite, projectDir, StudioError } from "./projects.js";
 import { VOICE_KEY_ENV_VARS } from "./voice.js";
+import { TRANSCRIPTION_ADAPTERS } from "./transcription/registry.js";
 import { DETACH_FOR_GROUP_KILL, killTree, spawnCommand } from "./proc.js";
 import type { WorkspacePaths } from "./workspace.js";
 
@@ -569,7 +570,7 @@ export class ChatEngine {
       cwd: this.deps.paths.root,
       env: {
         // Voice-provider keys stay in the helper: the agent (and the tools it runs) never get them.
-        ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !VOICE_KEY_ENV_VARS.includes(name))),
+        ...Object.fromEntries(Object.entries(process.env).filter(([name]) => ![...VOICE_KEY_ENV_VARS, ...Object.values(TRANSCRIPTION_ADAPTERS).map(a => a.metadata.envVar).filter(Boolean)].includes(name))),
         AGENTCUT_WORKSPACE: this.deps.paths.root,
         AGENTCUT_PROJECT: slug,
       },

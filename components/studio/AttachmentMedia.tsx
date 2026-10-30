@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
 import { Film, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -42,7 +43,7 @@ export function AttachmentMedia({ reference, url, onRemove, className }: {
             ) : null}
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="truncate text-foreground" title={name}>{name}</span>
+            <TooltipHint content={name}><span tabIndex={0} className="truncate text-foreground">{name}</span></TooltipHint>
             <span className="text-[10px] text-muted-foreground">{state === "loading" ? "Loading preview…" : state === "error" ? "Preview unavailable · open file" : video ? "Video · open preview" : "Image · open preview"}</span>
           </span>
         </button>
@@ -50,7 +51,7 @@ export function AttachmentMedia({ reference, url, onRemove, className }: {
       {onRemove ? <button type="button" onClick={onRemove} aria-label={`Remove ${name}`} className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><X className="size-3.5" /></button> : null}
     </span>
     <DialogContent className="max-h-[88dvh] overflow-y-auto text-foreground sm:max-w-3xl" onKeyDown={(event) => event.stopPropagation()}>
-      <DialogTitle className="truncate pr-6" title={name}>{name}</DialogTitle>
+      <TooltipHint content={name}><DialogTitle className="truncate pr-6">{name}</DialogTitle></TooltipHint>
       <DialogDescription>Inspect this attachment. Closing the preview keeps your draft and files.</DialogDescription>
       {video ? <MediaPlayer url={url} kind="video" poster={poster ?? undefined} onError={() => setPreviewError(true)} /> : (
         // eslint-disable-next-line @next/next/no-img-element -- full-size local attachment inspection

@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import {
   useCallback,
   useEffect,
@@ -10,8 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import type { MusicChoice } from "@/components/studio/MusicPicker";
+import { MusicSidebar, type MusicChoice, type MusicSidebarHandle } from "@/components/studio/MusicPicker";
 import {
   ChevronsUpDown,
   Download,
@@ -93,6 +93,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VoicesDialog } from "@/components/studio/VoicesDialog";
+import { TranscriptionDialog } from "@/components/studio/TranscriptionDialog";
 import { StudioInspector } from "@/components/studio/StudioInspector";
 import { StudioPreview } from "@/components/studio/StudioPreview";
 import { StudioTimeline } from "@/components/studio/StudioTimeline";
@@ -137,10 +138,6 @@ import {
 } from "@/lib/studio/agents";
 
 const TIMELINE_HEIGHT_KEY = "agentcut.timelineHeight";
-const MusicPicker = dynamic(() => import("@/components/studio/MusicPicker").then((module) => module.MusicPicker), {
-  ssr: false,
-  loading: () => <aside className="music-library-panel" role="status" aria-busy="true">Loading music library…</aside>,
-});
 
 function isTypingTarget(target: EventTarget | null) {
   const element = target as HTMLElement | null;
@@ -185,6 +182,8 @@ export function StudioApp() {
   );
   const agents = studioAgents(info);
   const agent = pickAgent(agents, agentChoice, info?.defaultAgent);
+  const workingAgentId = chat.messages.find(message => message.id === chat.running)?.agent;
+  const workingAgentName = agents.find(item => item.id === workingAgentId)?.name ?? agent?.name ?? "Agent";
   const agentPickable = canPickAgent(info);
   const modelChoices = useSyncExternalStore(
     modelChoiceStore.subscribe,
@@ -205,7 +204,7 @@ export function StudioApp() {
   const [stylesBySlug, setStylesBySlug] = useState<Record<string, MotionStyle | null>>({});
   const selectedStyle = stylesBySlug[doc?.slug ?? ""] ?? null;
   const selectStyle = (style: MotionStyle | null) => setStylesBySlug((all) => ({ ...all, [doc?.slug ?? ""]: style }));
-  const [musicOpen, setMusicOpen] = useState(false);
+  const musicSidebar = useRef<MusicSidebarHandle>(null);
   const [uploadCounts, setUploadCounts] = useState<Record<string, number>>({});
   const [musicBySlug, setMusicBySlug] = useState<Record<string, MusicChoice | null>>({});
   const selectedMusic = musicBySlug[doc?.slug ?? ""] ?? null;
@@ -231,6 +230,7 @@ export function StudioApp() {
     [chatSlug],
   );
   const [voicesOpen, setVoicesOpen] = useState(false);
+  const [transcriptionOpen, setTranscriptionOpen] = useState(false);
   const [recordOpen, setRecordOpen] = useState(false);
   const [pendingAsks, setPendingAsks] = useState<
     { frame: number; text: string }[]
@@ -640,38 +640,40 @@ export function StudioApp() {
           >
             agent<span className="text-brand">cut</span>
           </Link>
-          <a
-            href={CHANGELOG_URL}
-            target="_blank"
-            rel="noreferrer"
-            title={`Editor ${APP_VERSION}${info?.version ? ` · helper ${info.version}` : ""}. See what's new.`}
-            className="-ml-1 mr-1 text-[10px] font-semibold text-muted-foreground tabular-nums hover:text-foreground"
-          >
-            v{APP_VERSION}
-          </a>
+          <TooltipHint content={`Editor ${APP_VERSION}${info?.version ? ` · helper ${info.version}` : ""}. See what's new.`}>
+            <a
+              href={CHANGELOG_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="-ml-1 mr-1 text-[10px] font-semibold text-muted-foreground tabular-nums hover:text-foreground"
+            >
+              v{APP_VERSION}
+            </a>
+          </TooltipHint>
           <DropdownMenu
             open={projectMenuOpen}
             onOpenChange={setProjectMenuOpen}
           >
             <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                title={doc?.dir ?? "Switch project"}
-                className="max-w-80 gap-2 bg-background pl-3 pr-2.5 text-sm font-semibold"
-              >
-                <FolderOpen className="text-muted-foreground" />
-                <span className="truncate">
-                  {doc?.project?.name ??
-                    (studio.opening ? "Opening…" : "Choose a project")}
-                </span>
-                {studio.opening ? (
-                  <Loader2 className="animate-spin text-muted-foreground" />
-                ) : (
-                  <ChevronsUpDown className="text-muted-foreground" />
-                )}
-              </Button>
+              <TooltipHint content={doc?.dir ?? "Switch project"}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="max-w-80 gap-2 bg-background pl-3 pr-2.5 text-sm font-semibold"
+                >
+                  <FolderOpen className="text-muted-foreground" />
+                  <span className="truncate">
+                    {doc?.project?.name ??
+                      (studio.opening ? "Opening…" : "Choose a project")}
+                  </span>
+                  {studio.opening ? (
+                    <Loader2 className="animate-spin text-muted-foreground" />
+                  ) : (
+                    <ChevronsUpDown className="text-muted-foreground" />
+                  )}
+                </Button>
+              </TooltipHint>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-72">
               <DropdownMenuItem
@@ -703,23 +705,24 @@ export function StudioApp() {
                       {(project.durationInFrames / project.fps).toFixed(1)}s
                     </span>
                   ) : null}
-                  <button
-                    type="button"
-                    aria-label={`Delete ${project.name}`}
-                    title="Delete project"
-                    disabled={status !== "connected"}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      // Don't open the project: close the menu and ask first.
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setProjectMenuOpen(false);
-                      setProjectToDelete(project);
-                    }}
-                    className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-60 hover:bg-destructive hover:text-white hover:opacity-100 group-focus:text-accent-foreground group-focus:opacity-100 disabled:pointer-events-none"
-                  >
-                    <Trash2 className="size-3.5 text-current" />
-                  </button>
+                  <TooltipHint content="Delete project">
+                    <button
+                      type="button"
+                      aria-label={`Delete ${project.name}`}
+                      disabled={status !== "connected"}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        // Don't open the project: close the menu and ask first.
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setProjectMenuOpen(false);
+                        setProjectToDelete(project);
+                      }}
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-60 hover:bg-destructive hover:text-white hover:opacity-100 group-focus:text-accent-foreground group-focus:opacity-100 disabled:pointer-events-none"
+                    >
+                      <Trash2 className="size-3.5 text-current" />
+                    </button>
+                  </TooltipHint>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -739,18 +742,18 @@ export function StudioApp() {
               {variants.map(([name, size]) => {
                 const Icon = size.height > size.width ? Smartphone : Monitor;
                 return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => studio.setVariant(name)}
-                    title={`${name} ${size.width}×${size.height}`}
-                    className={cn(
-                      "flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
-                      variant === name && "bg-muted text-foreground",
-                    )}
-                  >
-                    <Icon className="size-3.5" /> {name}
-                  </button>
+                  <TooltipHint content={`${name} ${size.width}×${size.height}`} key={name}>
+                    <button
+                      type="button"
+                      onClick={() => studio.setVariant(name)}
+                      className={cn(
+                        "flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
+                        variant === name && "bg-muted text-foreground",
+                      )}
+                    >
+                      <Icon className="size-3.5" /> {name}
+                    </button>
+                  </TooltipHint>
                 );
               })}
             </div>
@@ -775,31 +778,35 @@ export function StudioApp() {
             >
               <Redo2 className="size-4" />
             </HeaderButton>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setRecordOpen(true)}
-              disabled={readOnly || !doc?.project}
-              title="Record a talking-head take with your camera"
-              className="text-xs text-muted-foreground"
-            >
-              <Video /> Record
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setVoicesOpen(true)}
-              disabled={status !== "connected"}
-              title="Voice-over providers (ElevenLabs, Gemini, OpenAI, Grok)"
-              className="text-xs text-muted-foreground"
-            >
-              <Mic /> Voices
-            </Button>
+            <TooltipHint content="Record a talking-head take with your camera">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setRecordOpen(true)}
+                disabled={readOnly || !doc?.project}
+                className="text-xs text-muted-foreground"
+              >
+                <Video /> Record
+              </Button>
+            </TooltipHint>
+            <TooltipHint content="Voice-over providers (ElevenLabs, Gemini, OpenAI, Grok)">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setVoicesOpen(true)}
+                disabled={status !== "connected"}
+                className="text-xs text-muted-foreground"
+              >
+                <Mic /> Voice-over
+              </Button>
+            </TooltipHint>
             <ThemeToggle
               className="size-9 rounded-full"
               placeholderClassName="size-9"
             />
             </div>
+            {simple ? <Button type="button" variant="ghost" size="sm" disabled={status !== "connected"} onClick={() => setVoicesOpen(true)}>Voice-over</Button> : null}
+            <Button type="button" variant="ghost" size="sm" disabled={status !== "connected"} onClick={() => setTranscriptionOpen(true)}>Transcription</Button>
             <ConnectionBadge
               helperVersion={info?.version ?? null}
               status={status}
@@ -807,37 +814,39 @@ export function StudioApp() {
               onReconnect={studio.reconnect}
             />
             {SHARE_AVAILABLE ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShareOpen(true)}
-                disabled={!doc?.project || status !== "connected"}
-                title="Send this project to someone with a link (expires in 3 days)"
-                className="text-xs text-muted-foreground"
-              >
-                <Share2 /> Share
-              </Button>
+              <TooltipHint content="Send this project to someone with a link (expires in 3 days)">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShareOpen(true)}
+                  disabled={!doc?.project || status !== "connected"}
+                  className="text-xs text-muted-foreground"
+                >
+                  <Share2 /> Share
+                </Button>
+              </TooltipHint>
             ) : null}
             {exporting ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setExportOpen(true)}
-                title="Export in progress. Click to see details or cancel."
-                className="relative w-36 overflow-hidden text-xs font-bold"
-              >
-                <span
-                  className="absolute inset-y-0 left-0 bg-primary/20 transition-[width] duration-300"
-                  style={{ width: `${exportPercent}%` }}
-                  aria-hidden="true"
-                />
-                <Loader2 className="relative animate-spin" />
-                <span className="relative truncate tabular-nums">
-                  {exporting.stage === "installing"
-                    ? "Installing…"
-                    : `${exporting.variant} ${exportPercent}%`}
-                </span>
-              </Button>
+              <TooltipHint content="Export in progress. Click to see details or cancel.">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setExportOpen(true)}
+                  className="relative w-36 overflow-hidden text-xs font-bold"
+                >
+                  <span
+                    className="absolute inset-y-0 left-0 bg-primary/20 transition-[width] duration-300"
+                    style={{ width: `${exportPercent}%` }}
+                    aria-hidden="true"
+                  />
+                  <Loader2 className="relative animate-spin" />
+                  <span className="relative truncate tabular-nums">
+                    {exporting.stage === "installing"
+                      ? "Installing…"
+                      : `${exporting.variant} ${exportPercent}%`}
+                  </span>
+                </Button>
+              </TooltipHint>
             ) : (
               <Button
                 type="button"
@@ -851,7 +860,7 @@ export function StudioApp() {
           </div>
         </header>
 
-        <div className={cn("studio-body flex min-h-0 flex-1", musicOpen && doc && "studio-body-with-music")}>
+        <div className="studio-body flex min-h-0 flex-1">
         <div className="studio-workspace flex min-h-0 min-w-0 flex-1 gap-2 px-2">
           {simple && blankVideo && !chat.running ? <div className="empty-project-scene" aria-hidden="true"><CreativeIdeas scene /></div> : null}
             <aside
@@ -875,7 +884,7 @@ export function StudioApp() {
                 selectedStyle={selectedStyle}
                 selectedMusic={selectedMusic}
                 onClearMusic={() => selectMusic(null)}
-                onOpenMusic={() => setMusicOpen(true)}
+                onOpenMusic={() => musicSidebar.current?.open()}
                 onClearStyle={() => selectStyle(null)}
                 onOpenStyles={() => { setStagingStyle(true); setStylesOpen(true); }}
                 onOpenStyleSpy={() => setStyleSpyOpen(true)}
@@ -1008,6 +1017,7 @@ export function StudioApp() {
                   playing={playing}
                   onPlayingChange={setPlaying}
                   editing={Boolean(chat.running)}
+                  workingAgentName={workingAgentName}
                   draw={
                     readOnly
                       ? undefined
@@ -1069,7 +1079,7 @@ export function StudioApp() {
             </aside>
           ) : null}
         </div>
-        {musicOpen && doc ? <MusicPicker key={doc.slug} selected={selectedMusic} onClose={() => setMusicOpen(false)} onSelect={selectMusic} /> : null}
+        <MusicSidebar ref={musicSidebar} projectKey={doc?.slug} selected={selectedMusic} onSelect={selectMusic} />
         </div>
 
         <div
@@ -1272,6 +1282,7 @@ export function StudioApp() {
             getBridge={studio.getBridge}
           />
         ) : null}
+        <TranscriptionDialog open={transcriptionOpen} onOpenChange={setTranscriptionOpen} getBridge={studio.getBridge} />
         <VoicesDialog
           open={voicesOpen}
           onOpenChange={setVoicesOpen}
@@ -1351,52 +1362,54 @@ function ConnectionBadge({
     isOlderVersion(helperVersion, MIN_HELPER_VERSION);
   if (outdated) {
     return (
-      <span
-        className="flex h-9 items-center gap-2 rounded-md border border-amber-500/50 px-3 text-xs font-semibold"
-        title={`Your helper is ${helperVersion}; this editor needs ${MIN_HELPER_VERSION} or newer. Stop it (Ctrl+C) and run: ${STUDIO_COMMAND}@latest`}
-      >
-        <span className="relative inline-flex size-2.5 rounded-full bg-amber-500" />
-        <span className="hidden sm:inline">Update helper</span>
-      </span>
+      <TooltipHint content={`Your helper is ${helperVersion}; this editor needs ${MIN_HELPER_VERSION} or newer. Stop it (Ctrl+C) and run: ${STUDIO_COMMAND}@latest`}>
+        <span tabIndex={0}
+          className="flex h-9 items-center gap-2 rounded-md border border-amber-500/50 px-3 text-xs font-semibold"
+        >
+          <span className="relative inline-flex size-2.5 rounded-full bg-amber-500" />
+          <span className="hidden sm:inline">Update helper</span>
+        </span>
+      </TooltipHint>
     );
   }
   return (
-    <button
-      type="button"
-      onClick={connected ? undefined : onReconnect}
-      className={cn(
-        "flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold",
-        connected
-          ? "border-emerald-500/40"
-          : "border-amber-500/50 hover:bg-muted",
-      )}
-      title={
+    <TooltipHint content={
         connected
           ? `Connected to the studio helper on this computer${helperVersion ? ` (${helperVersion})` : ""}`
           : "Click to reconnect"
-      }
-    >
-      <span className="relative flex size-2.5">
-        {working ? (
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-        ) : null}
-        <span
-          className={cn(
-            "relative inline-flex size-2.5 rounded-full",
-            connected ? "bg-emerald-500" : "bg-amber-500",
-          )}
-        />
-      </span>
-      <span className="hidden sm:inline">
-        {connected
-          ? working
-            ? `${agentName} is working`
-            : "Connected"
-          : status === "taken"
-            ? "In use by another tab"
-            : "Reconnecting…"}
-      </span>
-    </button>
+      }>
+      <button
+        type="button"
+        onClick={connected ? undefined : onReconnect}
+        className={cn(
+          "flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold",
+          connected
+            ? "border-emerald-500/40"
+            : "border-amber-500/50 hover:bg-muted",
+        )}
+      >
+        <span className="relative flex size-2.5">
+          {working ? (
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          ) : null}
+          <span
+            className={cn(
+              "relative inline-flex size-2.5 rounded-full",
+              connected ? "bg-emerald-500" : "bg-amber-500",
+            )}
+          />
+        </span>
+        <span className="hidden sm:inline">
+          {connected
+            ? working
+              ? `${agentName} is working`
+              : "Connected"
+            : status === "taken"
+              ? "In use by another tab"
+              : "Reconnecting…"}
+        </span>
+      </button>
+    </TooltipHint>
   );
 }
 

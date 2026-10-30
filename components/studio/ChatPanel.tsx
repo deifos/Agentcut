@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { STUDIO_COMMAND } from "@/lib/studio/commands";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -185,36 +186,37 @@ function ToolLine({ part }: { part: Extract<ChatPart, { type: "tool" }> }) {
   const isFile =
     part.name === "Write" || part.name === "Edit" || part.name === "MultiEdit";
   return (
-    <Marker
-      role={part.status === "running" ? "status" : undefined}
-      title={part.error ?? part.name}
-      className={cn(
-        "rounded-md border px-2 py-1.5 text-[12px]",
-        isFile
-          ? "border-emerald-500/30 bg-emerald-500/5 text-foreground"
-          : "border-border/60 bg-muted/30",
-        part.status === "error" && "border-destructive/40 bg-destructive/5",
-      )}
-    >
-      <MarkerIcon>
-        <ToolIcon name={part.name} />
-      </MarkerIcon>
-      <MarkerContent
+    <TooltipHint content={part.error ?? part.name}>
+      <Marker
+        role={part.status === "running" ? "status" : undefined}
         className={cn(
-          "min-w-0 flex-1 truncate",
-          part.status === "running" && "shimmer",
+          "rounded-md border px-2 py-1.5 text-[12px]",
+          isFile
+            ? "border-emerald-500/30 bg-emerald-500/5 text-foreground"
+            : "border-border/60 bg-muted/30",
+          part.status === "error" && "border-destructive/40 bg-destructive/5",
         )}
       >
-        {part.summary}
-      </MarkerContent>
-      {part.status === "running" ? (
-        <Spinner className="size-3.5 shrink-0" />
-      ) : part.status === "done" ? (
-        <Check className="size-3.5 shrink-0 text-emerald-500" />
-      ) : (
-        <X className="size-3.5 shrink-0 text-destructive" />
-      )}
-    </Marker>
+        <MarkerIcon>
+          <ToolIcon name={part.name} />
+        </MarkerIcon>
+        <MarkerContent
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            part.status === "running" && "shimmer",
+          )}
+        >
+          {part.summary}
+        </MarkerContent>
+        {part.status === "running" ? (
+          <Spinner className="size-3.5 shrink-0" />
+        ) : part.status === "done" ? (
+          <Check className="size-3.5 shrink-0 text-emerald-500" />
+        ) : (
+          <X className="size-3.5 shrink-0 text-destructive" />
+        )}
+      </Marker>
+    </TooltipHint>
   );
 }
 
@@ -405,15 +407,16 @@ function WorkingBar({ message }: { message: ChatMessage | undefined }) {
         </span>
         <span className="shimmer"> · {doing}</span>
       </MarkerContent>
-      <span
-        className="shrink-0 tabular-nums"
-        title={
+      <TooltipHint content={
           quiet > 20_000 ? "Big files show up when they're finished" : undefined
-        }
-      >
-        {message ? formatElapsed(now - message.at) : ""}
-        {quiet > 20_000 ? ` · quiet ${formatElapsed(quiet)}` : ""}
-      </span>
+        }>
+        <span tabIndex={0}
+          className="shrink-0 tabular-nums"
+        >
+          {message ? formatElapsed(now - message.at) : ""}
+          {quiet > 20_000 ? ` · quiet ${formatElapsed(quiet)}` : ""}
+        </span>
+      </TooltipHint>
     </Marker>
   );
 }
@@ -431,15 +434,16 @@ function ContextHint({
   const frame = useFrame(frameStore);
   const agentName = useAgentName();
   return (
-    <span
-      className="min-w-0 truncate text-[10px] text-muted-foreground"
-      title="Sent with every message, so you can say “here” or “this clip”"
-    >
-      {agentName} sees: playhead {formatFrameTime(frame, fps)}
-      {selectionCount
-        ? ` · ${selectionCount} clip${selectionCount > 1 ? "s" : ""} selected`
-        : ""}
-    </span>
+    <TooltipHint content="Sent with every message, so you can say “here” or “this clip”">
+      <span tabIndex={0}
+        className="min-w-0 truncate text-[10px] text-muted-foreground"
+      >
+        {agentName} sees: playhead {formatFrameTime(frame, fps)}
+        {selectionCount
+          ? ` · ${selectionCount} clip${selectionCount > 1 ? "s" : ""} selected`
+          : ""}
+      </span>
+    </TooltipHint>
   );
 }
 
@@ -710,13 +714,14 @@ function EffortPicker({
   const fallback = agent.defaultEffort && efforts.includes(agent.defaultEffort) ? effortLabel(agent.defaultEffort) : null;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-        title="Thinking level"
-      >
-        Thinking: {effort ? effortLabel(effort) : (fallback ?? "Default")}
-        <ChevronDown className="size-3" />
-      </DropdownMenuTrigger>
+      <TooltipHint content="Thinking level">
+        <DropdownMenuTrigger
+          className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          Thinking: {effort ? effortLabel(effort) : (fallback ?? "Default")}
+          <ChevronDown className="size-3" />
+        </DropdownMenuTrigger>
+      </TooltipHint>
       <DropdownMenuContent align="start" className="w-48">
         <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
           Thinking level. Higher is slower and uses more of your plan.
@@ -833,7 +838,6 @@ export function ChatPanel({
   onRecord,
   hasVideo = false,
 }: ChatPanelProps) {
-  const [conversationOpen, setConversationOpen] = useState(false);
   const attachmentInput = useRef<HTMLInputElement>(null);
   const [dropping, setDropping] = useState(false);
   const [localUploading, setUploading] = useState(0);
@@ -973,11 +977,6 @@ export function ChatPanel({
             </TooltipTrigger>
             <TooltipContent>New conversation</TooltipContent>
           </Tooltip>
-          {simple ? (
-            <Button type="button" size="sm" variant="ghost" aria-expanded={conversationOpen} aria-controls="studio-conversation" onClick={() => setConversationOpen((open) => !open)}>
-              {conversationOpen ? "Hide conversation" : `Conversation${chat.messages.length ? ` (${chat.messages.length})` : ""}`}
-            </Button>
-          ) : null}
         </div>
   );
 
@@ -986,7 +985,7 @@ export function ChatPanel({
       <div className={cn("studio-chat flex h-full min-h-0 flex-col", simple && "studio-chat-simple")}>
         {!simple ? agentControls : null}
 
-        <div id="studio-conversation" className="chat-history min-h-0 flex-1" hidden={simple && !conversationOpen}>
+        <div id="studio-conversation" className="chat-history min-h-0 flex-1">
         <MessageScrollerProvider autoScroll>
           <MessageScroller className="min-h-0 flex-1">
             <MessageScrollerViewport>
@@ -1157,6 +1156,7 @@ export function ChatPanel({
               addReferences([reference]);
             }}
           >
+            <div className="chat-context order-first flex w-full flex-col">
             {selectedStyle ? (
               <InputGroupAddon align="block-start" className="gap-1 pb-0">
                 <span className="inline-flex w-64 max-w-full items-start gap-2 rounded-xl border border-border/80 bg-background/40 p-2">
@@ -1197,6 +1197,7 @@ export function ChatPanel({
                 ) : null}
               </InputGroupAddon>
             ) : null}
+            </div>
             <InputGroupTextarea
               aria-label="Video request"
               data-speech={speech.id}
@@ -1244,21 +1245,22 @@ export function ChatPanel({
             />
             <InputGroupAddon align="block-end" className={cn("chat-action-controls gap-1", simple && "gap-3")}>
               {simple ? <SpeakButton speech={speech} className="simple-voice" /> : null}
-              <InputGroupButton type="button" size="icon-sm" aria-label="Attach files" title="Attach files" disabled={disabled || uploading > 0} onClick={() => attachmentInput.current?.click()}><Paperclip /></InputGroupButton>
-              <InputGroupButton
-                type="button"
-                size={simple ? "icon-sm" : "xs"}
-                aria-label={simple ? "Attach current frame" : undefined}
-                variant={attachFrame ? "secondary" : "ghost"}
-                onClick={() => setAttachFrame((value) => !value)}
-                disabled={disabled}
-                title={`Attach the current frame so ${agentName} can see what you mean`}
-              >
-                <Camera /> {simple ? null : attachFrame ? "Frame attached" : "Attach frame"}
-              </InputGroupButton>
+              <TooltipHint content="Attach files"><InputGroupButton type="button" size="icon-sm" aria-label="Attach files" disabled={disabled || uploading > 0} onClick={() => attachmentInput.current?.click()}><Paperclip /></InputGroupButton></TooltipHint>
+              <TooltipHint content={`Attach the current frame so ${agentName} can see what you mean`}>
+                <InputGroupButton
+                  type="button"
+                  size={simple ? "icon-sm" : "xs"}
+                  aria-label={simple ? "Attach current frame" : undefined}
+                  variant={attachFrame ? "secondary" : "ghost"}
+                  onClick={() => setAttachFrame((value) => !value)}
+                  disabled={disabled}
+                >
+                  <Camera /> {simple ? null : attachFrame ? "Frame attached" : "Attach frame"}
+                </InputGroupButton>
+              </TooltipHint>
               {simple ? <>
-                <InputGroupButton type="button" size="icon-sm" aria-label="Record yourself" title="Record yourself" onClick={onRecord} disabled={disabled}><Video /></InputGroupButton>
-                <InputGroupButton type="button" size="icon-sm" aria-label="Draw on video" title="Draw on video" aria-pressed={drawingOpen} onClick={onDraw} disabled={disabled || !drawingAvailable}><Pencil /></InputGroupButton>
+                <TooltipHint content="Record yourself"><InputGroupButton type="button" size="icon-sm" aria-label="Record yourself" onClick={onRecord} disabled={disabled}><Video /></InputGroupButton></TooltipHint>
+                <TooltipHint content="Draw on video"><InputGroupButton type="button" size="icon-sm" aria-label="Draw on video" aria-pressed={drawingOpen} onClick={onDraw} disabled={disabled || !drawingAvailable}><Pencil /></InputGroupButton></TooltipHint>
               </> : <SpeakButton speech={speech} label />}
               {!simple ? <ContextHint
                 frameStore={frameStore}
@@ -1266,37 +1268,39 @@ export function ChatPanel({
                 selectionCount={selectionCount}
               /> : null}
               {running ? (
-                <InputGroupButton
-                  type="button"
-                  variant={requestReady ? "outline" : "default"}
-                  size="icon-sm"
-                  onClick={onCancel}
-                  aria-label={`Stop ${agentName}`}
-                  title="Stop"
-                  className="ml-auto rounded-full"
-                >
-                  <Square className="fill-current" />
-                </InputGroupButton>
+                <TooltipHint content="Stop">
+                  <InputGroupButton
+                    type="button"
+                    variant={requestReady ? "outline" : "default"}
+                    size="icon-sm"
+                    onClick={onCancel}
+                    aria-label={`Stop ${agentName}`}
+                    className="ml-auto rounded-full"
+                  >
+                    <Square className="fill-current" />
+                  </InputGroupButton>
+                </TooltipHint>
               ) : null}
               {!running || requestReady ? (
-                <InputGroupButton
-                  type="button"
-                  variant="default"
-                  size="icon-sm"
-                  onClick={() => void send()}
-                  disabled={!requestReady || sending || disabled || Boolean(agentMissing) || uploading > 0 || dictating}
-                  aria-label={running ? "Queue message" : "Send"}
-                  title={
+                <TooltipHint content={
                     uploading
                       ? "Adding files…"
                       : running
                         ? `Queue: runs when ${agentName} is done`
                         : "Send"
-                  }
-                  className={cn("rounded-full", !running && "ml-auto")}
-                >
-                  {sending ? <Spinner /> : running ? <Clock /> : <ArrowUp />}
-                </InputGroupButton>
+                  }>
+                  <InputGroupButton
+                    type="button"
+                    variant="default"
+                    size="icon-sm"
+                    onClick={() => void send()}
+                    disabled={!requestReady || sending || disabled || Boolean(agentMissing) || uploading > 0 || dictating}
+                    aria-label={running ? "Queue message" : "Send"}
+                    className={cn("rounded-full", !running && "ml-auto")}
+                  >
+                    {sending ? <Spinner /> : running ? <Clock /> : <ArrowUp />}
+                  </InputGroupButton>
+                </TooltipHint>
               ) : null}
             </InputGroupAddon>
           </InputGroup>

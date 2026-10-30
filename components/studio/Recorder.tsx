@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState } from "react";
 import { Circle, Square, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -353,12 +354,13 @@ export function Recorder({
                 </option>
               ))}
             </select>
-            <div
-              className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-muted"
-              title="Mic level"
-            >
-              <div ref={meterRef} className="h-full w-0 bg-emerald-500" />
-            </div>
+            <TooltipHint content="Mic level">
+              <div tabIndex={0}
+                className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-muted"
+              >
+                <div ref={meterRef} className="h-full w-0 bg-emerald-500" />
+              </div>
+            </TooltipHint>
           </div>
         )}
 

@@ -33,13 +33,15 @@ export function StickerBadge(props: Props) {
         justifyContent: vertical === "top" ? "flex-start" : vertical === "bottom" ? "flex-end" : "center",
       }}
     >
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: horizontal === "right" ? "flex-end" : "flex-start" }}>
+      {/* column-reverse: the tag sits above the badge but comes later in the DOM, so it paints on top
+          where they overlap (the export renderer has no z-index). */}
+      <div style={{ position: "relative", display: "flex", flexDirection: "column-reverse", alignItems: horizontal === "right" ? "flex-end" : "flex-start" }}>
+        <Sticker kit={kit} text={props.text} size={size} frame={frame} fps={fps} start={props.label ? 6 : 0} />
         {props.label ? (
           <div style={{ position: "relative", marginBottom: -size * 0.12, marginRight: horizontal === "right" ? size * 0.55 : 0 }}>
             <Tag kit={kit} text={props.label} fontSize={size * 0.17} frame={frame} fps={fps} start={0} />
           </div>
         ) : null}
-        <Sticker kit={kit} text={props.text} size={size} frame={frame} fps={fps} start={props.label ? 6 : 0} />
       </div>
     </AbsoluteFill>
   );

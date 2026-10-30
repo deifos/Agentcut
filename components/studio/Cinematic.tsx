@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useId, useState } from "react";
 import { Check, Clapperboard, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -124,18 +125,19 @@ function roll(previous?: Direction): Direction {
 
 export function CinematicTab({ onClick }: { onClick(): void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Open Cinematic Mode"
-      title="Cinematic Mode"
-      className="flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
-    >
-      <Clapperboard className="size-3.5 text-brand" />
-      <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-rl]">
-        Cinematic
-      </span>
-    </button>
+    <TooltipHint content="Cinematic Mode">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Open Cinematic Mode"
+        className="flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+      >
+        <Clapperboard className="size-3.5 text-brand" />
+        <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-rl]">
+          Cinematic
+        </span>
+      </button>
+    </TooltipHint>
   );
 }
 
@@ -330,30 +332,30 @@ export function Cinematic({
               const on = selected.includes(a.path);
               const src = studioFileUrl(slug, a.path);
               return (
-                <button
-                  key={a.path}
-                  type="button"
-                  title={a.path}
-                  aria-label={fileName(a.path)}
-                  aria-pressed={on}
-                  onClick={() => toggle(a.path)}
-                  className={cn(
-                    "relative aspect-video overflow-hidden rounded-md border bg-muted",
-                    on ? "border-brand ring-2 ring-brand/40" : "opacity-60",
-                  )}
-                >
-                  {a.kind === "image" ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt="" className="size-full object-cover object-top" />
-                  ) : (
-                    <video src={src} muted preload="metadata" className="size-full object-cover" />
-                  )}
-                  {on ? (
-                    <span className="absolute top-1 right-1 rounded-full bg-brand p-0.5 text-white">
-                      <Check className="size-3" />
-                    </span>
-                  ) : null}
-                </button>
+                <TooltipHint content={a.path} key={a.path}>
+                  <button
+                    type="button"
+                    aria-label={fileName(a.path)}
+                    aria-pressed={on}
+                    onClick={() => toggle(a.path)}
+                    className={cn(
+                      "relative aspect-video overflow-hidden rounded-md border bg-muted",
+                      on ? "border-brand ring-2 ring-brand/40" : "opacity-60",
+                    )}
+                  >
+                    {a.kind === "image" ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={src} alt="" className="size-full object-cover object-top" />
+                    ) : (
+                      <video src={src} muted preload="metadata" className="size-full object-cover" />
+                    )}
+                    {on ? (
+                      <span className="absolute top-1 right-1 rounded-full bg-brand p-0.5 text-white">
+                        <Check className="size-3" />
+                      </span>
+                    ) : null}
+                  </button>
+                </TooltipHint>
               );
             })}
           </div>
@@ -373,18 +375,18 @@ export function Cinematic({
           </div>
           <div className="flex flex-wrap gap-1.5">
             {(Object.keys(LABELS) as (keyof Direction)[]).map((k) => (
-              <button
-                key={k}
-                type="button"
-                title={`Roll a new ${LABELS[k].toLowerCase()}`}
-                onClick={() =>
-                  setDirection((d) => ({ ...d, [k]: pick(DIRECTION[k], d[k]) }))
-                }
-                className="rounded-full bg-muted px-2.5 py-1 text-[11px] hover:bg-muted/70"
-              >
-                <span className="text-muted-foreground">{LABELS[k]}:</span>{" "}
-                {direction[k]}
-              </button>
+              <TooltipHint content={`Roll a new ${LABELS[k].toLowerCase()}`} key={k}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDirection((d) => ({ ...d, [k]: pick(DIRECTION[k], d[k]) }))
+                  }
+                  className="rounded-full bg-muted px-2.5 py-1 text-[11px] hover:bg-muted/70"
+                >
+                  <span className="text-muted-foreground">{LABELS[k]}:</span>{" "}
+                  {direction[k]}
+                </button>
+              </TooltipHint>
             ))}
           </div>
         </div>

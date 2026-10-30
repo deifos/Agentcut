@@ -2,11 +2,13 @@
 
 // Speak instead of typing, in any box that writes to the agent. One box listens at a time.
 // Ctrl+Space goes to the box with the focus, else the open overlay (pencil, playhead ask), else the chat:
-// hold to talk, or tap to start and tap again to stop.
+// Hold to talk. Every release stops capture and keeps the words for review.
+import { TooltipHint } from "@/components/ui/tooltip";
 import {
   useEffect,
   useEffectEvent,
   useId,
+  useRef,
   useState,
   type ComponentProps,
 } from "react";
@@ -25,6 +27,7 @@ import {
 export type SpeechPriority = "chat" | "overlay" | "focus";
 
 interface Target {
+  id: string;
   element(): HTMLElement | null;
   priority: SpeechPriority;
   dictating(): boolean;
@@ -34,13 +37,20 @@ interface Target {
 
 const targets: Target[] = [];
 let listening: Target | null = null;
-let pressed: { target: Target; at: number } | null = null;
+let pressed: { target: Target } | null = null;
 let listenerCount = 0;
 
 function shortcutTarget() {
   const focused = document.activeElement;
+  const buttonTarget = focused
+    ?.closest("[data-speech-target]")
+    ?.getAttribute("data-speech-target");
   for (let i = targets.length - 1; i >= 0; i--) {
-    if (focused && targets[i].element()?.contains(focused)) return targets[i];
+    if (
+      buttonTarget === targets[i].id ||
+      (focused && targets[i].element()?.contains(focused))
+    )
+      return targets[i];
   }
   for (const priority of ["overlay", "chat"] as const) {
     for (let i = targets.length - 1; i >= 0; i--) {
@@ -56,29 +66,29 @@ function onKeyDown(event: KeyboardEvent) {
   // Not play/pause: the studio's Space shortcut never sees it.
   event.preventDefault();
   event.stopPropagation();
-  if (event.repeat) return;
-  if (listening?.dictating()) {
-    void listening.stop();
-    return;
-  }
+  if (event.repeat || pressed) return;
   const target = shortcutTarget();
   if (!target) return;
-  pressed = { target, at: performance.now() };
+  pressed = { target };
   target.start();
 }
 
 function onKeyUp(event: KeyboardEvent) {
   if (!pressed || (event.code !== "Space" && event.key !== "Control")) return;
-  const { target, at } = pressed;
-  pressed = null;
-  if (performance.now() - at > 350) void target.stop();
-}
-
-function onBlur() {
-  if (!pressed) return;
+  event.preventDefault();
+  event.stopPropagation();
   const { target } = pressed;
   pressed = null;
   void target.stop();
+}
+
+function onBlur() {
+  pressed = null;
+  void listening?.stop();
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === "hidden") onBlur();
 }
 
 /** One box listens at a time: starting here stops the other. */
@@ -93,15 +103,18 @@ function register(target: Target) {
     window.addEventListener("keydown", onKeyDown, true);
     window.addEventListener("keyup", onKeyUp, true);
     window.addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", onVisibilityChange);
   }
   return () => {
     targets.splice(targets.indexOf(target), 1);
     if (listening === target) listening = null;
     if (pressed?.target === target) pressed = null;
+    void target.stop();
     if (--listenerCount === 0) {
       window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("keyup", onKeyUp, true);
       window.removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     }
   };
 }
@@ -117,6 +130,7 @@ class SpeechTarget implements Target {
   onChange: (value: string) => void = () => {};
   startDictation: () => Promise<void> = async () => {};
   stopDictation: () => Promise<void> = async () => {};
+  stopping: Promise<void> | null = null;
   /** The text box carries `data-speech={id}`. */
   id = "";
 
@@ -129,7 +143,7 @@ class SpeechTarget implements Target {
     return this.isDictating;
   }
   start() {
-    if (this.isDictating || this.disabled) return;
+    if (this.isDictating || this.stopping || this.disabled) return;
     claim(this);
     this.isDictating = true;
     this.base = this.value;
@@ -143,11 +157,31 @@ class SpeechTarget implements Target {
     });
   }
   stop() {
-    return this.stopDictation();
+    if (this.stopping) return this.stopping;
+    this.stopping = this.stopDictation()
+      .catch((error: unknown) => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Couldn't finish speech input.",
+        );
+      })
+      .finally(() => {
+        this.isDictating = false;
+        this.stopping = null;
+        if (listening === this) listening = null;
+      });
+    return this.stopping;
   }
   write(spoken: string) {
     const before = this.base.replace(/\s+$/, "");
-    this.onChange(before && spoken ? `${before} ${spoken}` : before || spoken);
+    const next = !spoken.trim()
+      ? this.base
+      : before
+        ? `${before} ${spoken}`
+        : spoken;
+    this.value = next;
+    this.onChange(next);
   }
 }
 
@@ -158,7 +192,8 @@ export interface SpeechInput {
   progress: number | null;
   dictating: boolean;
   disabled: boolean;
-  toggle(): void;
+  start(): void;
+  stop(): Promise<void>;
   /** Call on Enter: while listening it stops (the words stay to read before sending) and returns true. */
   handleEnter(): boolean;
 }
@@ -208,13 +243,11 @@ export function useSpeechInput({
     progress: dictation.progress,
     dictating,
     disabled,
-    toggle: () => {
-      if (dictating) void dictation.stop();
-      else target.start();
-    },
+    start: () => target.start(),
+    stop: () => target.stop(),
     handleEnter: () => {
       if (!dictating) return false;
-      void dictation.stop();
+      void target.stop();
       return true;
     },
   };
@@ -223,7 +256,7 @@ export function useSpeechInput({
 /** The mic button for a box using `useSpeechInput`; `label` shows the state next to it. */
 export function SpeakButton({
   speech,
-  label = false,
+  label = true,
   className,
 }: {
   speech: SpeechInput;
@@ -231,6 +264,38 @@ export function SpeakButton({
   className?: string;
 }) {
   const { state, progress, dictating } = speech;
+  const pointer = useRef<number | null>(null);
+  const key = useRef<string | null>(null);
+  const latest = useRef(speech);
+  useEffect(() => {
+    latest.current = speech;
+  });
+  const hintId = useId();
+  useEffect(() => {
+    const release = () => {
+      if (pointer.current === null && key.current === null) return;
+      pointer.current = null;
+      key.current = null;
+      void latest.current.stop();
+    };
+    const pointerEnd = (event: PointerEvent) => {
+      if (event.pointerId === pointer.current) release();
+    };
+    const hidden = () => {
+      if (document.visibilityState === "hidden") release();
+    };
+    window.addEventListener("pointerup", pointerEnd);
+    window.addEventListener("pointercancel", pointerEnd);
+    window.addEventListener("blur", release);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("pointerup", pointerEnd);
+      window.removeEventListener("pointercancel", pointerEnd);
+      window.removeEventListener("blur", release);
+      document.removeEventListener("visibilitychange", hidden);
+      release();
+    };
+  }, []);
   const busy = state === "loading" || state === "finishing";
   const text =
     state === "loading"
@@ -240,29 +305,129 @@ export function SpeakButton({
       : state === "listening"
         ? "Listening"
         : state === "finishing"
-          ? "Finishing…"
-          : "Speak";
+          ? "Processing…"
+          : "Hold to record";
   return (
-    <Button
-      type="button"
-      variant={dictating ? "secondary" : "ghost"}
-      size={label ? "xs" : "icon-sm"}
-      onClick={speech.toggle}
-      // Keep the focus in the box, so Enter and Ctrl+Space keep going to it.
-      onMouseDown={(event) => event.preventDefault()}
-      disabled={speech.disabled || state === "finishing"}
-      aria-pressed={dictating}
-      aria-label={label ? undefined : text}
-      title={
-        dictating
-          ? "Stop and keep the words (or release Ctrl+Space)"
-          : "Speak instead of typing: click, or hold Ctrl+Space. Runs on this computer."
-      }
-      className={cn("shrink-0", className)}
-    >
-      {busy ? <Spinner /> : <Mic className={cn(dictating && "text-red-500")} />}
-      {label ? text : null}
-    </Button>
+    <>
+      <TooltipHint content={`${text}. Hold the microphone or Ctrl+Space to speak. Release to keep the words. On a focused button, hold Space or Enter. Speech stays on this computer.`}>
+        <Button
+          type="button"
+          variant={dictating ? "secondary" : "ghost"}
+          size={label ? "xs" : "icon-sm"}
+          data-speech-target={speech.id}
+          data-speech-state={state}
+          onClick={(event) => event.preventDefault()}
+          onContextMenu={(event) => event.preventDefault()}
+          onPointerDown={(event) => {
+            if (
+              event.button !== 0 ||
+              !event.isPrimary ||
+              pointer.current !== null ||
+              key.current !== null ||
+              speech.disabled ||
+              dictating
+            )
+              return;
+            event.preventDefault();
+            pointer.current = event.pointerId;
+            try {
+              event.currentTarget.setPointerCapture(event.pointerId);
+            } catch {
+              /* Window release also ends the hold. */
+            }
+            speech.start();
+          }}
+          onPointerUp={(event) => {
+            if (pointer.current !== event.pointerId) return;
+            pointer.current = null;
+            void speech.stop();
+            if (event.currentTarget.hasPointerCapture(event.pointerId))
+              event.currentTarget.releasePointerCapture(event.pointerId);
+          }}
+          onPointerCancel={() => {
+            if (pointer.current !== null) {
+              pointer.current = null;
+              void speech.stop();
+            }
+          }}
+          onLostPointerCapture={() => {
+            if (pointer.current !== null) {
+              pointer.current = null;
+              void speech.stop();
+            }
+          }}
+          onKeyDown={(event) => {
+            if (
+              !["Space", "Enter", "NumpadEnter"].includes(event.code) ||
+              event.ctrlKey ||
+              event.metaKey ||
+              event.altKey
+            )
+              return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (
+              event.repeat ||
+              key.current !== null ||
+              pointer.current !== null ||
+              dictating
+            )
+              return;
+            key.current = event.code;
+            speech.start();
+          }}
+          onKeyUp={(event) => {
+            if (key.current !== event.code) return;
+            event.preventDefault();
+            event.stopPropagation();
+            key.current = null;
+            void speech.stop();
+          }}
+          onBlur={() => {
+            if (key.current !== null) {
+              key.current = null;
+              void speech.stop();
+            }
+          }}
+          disabled={speech.disabled || state === "finishing"}
+          aria-pressed={dictating}
+          aria-busy={busy}
+          aria-label={text}
+          aria-describedby={hintId}
+          aria-keyshortcuts="Control+Space"
+          className={cn(
+            "speech-button relative touch-none select-none shrink-0",
+            className,
+          )}
+        >
+          <span className="relative inline-flex shrink-0" aria-hidden="true">
+            <Mic className="speech-mic size-4" />
+            {busy ? (
+              <Spinner
+                aria-hidden="true"
+                role={undefined}
+                className="speech-processing absolute -right-1.5 -bottom-1.5 size-2.5 motion-reduce:animate-none"
+              />
+            ) : null}
+          </span>
+          {state === "listening" ? (
+            <span
+              aria-hidden="true"
+              className="absolute top-0 right-0 size-2 rounded-full border border-current bg-current animate-pulse motion-reduce:animate-none"
+            />
+          ) : null}
+        {label ? (state === "loading" ? "Loading…" : text) : null}
+        </Button>
+      </TooltipHint>
+      <span id={hintId} className="sr-only">
+        Hold to speak, then release to keep the words. Hold Ctrl+Space, or hold
+        Space or Enter while the button has focus. Nothing is sent
+        automatically.
+      </span>
+      <span className="sr-only" role="status" aria-live="polite">
+        {dictating ? text : ""}
+      </span>
+    </>
   );
 }
 
@@ -314,9 +479,11 @@ export function SpeechTextarea({
           }
           props.onKeyDown?.(event);
         }}
-        className={cn("pr-9", className)}
+        className={cn("pb-10", className)}
       />
-      <SpeakButton speech={speech} className="absolute top-1 right-1 size-7" />
+      <div className="absolute bottom-1 right-1">
+        <SpeakButton speech={speech} />
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useRef, useState } from "react";
 import { FolderOpen, Laptop, Loader2, MonitorPlay, X } from "lucide-react";
 import { toast } from "sonner";
@@ -284,16 +285,17 @@ export function ExportDialog({
                 <span className="font-semibold">
                   {progress?.variant ?? selected[0]}
                 </span>
-                <span
-                  className="min-w-0 flex-1 truncate text-muted-foreground"
-                  title={progress?.message}
-                >
-                  {STAGE_LABEL[progress?.stage ?? "preparing"] ??
-                    progress?.stage}
-                  {progress?.message && progress.stage !== "installing"
-                    ? ` · ${progress.message}`
-                    : ""}
-                </span>
+                <TooltipHint content={progress?.message}>
+                  <span tabIndex={0}
+                    className="min-w-0 flex-1 truncate text-muted-foreground"
+                  >
+                    {STAGE_LABEL[progress?.stage ?? "preparing"] ??
+                      progress?.stage}
+                    {progress?.message && progress.stage !== "installing"
+                      ? ` · ${progress.message}`
+                      : ""}
+                  </span>
+                </TooltipHint>
                 {known ? <span className="font-mono">{percent}%</span> : null}
               </p>
               <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -336,15 +338,16 @@ export function ExportDialog({
                 <X className="size-4" /> Cancel render
               </Button>
             ) : (
-              <Button
-                variant="outline"
-                className="h-10"
-                disabled={busy || selected.length === 0}
-                onClick={() => void runLocal()}
-                title="Uses Remotion on your computer (the first time installs it into the workspace). Use this if a scene uses CSS the browser export can't draw."
-              >
-                <Laptop className="size-4" /> Render on this computer
-              </Button>
+              <TooltipHint content="Uses Remotion on your computer (the first time installs it into the workspace). Use this if a scene uses CSS the browser export can't draw.">
+                <Button
+                  variant="outline"
+                  className="h-10"
+                  disabled={busy || selected.length === 0}
+                  onClick={() => void runLocal()}
+                >
+                  <Laptop className="size-4" /> Render on this computer
+                </Button>
+              </TooltipHint>
             )}
           </div>
 

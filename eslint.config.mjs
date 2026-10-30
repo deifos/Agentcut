@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
     "packages/**",
     // Video style presets: workspace scene code (built by the helper, not this app).
     "motion/presets/**",
+    // Generated worker and vendored MediaPipe runtime, built by prepare:vision.
+    "public/vision/face-detector.js",
+    "public/vision/wasm/**",
   ]),
 ]);
 

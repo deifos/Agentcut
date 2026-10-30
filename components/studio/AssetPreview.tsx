@@ -2,6 +2,7 @@
 
 // One preview for every kind of project file: images, audio, video, fonts, text.
 // Opens beside the assets list so the user never has to leave the studio.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUp,
@@ -317,28 +318,29 @@ function ImageView({
       className="rounded-lg bg-[repeating-conic-gradient(#8881_0%_25%,transparent_0%_50%)] bg-[length:16px_16px]"
       viewportClassName="max-h-[60vh]"
     >
-      <div
-        className={cn(
-          "flex min-h-32 items-center justify-center",
-          actual ? "cursor-zoom-out" : "cursor-zoom-in",
-        )}
-        onClick={() => setActual((value) => !value)}
-        title={actual ? "Fit" : "Actual size"}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element -- local helper file, not an app asset */}
-        <img
-          src={url}
-          alt=""
-          onLoad={(event) =>
-            onMeta(
-              `${event.currentTarget.naturalWidth}×${event.currentTarget.naturalHeight}`,
-            )
-          }
-          className={
-            actual ? "max-w-none" : "max-h-[60vh] max-w-full object-contain"
-          }
-        />
-      </div>
+      <TooltipHint content={actual ? "Fit" : "Actual size"}>
+        <div tabIndex={0}
+          className={cn(
+            "flex min-h-32 items-center justify-center",
+            actual ? "cursor-zoom-out" : "cursor-zoom-in",
+          )}
+          onClick={() => setActual((value) => !value)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- local helper file, not an app asset */}
+          <img
+            src={url}
+            alt=""
+            onLoad={(event) =>
+              onMeta(
+                `${event.currentTarget.naturalWidth}×${event.currentTarget.naturalHeight}`,
+              )
+            }
+            className={
+              actual ? "max-w-none" : "max-h-[60vh] max-w-full object-contain"
+            }
+          />
+        </div>
+      </TooltipHint>
     </ScrollArea>
   );
 }
@@ -601,9 +603,11 @@ export function AssetPreview({
     <div className="space-y-3">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold" title={asset.path}>
-            {name}
-          </p>
+          <TooltipHint content={asset.path}>
+            <p tabIndex={0} className="truncate text-sm font-semibold">
+              {name}
+            </p>
+          </TooltipHint>
           <p className="text-[11px] text-muted-foreground">
             {[formatBytes(asset.size), meta].filter(Boolean).join(" · ")}
           </p>
@@ -629,16 +633,17 @@ export function AssetPreview({
       />
       <div className="flex flex-wrap items-center gap-1.5">
         {addable ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="xs"
-            onClick={onAdd}
-            disabled={adding}
-            title="Drop it on the timeline yourself, at the playhead"
-          >
-            {adding ? <Spinner /> : <Plus />} Place at playhead
-          </Button>
+          <TooltipHint content="Drop it on the timeline yourself, at the playhead">
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={onAdd}
+              disabled={adding}
+            >
+              {adding ? <Spinner /> : <Plus />} Place at playhead
+            </Button>
+          </TooltipHint>
         ) : null}
         <Button
           type="button"

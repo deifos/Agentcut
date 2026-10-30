@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ScanEye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,18 +69,19 @@ function stageLabel(job: ReferenceJob) {
 
 export function StyleSpyTab({ onClick }: { onClick(): void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Open Style Spy"
-      title="Style Spy"
-      className="flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
-    >
-      <ScanEye className="size-3.5 text-brand" />
-      <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-rl]">
-        Style Spy
-      </span>
-    </button>
+    <TooltipHint content="Style Spy">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Open Style Spy"
+        className="flex w-7 flex-col items-center gap-2 rounded-r-lg border border-l-0 border-brand/70 bg-background py-2.5 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+      >
+        <ScanEye className="size-3.5 text-brand" />
+        <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-rl]">
+          Style Spy
+        </span>
+      </button>
+    </TooltipHint>
   );
 }
 

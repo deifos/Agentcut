@@ -3,6 +3,7 @@
 // Voice-over providers: the user picks one, pastes their API key once, and the agent can
 // generate voice-overs with it. Keys go straight to the helper on this computer and are
 // never shown again (the field is masked, so it's safe on a stream or screen share).
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useCallback, useEffect, useState } from "react";
 import {
   Check,
@@ -44,7 +45,7 @@ import type { StudioBridge } from "@/lib/studio/bridge";
 import { MediaPlayer } from "@/components/studio/AssetPreview";
 import { useAgentName } from "@/components/studio/StudioAgent";
 
-type ProviderId = "elevenlabs" | "gemini" | "openai" | "xai";
+type ProviderId = string;
 
 interface ProviderState {
   id: ProviderId;
@@ -194,7 +195,7 @@ export function VoicesDialog({
       <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mic className="size-4" /> Voices &amp; music
+            <Mic className="size-4" /> Voice-over &amp; music
           </DialogTitle>
           <DialogDescription>
             Connect your own voice provider. Then just ask {agentName}: “make a
@@ -357,17 +358,18 @@ export function VoicesDialog({
                             </Button>
                           )}
                           {p.source === "saved" ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-xs"
-                              onClick={() => void remove(p.id)}
-                              aria-label={`Remove ${p.name} key`}
-                              title="Remove key"
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 />
-                            </Button>
+                            <TooltipHint content="Remove key">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={() => void remove(p.id)}
+                                aria-label={`Remove ${p.name} key`}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 />
+                              </Button>
+                            </TooltipHint>
                           ) : null}
                         </li>
                       );

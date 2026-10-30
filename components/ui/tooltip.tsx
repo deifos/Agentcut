@@ -54,4 +54,54 @@ function TooltipContent({
   );
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+/** Shared hint for controls and truncated text. Also composes with menu/dialog triggers. */
+function TooltipHint({
+  content,
+  children,
+  ...props
+}: Omit<
+  React.ComponentProps<typeof TooltipTrigger>,
+  "children" | "content" | "asChild"
+> & {
+  content?: React.ReactNode;
+  children: React.ReactElement<React.ComponentProps<"button">>;
+}) {
+  const disabled = children.props.disabled;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild tabIndex={0} {...props}>
+        {disabled ? (
+          <span
+            tabIndex={0}
+            aria-disabled="true"
+            aria-label={
+              children.props["aria-label"] ??
+              (typeof content === "string" ? content : undefined)
+            }
+            className={cn(
+              "inline-flex max-w-full items-center",
+              children.props.className?.includes("ml-auto") && "ml-auto",
+            )}
+          >
+            {React.cloneElement(children, {
+              className: cn(children.props.className, "pointer-events-none"),
+            })}
+          </span>
+        ) : (
+          children
+        )}
+      </TooltipTrigger>
+      {content ? (
+        <TooltipContent className="max-w-xs">{content}</TooltipContent>
+      ) : null}
+    </Tooltip>
+  );
+}
+
+export {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+  TooltipHint,
+};

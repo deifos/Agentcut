@@ -13,8 +13,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.16] - 2026-10-29
+
+### Fixed
+
+- Finish cancelled local transcription requests even if the editor does not reply, and remove completed jobs from the active list.
+- Exclude generated vision files from lint checks and show an update notice for helpers older than 0.2.16.
+- Give the render download button an accessible name.
+
 ### Added
 
+- Open the music library without re-rendering the chat and editor. Show an initial page of songs and load more on scroll or request; search the full built-in catalog. Keep the mounted list, search, selected song, and audio player when the sidebar closes, and remove the extra code load on first open. Audio still loads only when Play is pressed, with a clear loading state.
+- Show “Hold to record” on speech input buttons, with visible Listening and Processing states. Keep Simple view's action controls and Send on one row, with a wider chat panel on desktop and compact spacing on phones. Use the shared shadcn tooltips across editor controls, music, styles, and library pages, including keyboard access for disabled controls.
+- Show a larger, readable preview status panel while an agent edits or checks playback. Keep the preview visible, use the active agent's name, and respect reduced motion without estimating progress.
+- Use press-and-hold dictation for the microphone, touch, and keyboard. Releasing stops capture and keeps the words without sending. Keep the mic icon visible while listening, loading, finishing, hovering, focused, or disabled.
+- Place Simple view chat on the left and the video preview in the center on desktop, with music on the right. Keep conversation visible above the composer, without a collapse toggle. Dock the persistent music player inside its sidebar and stack the panels on narrow screens without resetting drafts or selections.
+- Center a visible speaker on explicit agent request with local MediaPipe face detection and a smoothed, variant-specific crop path across the full displayed clip, with dead-zone motion, bounds and brief detection-loss holds. Preview and exports share the path; reset and Undo restore prior crop/path settings. An explicit static mode remains available. Ambiguous or weak detections return useful next steps without choosing a person. No framing control is added to Simple view.
+- Add modular transcription with Local Whisper and user-key AssemblyAI, common word timings/provenance, capability discovery, explicit provider preference, job progress and cancellation. Cloud transcripts request filler words; audio uploads and provider charges are stated in settings.
+- Expose Voice-over and Transcription settings in Simple view. Split existing voice-over providers into registered adapters and share helper-side credential storage without changing their synthesis payloads.
 - Add Signal, Studyroom, Afterglow, and Fieldnote styles with distinct preview reels and editing guides for speech cleanup, framing, B-roll, sound, and color. Sync the guides to the helper.
 - Use the existing shadcn ScrollArea in both style galleries. Add centered and lower-third title layouts, and separate Fieldnote's editorial cards from Snipwork's paper collage.
 - Open the studio in a simple view with a centered video preview and a shared request composer.
@@ -379,7 +395,10 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.13...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.16...HEAD
+[0.2.16]: https://github.com/deifos/Agentcut/compare/v0.2.15...v0.2.16
+[0.2.15]: https://github.com/deifos/Agentcut/compare/v0.2.14...v0.2.15
+[0.2.14]: https://github.com/deifos/Agentcut/compare/v0.2.13...v0.2.14
 [0.2.13]: https://github.com/deifos/Agentcut/compare/v0.2.12...v0.2.13
 [0.2.12]: https://github.com/deifos/Agentcut/compare/v0.2.11...v0.2.12
 [0.2.11]: https://github.com/deifos/Agentcut/compare/v0.2.10...v0.2.11

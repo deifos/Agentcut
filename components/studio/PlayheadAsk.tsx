@@ -2,6 +2,7 @@
 
 // "Ask here": a small bubble on the playhead. The request goes to the agent with the exact
 // time and a snapshot of that frame, so "here" means this spot in the video.
+import { TooltipHint } from "@/components/ui/tooltip";
 import { memo, useState } from "react";
 import { ArrowUp, Clock, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -77,16 +78,17 @@ export const PlayheadAsk = memo(function PlayheadAsk({
       }}
     >
       <PopoverTrigger asChild>
-        <Button
-          type="button"
-          size="icon-xs"
-          aria-label={`Ask ${agentName} about this moment`}
-          title={`Ask ${agentName} about this moment`}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="pointer-events-auto size-5 rounded-full rounded-bl-none bg-foreground text-background shadow-md hover:bg-foreground/85 [&_svg:not([class*='size-'])]:size-3"
-        >
-          <MessageSquarePlus />
-        </Button>
+        <TooltipHint content={`Ask ${agentName} about this moment`}>
+          <Button
+            type="button"
+            size="icon-xs"
+            aria-label={`Ask ${agentName} about this moment`}
+            onPointerDown={(event) => event.stopPropagation()}
+            className="pointer-events-auto size-5 rounded-full rounded-bl-none bg-foreground text-background shadow-md hover:bg-foreground/85 [&_svg:not([class*='size-'])]:size-3"
+          >
+            <MessageSquarePlus />
+          </Button>
+        </TooltipHint>
       </PopoverTrigger>
       <PopoverContent
         side="top"

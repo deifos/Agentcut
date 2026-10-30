@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipHint } from "@/components/ui/tooltip";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -83,17 +84,19 @@ function Control({
           </div>
         );
       return (
-        <div className="space-y-1" title={spec.help}>
-          <LabeledSlider
-            label={spec.label}
-            value={Number(value)}
-            min={spec.min}
-            max={spec.max}
-            step={spec.step}
-            unit={spec.unit && spec.unit.length <= 3 ? spec.unit : ""}
-            onChange={onChange}
-          />
-        </div>
+        <TooltipHint content={spec.help}>
+          <div tabIndex={0} className="space-y-1">
+            <LabeledSlider
+              label={spec.label}
+              value={Number(value)}
+              min={spec.min}
+              max={spec.max}
+              step={spec.step}
+              unit={spec.unit && spec.unit.length <= 3 ? spec.unit : ""}
+              onChange={onChange}
+            />
+          </div>
+        </TooltipHint>
       );
     case "boolean":
       return (

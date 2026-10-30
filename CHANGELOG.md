@@ -21,6 +21,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Use Moonshine's full-precision decoder for speech input, for more accurate words. The voice model is now about 250 MB, so existing users download it once more.
+- Keep voice download progress below 100% until both model files finish downloading.
+- Make the first voice model download clear: a message explains it, and the microphone button shows the percentage, including after you release it.
 - Remove the standalone New project button from the studio header; project creation remains available in the project picker.
 - Move the soft, warm gradient in Simple view to the left chat area, with a gradual fade toward the preview.
 

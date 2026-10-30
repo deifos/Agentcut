@@ -36,6 +36,9 @@ registerProcessor("agentcut-capture", Capture);
 let worker: Worker | null = null;
 let workerReady: Promise<void> | null = null;
 let modelLoaded = false;
+/** Download percent while the model downloads, for whichever box is waiting on it. */
+let downloadPercent: number | null = null;
+const downloadListeners = new Set<(percent: number) => void>();
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let nextId = 0;
 const activeSessions = new Set<object>();
@@ -55,6 +58,8 @@ function getWorker(onProgress?: (percent: number) => void) {
     idleTimer = null;
   }
   if (!worker) {
+    downloadPercent = null;
+    downloadListeners.clear();
     worker = new Worker(
       new URL("../../../app/dictation-worker.ts", import.meta.url),
       { type: "module" },
@@ -67,12 +72,16 @@ function getWorker(onProgress?: (percent: number) => void) {
         ? "webgpu"
         : "wasm";
     // Files download in parallel; show the slowest one.
-    const files = new Map<string, number>();
+    const files = new Map<string, number>([
+      ["onnx/encoder_model.onnx", 0],
+      ["onnx/decoder_model_merged.onnx", 0],
+    ]);
     workerReady = new Promise<void>((resolve, reject) => {
       const cleanup = () => {
         w.removeEventListener("message", onMessage);
         w.removeEventListener("error", onError);
         w.removeEventListener("messageerror", onError);
+        downloadListeners.clear();
       };
       const onError = () => {
         cleanup();
@@ -87,7 +96,13 @@ function getWorker(onProgress?: (percent: number) => void) {
         };
         if (data.type === "progress" && data.file) {
           files.set(data.file, data.progress ?? 0);
-          onProgress?.(Math.min(...files.values()));
+          // Include both files from the start so a fast or cached encoder
+          // cannot finish the download indicator before the decoder starts.
+          downloadPercent = Math.max(
+            downloadPercent ?? 0,
+            Math.floor(Math.min(...files.values())),
+          );
+          for (const listener of downloadListeners) listener(downloadPercent);
         } else if (data.type === "ready") {
           cleanup();
           modelLoaded = true;
@@ -105,6 +120,10 @@ function getWorker(onProgress?: (percent: number) => void) {
     workerReady.catch(() => {
       resetWorker(w);
     });
+  }
+  if (onProgress && !modelLoaded) {
+    downloadListeners.add(onProgress);
+    if (downloadPercent !== null) onProgress(downloadPercent);
   }
   return { worker, ready: workerReady! };
 }
@@ -286,14 +305,18 @@ function pump(s: Session) {
 export function useDictation({
   onText,
   onError,
+  onDownload,
   enabled = true,
 }: {
   /** The words so far (`final` once the phrase is done); replaces what the last call sent. */
   onText(text: string, final: boolean): void;
   onError(error: unknown): void;
+  /** The model isn't on this computer yet: it started downloading. */
+  onDownload?(): void;
   enabled?: boolean;
 }) {
   const [state, setState] = useState<DictationState>("idle");
+  /** Percent of the model downloaded; null unless it is downloading right now. */
   const [progress, setProgress] = useState<number | null>(null);
   const [wasEnabled, setWasEnabled] = useState(enabled);
   if (enabled !== wasEnabled) {
@@ -301,9 +324,9 @@ export function useDictation({
     setState("idle");
     setProgress(null);
   }
-  const callbacks = useRef({ onText, onError });
+  const callbacks = useRef({ onText, onError, onDownload });
   useEffect(() => {
-    callbacks.current = { onText, onError };
+    callbacks.current = { onText, onError, onDownload };
   });
 
   const session = useRef<Session | null>(null);
@@ -404,8 +427,12 @@ export function useDictation({
           // The worklet emits silence, but needs an output connection to keep processing.
           node.connect(audioContext.destination);
         }
+        let announced = false;
         const { ready } = getWorker((percent) => {
-          if (attempt.current === token) setProgress(percent);
+          if (attempt.current !== token) return;
+          setProgress(percent);
+          if (!announced) callbacks.current.onDownload?.();
+          announced = true;
         });
         if (!s.stopped) setState(modelLoaded ? "listening" : "loading");
         await ready;

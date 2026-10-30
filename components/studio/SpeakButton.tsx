@@ -217,6 +217,12 @@ export function useSpeechInput({
       toast.error(
         error instanceof Error ? error.message : "Speech recognition failed.",
       ),
+    onDownload: () =>
+      toast.info("Downloading the voice model", {
+        id: "voice-model-download",
+        description:
+          "About 250 MB, one time only. Your words appear once it's ready.",
+      }),
     enabled: !disabled,
   });
   const dictating = dictation.state !== "idle";
@@ -297,19 +303,31 @@ export function SpeakButton({
     };
   }, []);
   const busy = state === "loading" || state === "finishing";
-  const text =
-    state === "loading"
-      ? progress !== null
-        ? `Loading voice ${Math.round(progress)}%`
-        : "Loading voice…"
-      : state === "listening"
-        ? "Listening"
-        : state === "finishing"
-          ? "Processing…"
-          : "Hold to record";
+  // The download outlasts the hold: it stays on the button after release too.
+  const downloading = progress !== null && progress < 100;
+  const preparing = progress === 100;
+  const text = downloading
+    ? `Downloading voice model ${progress}%`
+    : preparing
+      ? "Preparing voice model…"
+      : state === "loading"
+        ? "Loading voice…"
+        : state === "listening"
+          ? "Listening"
+          : state === "finishing"
+            ? "Processing…"
+            : "Hold to record";
+  // The composers only have room for a short label; the toast and tooltip say the rest.
+  const shortText = downloading
+    ? `Downloading ${progress}%`
+    : preparing
+      ? "Preparing…"
+      : state === "loading"
+        ? "Loading…"
+        : text;
   return (
     <>
-      <TooltipHint content={`${text}. Hold the microphone or Ctrl+Space to speak. Release to keep the words. On a focused button, hold Space or Enter. Speech stays on this computer.`}>
+      <TooltipHint content={`${text}. Hold the microphone or Ctrl+Space to speak. Release to keep the words. On a focused button, hold Space or Enter. The voice model downloads once (about 250 MB). Speech stays on this computer.`}>
         <Button
           type="button"
           variant={dictating ? "secondary" : "ghost"}
@@ -416,7 +434,7 @@ export function SpeakButton({
               className="absolute top-0 right-0 size-2 rounded-full border border-current bg-current animate-pulse motion-reduce:animate-none"
             />
           ) : null}
-        {label ? (state === "loading" ? "Loading…" : text) : null}
+          {label ? shortText : null}
         </Button>
       </TooltipHint>
       <span id={hintId} className="sr-only">
@@ -425,7 +443,7 @@ export function SpeakButton({
         automatically.
       </span>
       <span className="sr-only" role="status" aria-live="polite">
-        {dictating ? text : ""}
+        {downloading ? "Downloading voice model" : dictating ? text : ""}
       </span>
     </>
   );

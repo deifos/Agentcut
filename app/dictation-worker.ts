@@ -7,18 +7,24 @@ import {
 // so re-reading a growing phrase several times a second stays cheap.
 const MODEL_ID = "onnx-community/moonshine-base-ONNX";
 
+const FILES_URL = `https://huggingface.co/${MODEL_ID}/resolve/main/onnx`;
+const MODEL_FILES = ["encoder_model.onnx", "decoder_model_merged.onnx"];
+
 type DeviceType = "webgpu" | "wasm";
 
-const PER_DEVICE_CONFIG = {
-  webgpu: {
-    dtype: { encoder_model: "fp32", decoder_model_merged: "q4" },
-    device: "webgpu",
-  },
-  wasm: {
-    dtype: { encoder_model: "fp32", decoder_model_merged: "q8" },
-    device: "wasm",
-  },
-} as const;
+/** Reading a cached model also reports progress: only a real download should look like one. */
+async function modelCached() {
+  if (typeof caches === "undefined") return false;
+  try {
+    const cache = await caches.open("transformers-cache");
+    const hits = await Promise.all(
+      MODEL_FILES.map((file) => cache.match(`${FILES_URL}/${file}`)),
+    );
+    return hits.every(Boolean);
+  } catch {
+    return false;
+  }
+}
 
 let instance: Promise<AutomaticSpeechRecognitionPipeline> | null = null;
 
@@ -31,14 +37,20 @@ function load(device: DeviceType) {
       options: object,
     ) => Promise<AutomaticSpeechRecognitionPipeline>;
     instance = (async () => {
+      let downloading = false;
       const options = (target: DeviceType) => ({
-        ...PER_DEVICE_CONFIG[target],
+        dtype: { encoder_model: "fp32", decoder_model_merged: "fp32" },
+        device: target,
         progress_callback: (progress: {
           status?: string;
           progress?: number;
           file?: string;
         }) => {
-          if (progress.status === "progress") {
+          if (
+            downloading &&
+            progress.status === "progress" &&
+            progress.file?.endsWith(".onnx")
+          ) {
             self.postMessage({
               type: "progress",
               file: progress.file,
@@ -48,6 +60,7 @@ function load(device: DeviceType) {
         },
       });
       const initialize = async (target: DeviceType) => {
+        downloading = !(await modelCached());
         const transcriber = await createPipeline(
           "automatic-speech-recognition",
           MODEL_ID,

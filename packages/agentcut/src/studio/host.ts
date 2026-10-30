@@ -53,6 +53,8 @@ export interface StudioHostOptions {
   allowBash: boolean;
   /** Extra folders the agent may read (the app's repo, a media folder). */
   addDirs?: string[];
+  /** Extra sites the agent's sandboxed shell may reach. */
+  shellDomains?: string[];
   /** Agent used when the page doesn't pick one (an id from ./agents); else the first one installed. */
   agent?: string;
 }
@@ -96,6 +98,7 @@ export class StudioHost implements BridgeExtension {
       mcp: studioMcpServer(this.paths),
       getPageContext: () => this.pageSession,
       addDirs: options.addDirs ?? [],
+      shellDomains: options.shellDomains ?? [],
     });
     this.references = new ReferenceImports(
       this.paths,

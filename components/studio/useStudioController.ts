@@ -835,11 +835,11 @@ export function useStudioController() {
       applyToolLayers: async (layers, base) => {
         const current = latest.current.doc;
         if (!current || current.slug !== base.slug || current.layers !== base.layers || current.projectHash !== base.projectHash || current.layersHash !== base.layersHash)
-          throw new Error("The project changed during face analysis. No crop was applied. Retry on the current clip.");
+          throw new Error("The project changed during processing. The edit was not applied. Retry on the current clip.");
         commitLayers(layers, current.layers!);
         await flushWrite();
         if (writeRef.current.layers || latest.current.doc?.slug !== base.slug || latest.current.doc.layers !== layers)
-          throw new Error("The framing could not be confirmed on disk, or the project changed during save. Check the timeline before retrying; Undo can restore the last edit.");
+          throw new Error("The edit could not be confirmed on disk, or the project changed during save. Check the timeline before retrying; Undo can restore the last edit.");
       },
     };
   }, [frameStore, previewPerf, openProject, syncProject, waitForProject, commitLayers, flushWrite]);

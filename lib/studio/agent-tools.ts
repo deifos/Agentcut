@@ -564,6 +564,28 @@ export async function runStudioTool(
       return runFaceFraming(params, doc, context);
     }
 
+    case "studio_cutout_person": {
+      const doc = await ready(context, params);
+      const [{ runPersonCutout }, { toast }] = await Promise.all([
+        import("@/lib/studio/cutout-tool"),
+        import("sonner"),
+      ]);
+      const toastId = `cutout-${doc.slug}`;
+      let shown = "";
+      try {
+        return await runPersonCutout(params, doc, context, {
+          onProgress: ({ stage, progress }) => {
+            const label = `${stage === "model" ? "Downloading cutout model" : "Cutting out person"} ${Math.round(progress * 100)}%`;
+            if (label === shown) return;
+            shown = label;
+            toast.loading(label, { id: toastId, duration: Infinity });
+          },
+        });
+      } finally {
+        toast.dismiss(toastId);
+      }
+    }
+
     case "studio_transcribe": {
       const doc = await ready(context, params);
       const path = String(params.path ?? "");

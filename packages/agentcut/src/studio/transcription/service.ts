@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { providerStore } from "../providers/settings.js";
 import { projectDir, readProjectState, safeJoin } from "../projects.js";
-import { ensureFfmpeg } from "../references.js";
+import { ensureFfmpeg, MEDIA_INPUT_ONLY } from "../references.js";
 import type { WorkspacePaths } from "../workspace.js";
 import { TRANSCRIPTION_ADAPTERS } from "./registry.js";
 import type { Transcript, TranscriptionInput } from "./types.js";
@@ -194,6 +194,7 @@ export class TranscriptionService {
                 "-nostdin",
                 "-v",
                 "error",
+                ...MEDIA_INPUT_ONLY,
                 "-i",
                 source,
                 "-vn",

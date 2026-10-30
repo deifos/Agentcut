@@ -4,6 +4,7 @@ import { BridgeTakeoverError, setBridgeExtension, startOwnedBridge } from "../br
 import { getConfig, PACKAGE_VERSION } from "../config.js";
 import { debugLog } from "../log.js";
 import { AGENTS, getAgent } from "./agents/index.js";
+import { claudeSandboxAvailable } from "./agents/claude.js";
 import { DEFAULT_ALLOWED_ORIGINS, STUDIO_APP_URL, StudioHost } from "./host.js";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -15,6 +16,7 @@ interface CliOptions {
   origins: string[];
   addDirs: string[];
   removeDirs: string[];
+  shellDomains: string[];
   agent: string | undefined;
   help: boolean;
   version: boolean;
@@ -27,6 +29,7 @@ function parseArgs(argv: string[]): CliOptions {
     origins: [],
     addDirs: [],
     removeDirs: [],
+    shellDomains: [],
     agent: process.env.AGENTCUT_AGENT || undefined,
     help: false,
     version: false,
@@ -50,6 +53,8 @@ function parseArgs(argv: string[]): CliOptions {
     else if (arg.startsWith("--add-dir=")) options.addDirs.push(arg.slice(10));
     else if (arg === "--remove-dir") options.removeDirs.push(next());
     else if (arg.startsWith("--remove-dir=")) options.removeDirs.push(arg.slice(13));
+    else if (arg === "--allow-domain") options.shellDomains.push(next());
+    else if (arg.startsWith("--allow-domain=")) options.shellDomains.push(arg.slice(15));
     else if (arg === "--agent") options.agent = next();
     else if (arg.startsWith("--agent=")) options.agent = arg.slice(8);
     else if (arg === "--help" || arg === "-h") options.help = true;
@@ -61,6 +66,9 @@ function parseArgs(argv: string[]): CliOptions {
     .map((value) => value.trim())
     .filter(Boolean);
   options.origins = [...options.origins, ...fromEnv].map((origin) => origin.replace(/\/+$/, ""));
+  for (const domain of options.shellDomains) {
+    if (!/^(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(domain)) throw new Error(`--allow-domain takes a site like cdn.example.com or *.example.com, not "${domain}".`);
+  }
   if (options.agent && !getAgent(options.agent)) {
     throw new Error(`Unknown agent "${options.agent}". Choose one of: ${AGENTS.map((agent) => agent.id).join(", ")}`);
   }
@@ -84,6 +92,9 @@ Usage: npx -y agentcut [options]
   --remove-dir <p>  Forget a folder added with --add-dir
   --no-bash         Don't let the agent run shell commands (Codex always has a sandboxed shell:
                     this turns off its network access instead)
+  --allow-domain <site>
+                    Also let Claude Code's sandboxed shell reach this site (repeatable; it starts
+                    with npm and the sound sources the agent searches)
   -h, --help        Show this help
 `;
 
@@ -130,6 +141,7 @@ async function main() {
     port,
     allowBash: options.allowBash,
     addDirs: readFolders,
+    shellDomains: options.shellDomains,
     agent: options.agent,
     allowedOrigins: [...DEFAULT_ALLOWED_ORIGINS, ...options.origins],
   });
@@ -175,7 +187,13 @@ async function main() {
     ...(agents.some((agent) => agent.found)
       ? []
       : ["  No coding agent found: install one of the above, log in once, then start Agentcut again."]),
-    `  Shell tools ${options.allowBash ? "allowed for the agent" : "off (--no-bash)"}`,
+    `  Shell tools ${
+      !options.allowBash
+        ? "off (--no-bash)"
+        : claudeSandboxAvailable()
+          ? "sandboxed (Claude Code: workspace and listed sites; Codex: workspace, open network)"
+          : "allowed, but Claude Code can't be sandboxed here: use --no-bash with files you don't trust"
+    }`,
     `  Extra folders ${readFolders.length ? readFolders.join(", ") : "none configured (add a folder with --add-dir <path>)"}`,
     "",
     `  Open ${STUDIO_APP_URL}/studio in Chrome.`,

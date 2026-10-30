@@ -40,6 +40,11 @@ const MAX_FRAMES = 48;
 const MAX_CUT_STRIPS = 30;
 const YTDLP_CHECK_MS = 3 * 24 * 60 * 60 * 1000;
 const VIDEO_EXT = /\.(mp4|webm|mov|m4v)$/i;
+/**
+ * Goes before `-i` on media from outside. ffmpeg picks a reader by content, not extension, so a
+ * playlist named clip.mp4 would otherwise pull other videos on this computer into the output.
+ */
+export const MEDIA_INPUT_ONLY = ["-format_whitelist", "mov,mp4,m4a,3gp,3g2,mj2,matroska,webm,wav,mp3,aac,ogg,flac,avi,mpegts,mpeg,asf,aiff,caf,flv,amr"];
 
 // ffmpeg doesn't move fast; pin a build and its checksum (github.com/eugeneware/ffmpeg-static).
 const FFMPEG_RELEASE = "b6.1.1";
@@ -421,7 +426,7 @@ export function classifyFailure(output: string, browser: LoginBrowser | null): R
 
 async function probeDuration(ffmpeg: string, file: string) {
   // `ffmpeg -i` with no output exits 1 but prints the input's duration.
-  const result = await run(ffmpeg, ["-hide_banner", "-i", file], { timeoutMs: 30_000 });
+  const result = await run(ffmpeg, ["-hide_banner", ...MEDIA_INPUT_ONLY, "-i", file], { timeoutMs: 30_000 });
   const match = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(result.stderr);
   if (!match) throw new ReferenceError("failed", "This file doesn't look like a video ffmpeg can read.");
   return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
@@ -431,7 +436,7 @@ async function probeDuration(ffmpeg: string, file: string) {
 async function detectCuts(ffmpeg: string, video: string) {
   const result = await run(
     ffmpeg,
-    ["-hide_banner", "-i", video, "-an", "-vf", `scale=160:-2,select='gt(scene,${SCENE_THRESHOLD})',showinfo`, "-f", "null", "-"],
+    ["-hide_banner", ...MEDIA_INPUT_ONLY, "-i", video, "-an", "-vf", `scale=160:-2,select='gt(scene,${SCENE_THRESHOLD})',showinfo`, "-f", "null", "-"],
     { timeoutMs: 5 * 60_000 },
   );
   const cuts: number[] = [];
@@ -513,6 +518,7 @@ async function renderStrip(ffmpeg: string, video: string, strip: Omit<ReferenceS
       String(strip.start),
       "-t",
       String(strip.end - strip.start),
+      ...MEDIA_INPUT_ONLY,
       "-i",
       video,
       "-an",
@@ -555,7 +561,7 @@ async function analyzeVideo(ffmpeg: string, video: string, folder: string, rel: 
     const name = `${String(frames.length + 1).padStart(2, "0")}.jpg`;
     await run(
       ffmpeg,
-      ["-hide_banner", "-loglevel", "error", "-ss", String(time), "-i", video, "-frames:v", "1", "-vf", "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'", "-q:v", "3", "-y", join(dir, name)],
+      ["-hide_banner", "-loglevel", "error", "-ss", String(time), ...MEDIA_INPUT_ONLY, "-i", video, "-frames:v", "1", "-vf", "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'", "-q:v", "3", "-y", join(dir, name)],
       { timeoutMs: 60_000 },
     );
     if (existsSync(join(dir, name))) frames.push({ path: `${rel}/frames/${name}`, time });

@@ -13,11 +13,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Put text and graphics behind a person. Ask your agent, and it cuts the person out of just the frames it needs, on your computer, and places them on their own layer above the graphic. Preview and exports show the same result. The first use downloads a model of about 26 MB.
+
 ### Fixed
 
+- Keep person cutouts aligned at different playback speeds, invalidate cached cutouts when source files change, and avoid applying results after timing or track permissions change.
+- Open media without a Windows command shell, and reject links to scripts or folders.
 - Release decoded audio after computing timeline waveforms, and limit the video thumbnail cache without retaining object URLs.
 - Keep visible video thumbnails after cache eviction, and replace old thumbnails when a clip's video source changes.
 - Capture timeline scene previews as small still images, one at a time, instead of keeping many complex scenes mounted in Advanced view. Limit the still cache and cancel queued captures when their tiles close.
+
+### Security
+
+- Claude Code's shell now runs in a sandbox on macOS and on Linux with bubblewrap and socat, so a malicious file name, web page or video can't use it to reach your whole computer. It writes only to the workspace and reaches only npm and the agent's sound sources (add others with `--allow-domain`). Claude Code can no longer open SSH keys, cloud credentials, browser logins or your provider keys. Windows has no sandbox: the helper says so when it starts.
+- "Open" only launches video, audio and image files, never scripts or apps.
+- Reference imports and transcription only read real media files, so a playlist disguised as a video can't pull in other videos from your computer.
+- Shared projects can't bring their own agent instructions (`CLAUDE.md`, `AGENTS.md`, `.claude/` and similar), and the share dialog now says that scene code can reach your agent.
+- The agent treats file names and downloaded content as data, not instructions.
 
 ### Changed
 

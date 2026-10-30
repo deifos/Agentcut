@@ -19,6 +19,8 @@
     "helper:build": "npm run build --workspace agentcut",
     "sync:skill": "npm run sync:skill --workspace agentcut",
     "test:agents": "node --import tsx --test tests/agent-models.test.mjs",
+    "test:cutout": "node --import tsx --test tests/cutout.test.mjs",
+    "test:security": "node --import tsx --test tests/agent-security.test.mjs",
     "test:dictation": "node --test tests/dictation.test.mjs",
     "prepare:vision": "node scripts/prepare-vision.mjs",
     "predev": "npm run prepare:vision",

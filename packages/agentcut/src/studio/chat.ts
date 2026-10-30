@@ -91,6 +91,8 @@ export interface ChatEngineDeps {
   getPageContext(): Record<string, unknown> | null;
   /** Extra folders the agent may read, e.g. the app's repo. */
   addDirs: string[];
+  /** Extra sites the agent's sandboxed shell may reach. */
+  shellDomains: string[];
 }
 
 type ResolvedAgent = { adapter: AgentAdapter; info: AgentInfo; path: string; agents: AgentInfo[]; model: string | null; effort: string | null };
@@ -554,17 +556,22 @@ export class ChatEngine {
     sessionId: string | null,
     isRetry: boolean,
   ) {
-    const args = agent.buildArgs({
+    const run = {
       prompt,
       sessionId,
       images,
       workspace: this.deps.paths.root,
       mcp: this.deps.mcp,
       mcpConfigPath: this.deps.paths.mcpConfig,
+      settingsPath: this.deps.paths.agentSettings,
       allowShell: this.deps.allowBash,
       readDirs: this.deps.addDirs,
+      shellDomains: this.deps.shellDomains,
       ...settings,
-    });
+    };
+    const agentSettings = agent.settings?.(run);
+    if (agentSettings) atomicWrite(run.settingsPath, `${JSON.stringify(agentSettings, null, 2)}\n`);
+    const args = agent.buildArgs(run);
 
     const child = spawnCommand(agentPath, args, {
       cwd: this.deps.paths.root,

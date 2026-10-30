@@ -66,10 +66,14 @@ export interface AgentRun {
   mcp: McpServerSpec;
   /** The same server as a Claude-style `{ mcpServers }` JSON file, for CLIs that take one. */
   mcpConfigPath: string;
+  /** Where `AgentAdapter.settings` is written before the turn starts. */
+  settingsPath: string;
   /** Let the agent run shell commands (`--no-bash` turns it off where the CLI allows it). */
   allowShell: boolean;
   /** Extra folders the agent may read but must not change. */
   readDirs: string[];
+  /** Extra sites the agent's sandboxed shell may reach (`--allow-domain`). */
+  shellDomains: string[];
   /** The model to use (checked against MODEL_ID), or null for the CLI's default. */
   model: string | null;
   /** The thinking level (checked against EFFORT_ID), or null for the CLI's default. */
@@ -127,6 +131,8 @@ export interface AgentAdapter {
   imageHint: string;
   /** The models and thinking levels to offer, and the CLI's defaults when they can be read. */
   listModels(): { models: AgentModel[]; defaultModel: string | null; efforts: string[]; defaultEffort: string | null };
+  /** Settings file for one turn, for CLIs that take one (rewritten every turn, so edits don't last). */
+  settings?(run: AgentRun): unknown;
   /** Arguments for one turn. The prompt goes on stdin. */
   buildArgs(run: AgentRun): string[];
   createParser(): AgentParser;

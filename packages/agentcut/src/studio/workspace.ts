@@ -29,6 +29,7 @@ export interface WorkspacePaths {
   runtime: string;
   render: string;
   mcpConfig: string;
+  agentSettings: string;
 }
 
 export const SKILL_NAME = "agentcut";
@@ -47,6 +48,7 @@ export function workspacePaths(root: string): WorkspacePaths {
     runtime: join(absolute, ".agentcut", "runtime"),
     render: join(absolute, ".agentcut", "render"),
     mcpConfig: join(absolute, ".agentcut", "mcp.json"),
+    agentSettings: join(absolute, ".agentcut", "agent-settings.json"),
   };
 }
 

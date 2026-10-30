@@ -64,7 +64,13 @@ npx -y agentcut --dir D:\videos              # workspace folder (default ~/Agent
 npx -y agentcut --agent codex                # start the chat with Codex
 npx -y agentcut --add-dir path/to/your-app   # let the agent read your app's code (remembered)
 npx -y agentcut --no-bash                    # no shell commands for the agent
+npx -y agentcut --allow-domain cdn.example.com  # let Claude Code's sandboxed shell reach another site
 ```
+
+Agents run without asking before each command, so they are sandboxed. Claude Code's shell writes only to the
+workspace, reaches only npm and the agent's sound sources, and can't read logins or keys (macOS, and Linux with
+`bubblewrap` and `socat`; **Windows has no sandbox, so use `--no-bash` with files you don't trust**). Codex's shell
+writes only to the workspace, but it can read your files and reach any site unless you pass `--no-bash`.
 
 Voice-over (ElevenLabs, Gemini, OpenAI, xAI) and music generation (Gemini Lyria) use your own keys,
 entered in the studio and kept in your user folder.

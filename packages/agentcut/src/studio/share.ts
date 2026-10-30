@@ -27,6 +27,8 @@ export const MAX_SHARE_BYTES = 1024 * 1024 * 1024;
 export const MAX_SHARE_FILES = 5000;
 /** Not shared: exports, the chat, and anything that isn't part of the project itself. */
 const SKIPPED_TOP = new Set(["renders", ".studio", "node_modules", ".git"]);
+/** Instructions and settings agents load by themselves, at any depth: a share must not bring its own. */
+const AGENT_FILES = new Set(["claude.md", "claude.local.md", "agents.md", "agents.override.md", "gemini.md", ".mcp.json", ".claude", ".agents", ".codex", ".cursor", ".gemini"]);
 const PARALLEL = 3;
 /** Per request: a stalled connection fails and retries instead of hanging the share. */
 const REQUEST_TIMEOUT_MS = 2 * 60 * 1000;
@@ -159,6 +161,7 @@ async function collectFiles(dir: string) {
     for (const entry of readdirSync(join(dir, rel), { withFileTypes: true })) {
       const path = rel ? `${rel}/${entry.name}` : entry.name;
       if (!rel && SKIPPED_TOP.has(entry.name)) continue;
+      if (AGENT_FILES.has(entry.name.toLowerCase())) continue;
       if (entry.name.endsWith(".tmp") || entry.name === ".DS_Store") continue;
       // Links are skipped, never followed (a junction can point anywhere on the disk).
       if (entry.isDirectory()) await walk(path);
@@ -325,7 +328,7 @@ export async function shareProject(
 const WINDOWS_DEVICE = /^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i;
 
 /** Paths from someone else's manifest: plain relative paths inside the project, nothing hidden we manage. */
-function checkPath(path: unknown): string {
+export function checkPath(path: unknown): string {
   if (typeof path !== "string" || !path || path.length > 400) throw new StudioError("The share has a bad file name.", "share_corrupt");
   const parts = path.split("/");
   const bad =
@@ -335,6 +338,7 @@ function checkPath(path: unknown): string {
     parts.some((part) => part === "" || part === "." || part === ".." || /[. ]$/.test(part) || WINDOWS_DEVICE.test(part)) ||
     SKIPPED_TOP.has(parts[0].toLowerCase());
   if (bad) throw new StudioError(`The share has a file outside the project (${path}).`, "share_corrupt");
+  if (parts.some((part) => AGENT_FILES.has(part.toLowerCase()))) throw new StudioError(`The share tries to add agent instructions (${path}).`, "share_corrupt");
   return path;
 }
 

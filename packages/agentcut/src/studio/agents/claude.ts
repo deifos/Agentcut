@@ -1,3 +1,6 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { resolveCommand } from "../proc.js";
 import type { AgentAdapter, AgentEvent, AgentParser, AgentRun } from "./types.js";
 
 /**
@@ -24,6 +27,88 @@ const BASE_TOOLS = [
   "Skill",
   "mcp__agentcut",
 ];
+
+// A file name, web page or transcript can carry instructions, and the agent runs without anyone
+// approving its commands. So its shell only writes to the workspace, only reaches these sites, and
+// neither the shell nor Read can open logins and keys.
+const SHELL_DOMAINS = ["registry.npmjs.org", "api.openverse.org", "freesound.org", "cdn.freesound.org", "upload.wikimedia.org"];
+
+const SECRET_FOLDERS = [
+  ".ssh",
+  ".aws",
+  ".azure",
+  ".gnupg",
+  ".kube",
+  ".config/gh",
+  ".config/gcloud",
+  ".mozilla",
+  ".config/google-chrome",
+  ".config/BraveSoftware",
+  ".config/microsoft-edge",
+  "Library/Keychains",
+  "Library/Cookies",
+  "Library/Safari",
+  "Library/Application Support/Google/Chrome",
+  "Library/Application Support/BraveSoftware",
+  "Library/Application Support/Microsoft Edge",
+  "Library/Application Support/Firefox",
+  "AppData/Local/Google/Chrome",
+  "AppData/Local/BraveSoftware",
+  "AppData/Local/Microsoft/Edge",
+  "AppData/Roaming/Mozilla",
+];
+const SECRET_FILES = [
+  ".netrc",
+  ".npmrc",
+  ".pypirc",
+  ".git-credentials",
+  ".docker/config.json",
+  ".claude/.credentials.json",
+  ".codex/auth.json",
+  ".agentcut/studio-keys.json",
+  ".agentcut/transcription-keys.json",
+];
+
+/** What the agent could use to run code outside the sandbox on a later turn. */
+const CONTROL_FOLDERS = [".agentcut", ".claude", ".agents", ".codex"];
+const CONTROL_FILES = [".mcp.json", "CLAUDE.md", "AGENTS.md", "remotion.config.ts"];
+
+const fileRule = (file: string) => absoluteRule(file).slice(0, -3);
+
+/** The `--settings` file: Claude Code's OS sandbox for the shell, and the same limits on its file tools. */
+export function claudeSettings(run: Pick<AgentRun, "workspace" | "readDirs" | "shellDomains">, home = homedir()) {
+  const secretFolders = SECRET_FOLDERS.map((path) => join(home, path));
+  const secretFiles = SECRET_FILES.map((path) => join(home, path));
+  const controlFolders = CONTROL_FOLDERS.map((path) => join(run.workspace, path));
+  const controlFiles = CONTROL_FILES.map((path) => join(run.workspace, path));
+  return {
+    sandbox: {
+      enabled: true,
+      autoAllowBashIfSandboxed: true,
+      allowUnsandboxedCommands: false,
+      filesystem: {
+        denyRead: [...secretFolders, ...secretFiles],
+        allowWrite: [join(home, ".npm")],
+        denyWrite: [...controlFolders, ...controlFiles, ...run.readDirs],
+      },
+      network: { allowedDomains: [...SHELL_DOMAINS, ...run.shellDomains] },
+    },
+    permissions: {
+      deny: [
+        ...secretFolders.map((path) => `Read(${absoluteRule(path)})`),
+        ...secretFiles.map((path) => `Read(${fileRule(path)})`),
+        ...controlFolders.map((path) => `Edit(${absoluteRule(path)})`),
+        ...controlFiles.map((path) => `Edit(${fileRule(path)})`),
+      ],
+    },
+  };
+}
+
+/** Claude Code's sandbox runs on macOS, and on Linux with bubblewrap and socat. Elsewhere its shell is unconfined. */
+export function claudeSandboxAvailable() {
+  if (process.platform === "darwin") return true;
+  return process.platform === "linux" && Boolean(resolveCommand("bwrap")) && Boolean(resolveCommand("socat"));
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -126,6 +211,8 @@ export const claudeAgent: AgentAdapter = {
   skillsDir: ".claude/skills",
   imageHint: "open it with Read",
 
+  settings: claudeSettings,
+
   buildArgs(run: AgentRun) {
     const tools = run.allowShell ? [...BASE_TOOLS, "Bash"] : BASE_TOOLS;
     const args = [
@@ -140,12 +227,16 @@ export const claudeAgent: AgentAdapter = {
       tools.join(","),
       "--mcp-config",
       run.mcpConfigPath,
+      "--settings",
+      run.settingsPath,
     ];
     for (const dir of run.readDirs) args.push("--add-dir", dir);
     // Extra folders are for reading (e.g. the user's app repo): block Claude's file-edit tools there.
-    if (run.readDirs.length) {
-      args.push("--disallowedTools", ...run.readDirs.map((dir) => `Edit(${absoluteRule(dir)})`));
-    }
+    const deniedTools = [
+      ...(!run.allowShell ? ["Bash", "PowerShell", "Monitor"] : []),
+      ...run.readDirs.map((dir) => `Edit(${absoluteRule(dir)})`),
+    ];
+    if (deniedTools.length) args.push("--disallowedTools", ...deniedTools);
     if (run.model) args.push("--model", run.model);
     if (run.effort) args.push("--effort", run.effort);
     if (run.sessionId) args.push("--resume", run.sessionId);

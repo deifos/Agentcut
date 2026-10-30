@@ -76,10 +76,12 @@ async function sendFile(
   extra: Record<string, string>,
 ) {
   let size: number;
+  let revision: string;
   try {
     const stat = statSync(file);
     if (!stat.isFile()) throw new Error("not a file");
     size = stat.size;
+    revision = `${stat.size}-${stat.mtimeMs}-${stat.ctimeMs}`;
   } catch {
     sendJson(response, 404, { error: "File not found" }, extra);
     return;
@@ -89,6 +91,7 @@ async function sendFile(
     ...extra,
     "content-type": type,
     "accept-ranges": "bytes",
+    "x-studio-revision": revision,
     "cache-control": "no-cache",
   };
   const range = request.headers.range;

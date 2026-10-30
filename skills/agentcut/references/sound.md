@@ -57,7 +57,7 @@ curl -G https://api.openverse.org/v1/audio/ --data-urlencode "q=whoosh" -d licen
 ```
 
 - `length`: `shortest` (< 30 s), `short`, `medium`, `long`. Only `license=cc0` (no credit needed).
-- Download each result's `url` into a new empty folder, check with ffprobe if available, copy the ones you
+- Download each result's `url` into a new empty folder under a name you choose, check with ffprobe if available, copy the ones you
   keep into `assets/sfx/`, rank and check them with the listen tools, and record `foreign_landing_url` in
   notes.md.
 - Anonymous limits: 20 requests/minute, 200/day. Space requests ≥ 4 s apart (HTTP 429 → wait).

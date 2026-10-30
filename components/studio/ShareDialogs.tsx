@@ -322,8 +322,8 @@ export function IncomingShareDialog({
             <p className="flex gap-2 rounded-xl border border-border bg-muted/50 p-3 text-muted-foreground">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
               <span>
-                Projects include scene code that runs in your preview and renders. Only open links from people you trust.
-                It&apos;s copied into your projects; nothing is shared back.
+                Projects include scene code that runs in your preview and renders, with the same access as this page,
+                including your agent. Only open links from people you trust. It&apos;s copied into your projects; nothing is shared back.
               </span>
             </p>
             {newer ? (

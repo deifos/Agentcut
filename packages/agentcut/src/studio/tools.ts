@@ -60,8 +60,13 @@ function defineTool<T extends z.ZodRawShape>(
     const parsed = z.object(shape).strict().parse(args ?? {});
     return text(await run(parsed as z.objectOutputType<T, z.ZodTypeAny>));
   };
-  // The SDK's generic callback type doesn't infer through this helper.
-  server.registerTool(name, { description, inputSchema: shape as z.ZodRawShape }, handler as never);
+  // Parsing is handled above. Keep the SDK's dual Zod 3/4 generics out of this boundary.
+  const register = server.registerTool as (
+    name: string,
+    config: { description: string; inputSchema: z.ZodRawShape },
+    callback: typeof handler,
+  ) => unknown;
+  register.call(server, name, { description, inputSchema: shape }, handler);
 }
 
 export function registerStudioTools(server: McpServer) {
@@ -184,6 +189,20 @@ export function registerStudioTools(server: McpServer) {
     "On explicit request only, keep one visible person centered in a target variant. Default mode=follow samples the full trimmed source range at 2 Hz, associates faces by position/size continuity, smooths a bounded crop path with a dead zone, and holds brief face loss (up to 1.5 s). mode=static requests a fixed crop. Uses built-in local MediaPipe on upright source frames; no frames go to an LLM or image service. Applies the same persisted source-time path to preview and export as one undoable edit. clipIds defaults to the current selection, or the sole visible video clip. Multiple candidates, multiple faces, weak detection, large motion, unsupported sources, locked tracks or changed files return structured status and next steps without choosing a person. This is sampled face-based talking-head following, not identity recognition, arbitrary-object detection or frame-by-frame tracking. Long loss, scene/subject changes and ambiguity stop the operation; split the shot instead. Maximum 10 source minutes per clip and 1800 samples per call; no partial paths. Existing clip box, timing, scale and other variants are preserved; style camera motion is suspended while framing is set. action=reset restores prior crop overrides for these clips/variant, preserving later unrelated edits. Requires an up-to-date helper/runtime and open studio page. Never auto-call just because the aspect ratio changes.",
     { project, variant, clipIds: z.array(z.string().min(1)).min(1).max(8).optional(), action: z.enum(["center", "reset"]).default("center"), mode: z.enum(["follow", "static"]).default("follow") },
     async (args) => page("studio_frame_person", args, 10 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_cutout_person",
+    "On request, put text or graphics behind a person: cuts the person out of a video clip into a transparent video and adds it on its own track above the footage. Uses a built-in local model (MODNet) in the studio page; no frames go to an LLM or image service, and nothing needs installing. Pass only the frames that need it with fromFrame and durationInFrames: a few seconds take seconds, and a file already made for the same range is reused. Pass behind with the clip IDs of the graphics so the cutout lands above them; without it the cutout sits directly above the footage. One undoable edit. Multiple candidates, a missing person, ranges that depend on the whole clip and clips retimed per variant return structured status and next steps. Works best on one person facing the camera; other subjects are not supported. Requires an open studio page. Never install a segmentation package or write a script for this.",
+    {
+      project,
+      clipId: z.string().min(1).optional().describe("Footage clip. Defaults to the selected video clip, or the sole visible video clip."),
+      fromFrame: z.number().int().min(0).optional().describe("First timeline frame. Defaults to the clip's start."),
+      durationInFrames: z.number().int().positive().optional().describe("Timeline frames to cut out. Defaults to the rest of the clip."),
+      behind: z.array(z.string().min(1)).max(32).optional().describe("Clip IDs that should appear behind the person. They must be on tracks above the footage."),
+    },
+    async (args) => page("studio_cutout_person", args, 30 * MINUTE),
   );
 
   defineTool(

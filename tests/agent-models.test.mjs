@@ -39,7 +39,7 @@ test("model changes reject an unsupported saved thinking level", () => {
 
 test("both adapters pass model and effort on new and resumed turns", () => {
   for (const sessionId of [null, "saved-session"]) {
-    const run = { workspace: ".", sessionId, images: [], mcp: { name: "agentcut", command: "node", args: [], env: {} }, mcpConfigPath: "mcp.json", allowShell: false, readDirs: [], model: "chosen-model", effort: "high" };
+    const run = { workspace: ".", sessionId, images: [], mcp: { name: "agentcut", command: "node", args: [], env: {} }, mcpConfigPath: "mcp.json", settingsPath: "settings.json", allowShell: false, readDirs: [], shellDomains: [], model: "chosen-model", effort: "high" };
     const claude = claudeAgent.buildArgs(run);
     assert.equal(claude[claude.indexOf("--model") + 1], run.model);
     assert.equal(claude[claude.indexOf("--effort") + 1], run.effort);

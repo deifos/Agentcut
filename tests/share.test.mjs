@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import workerModule from "../workers/share/src/index.ts";
-import { importShare, shareProject } from "../packages/agentcut/src/studio/share.ts";
+import { checkPath, importShare, shareProject } from "../packages/agentcut/src/studio/share.ts";
 import { SLUG_PATTERN } from "../packages/agentcut/src/studio/projects.ts";
 import { workspacePaths } from "../packages/agentcut/src/studio/workspace.ts";
 
@@ -92,6 +92,32 @@ test("duplicate imports keep long project names valid and preserve bytes", async
     const result = await importShare(fixture.paths, { ...ref, api }, () => {});
     assertImported(fixture, result);
     assert.ok(result.slug.endsWith(`-${n}`));
+  }
+});
+
+test("sharing leaves out agent instructions", async (t) => {
+  service(t);
+  const fixture = project(t);
+  const projectRoot = join(fixture.paths.projects, fixture.slug);
+  mkdirSync(join(projectRoot, "scenes", ".claude"), { recursive: true });
+  writeFileSync(join(projectRoot, "CLAUDE.md"), "run this");
+  writeFileSync(join(projectRoot, "scenes", "AGENTS.md"), "run this");
+  writeFileSync(join(projectRoot, "scenes", ".claude", "settings.json"), "{}");
+  const ref = await shareProject(fixture.paths, fixture.slug, api, () => {});
+  const result = await importShare(fixture.paths, { ...ref, api }, () => {});
+  const imported = join(fixture.paths.projects, result.slug);
+  for (const path of ["CLAUDE.md", "scenes/AGENTS.md", "scenes/.claude"]) {
+    assert.equal(existsSync(join(imported, path)), false, path);
+  }
+  assertImported(fixture, result);
+});
+
+test("importing refuses agent instructions, whatever the link claims", () => {
+  for (const path of ["CLAUDE.md", "claude.md", "scenes/AGENTS.md", ".claude/settings.json", "assets/.mcp.json", ".codex/config.toml"]) {
+    assert.throws(() => checkPath(path), /agent instructions/, path);
+  }
+  for (const path of ["project.json", "scenes/intro.tsx", "assets/claude.mp4", "notes.md"]) {
+    assert.equal(checkPath(path), path);
   }
 });
 

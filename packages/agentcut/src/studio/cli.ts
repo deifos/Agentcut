@@ -202,8 +202,11 @@ async function main() {
   ];
   process.stdout.write(`${lines.join("\n")}\n`);
 
-  const shutdown = () => {
-    host.stop();
+  let stopping = false;
+  const shutdown = async () => {
+    if (stopping) return;
+    stopping = true;
+    await host.stop();
     process.exit(0);
   };
   process.on("SIGINT", shutdown);

@@ -7,14 +7,16 @@ import { ensureBridge } from "./bridge.js";
 import { PACKAGE_VERSION } from "./config.js";
 import { debugLog } from "./log.js";
 import { registerStudioTools } from "./studio/tools.js";
+import { MCP_INSTRUCTIONS, registerAgentGuides } from "./studio/mcp-guides.js";
 
 async function main() {
   const server = new McpServer({
     name: "agentcut",
     version: PACKAGE_VERSION,
-  });
+  }, { instructions: MCP_INSTRUCTIONS });
 
   registerStudioTools(server);
+  registerAgentGuides(server);
 
   void ensureBridge().catch((error) => {
     debugLog(`background bridge startup failed ${error instanceof Error ? error.message : String(error)}`);

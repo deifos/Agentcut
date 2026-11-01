@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync, mkdtempSync, writeFileSync, symlinkSync, mkdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, readdirSync, mkdtempSync, writeFileSync, symlinkSync, mkdirSync, rmSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { checkPath } from "../packages/agentcut/src/studio/share.ts";
 import { join } from "node:path";
 import test from "node:test";
 import { claudeAgent, claudeSettings } from "../packages/agentcut/src/studio/agents/claude.ts";
 import { codexAgent } from "../packages/agentcut/src/studio/agents/codex.ts";
-import { openFile } from "../packages/agentcut/src/studio/reveal.ts";
+import { openFile, openWebUrl } from "../packages/agentcut/src/studio/reveal.ts";
+
+test("editor link opener refuses files, executable protocols and credentials", () => {
+  for (const url of ["file:///tmp/test.html", "javascript:alert(1)", "https://user:pass@example.test", "not a URL"])
+    assert.throws(() => openWebUrl(url));
+});
 import { MEDIA_INPUT_ONLY } from "../packages/agentcut/src/studio/references.ts";
 
 const home = "/home/someone";
@@ -48,7 +53,7 @@ test("logins and keys are closed to both the shell and the Read tool", () => {
   const { sandbox, permissions } = claudeSettings(run, home);
   for (const secret of [".ssh", ".aws", ".agentcut/studio-keys.json", ".agentcut/transcription-keys.json", "Library/Keychains"]) {
     assert.ok(sandbox.filesystem.denyRead.includes(join(home, secret)), secret);
-    assert.ok(permissions.deny.some((rule) => rule.startsWith(`Read(/${join(home, secret)}`)), secret);
+    assert.ok(permissions.deny.some((rule) => rule.startsWith(`Read(/${join(home, secret).replaceAll("\\", "/")}`)), secret);
   }
   // The video tools live next to the keys and must stay readable.
   assert.ok(!sandbox.filesystem.denyRead.includes(join(home, ".agentcut")));
@@ -56,9 +61,10 @@ test("logins and keys are closed to both the shell and the Read tool", () => {
 
 test("the agent can't change what later runs outside the sandbox", () => {
   const { sandbox, permissions } = claudeSettings(run, home);
-  for (const path of ["/work/.agentcut", "/work/.claude", "/work/.mcp.json", "/work/CLAUDE.md"]) {
+  for (const name of [".agentcut", ".claude", ".mcp.json", "CLAUDE.md"]) {
+    const path = join(run.workspace, name);
     assert.ok(sandbox.filesystem.denyWrite.includes(path), path);
-    assert.ok(permissions.deny.some((rule) => rule.startsWith(`Edit(/${path}`)), path);
+    assert.ok(permissions.deny.some((rule) => rule.startsWith(`Edit(/${path.replaceAll("\\", "/")}`)), path);
   }
 });
 
@@ -98,14 +104,26 @@ test("the media whitelist keeps real formats and refuses a playlist disguised as
   assert.match(probe(real), /Duration:/);
   const fake = join(dir, "fake.mp4");
   writeFileSync(fake, "#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:1.0,\nother.ts\n#EXT-X-ENDLIST\n");
-  assert.match(probe(fake), /not on whitelist/);
+  // New FFmpeg versions can reject the disguised playlist during format probing,
+  // before the explicit demuxer whitelist check.
+  const rejected = probe(fake);
+  assert.match(rejected, /not on whitelist|Invalid data found when processing input/);
+  assert.doesNotMatch(rejected, /Duration:/);
 });
 
 function ffmpegPath() {
   try {
-    const root = join(process.env.HOME ?? "", ".agentcut", "tools", "ffmpeg");
-    const out = execFileSync("find", [root, "-type", "f", "-name", "ffmpeg"], { encoding: "utf8" });
-    return out.split("\n").find(Boolean) ?? null;
+    const folders = [join(homedir(), ".agentcut", "tools", "ffmpeg")];
+    const executable = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
+    while (folders.length) {
+      const folder = folders.pop();
+      for (const entry of readdirSync(folder, { withFileTypes: true })) {
+        const path = join(folder, entry.name);
+        if (entry.isFile() && entry.name === executable) return path;
+        if (entry.isDirectory()) folders.push(path);
+      }
+    }
+    return null;
   } catch {
     return null;
   }

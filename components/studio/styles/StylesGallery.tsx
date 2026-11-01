@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Player, Thumbnail, type PlayerRef } from "@remotion/player";
 import {
   Check,
+  Bookmark,
   Clapperboard,
   Loader2,
   Sparkles,
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoStyles } from "@/components/studio/styles/VideoStyles";
+import { SavedEditingStyles } from "@/components/studio/styles/SavedEditingStyles";
 import type { AssetEntry } from "@/lib/studio/types";
 import { useAgentName } from "@/components/studio/StudioAgent";
 import { cn } from "@/lib/utils";
@@ -131,6 +133,7 @@ export function StylesGallery({
   assets,
   onSend,
   onSelect,
+  onSaveCurrentStyle,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
@@ -146,13 +149,14 @@ export function StylesGallery({
   library: AssetEntry[];
   assets: AssetEntry[];
   /** Send a chat message to the agent (video styles hand it their recipe). */
-  onSend(text: string): void;
+  onSend(text: string): Promise<void>;
+  onSaveCurrentStyle(): void;
   /** Stage a style in the composer. Selection does not edit or send. */
   onSelect?(style: MotionStyle): void;
 }) {
   const agentName = useAgentName();
   const styles = Object.values(MOTION_STYLES);
-  const [tab, setTab] = useState<"talking" | "video">("talking");
+  const [tab, setTab] = useState<"talking" | "video" | "saved">("talking");
   const [selected, setSelected] = useState(currentStyle ?? styles[0]?.id);
   const [muted, setMuted] = useState(true);
   // Only the hovered card plays (plus the big preview): seven live players at once is too much.
@@ -217,26 +221,6 @@ export function StylesGallery({
     words: clip ? (clip.words ?? []) : DEMO_WORDS,
   });
 
-  if (onSelect) return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[min(820px,88dvh)] flex-col overflow-hidden sm:max-w-4xl">
-        <DialogTitle>Choose a style</DialogTitle>
-        <DialogDescription>Choose a look for your video. Review the request, then press Send.</DialogDescription>
-        <ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain">
-        <div className="grid grid-cols-2 gap-4 p-1 pr-3 sm:grid-cols-3 lg:grid-cols-4">
-          {styles.map((item) => (
-            <button key={item.id} type="button" onClick={() => { onSelect(item); onOpenChange(false); }} className="group flex flex-col gap-2 rounded-xl border border-border p-2 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
-              <div className="aspect-[9/16] overflow-hidden rounded-lg"><DemoStill inputProps={demo(item.id)} /></div>
-              <span className="text-sm font-semibold">{item.name}</span>
-              <span className="text-xs leading-relaxed text-muted-foreground">{item.description}</span>
-            </button>
-          ))}
-        </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
-  );
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -250,23 +234,23 @@ export function StylesGallery({
           // Card height: two rows in the height, four columns in what's left of the width.
           ["--thumb" as string]:
             "min(calc((var(--body) - 32px - 12px - 64px) / 2), calc((96vw - 402px - var(--big) * 0.5625) / 4 / 0.5625))",
-          width:
+          width: onSelect || tab !== "talking" ? "min(1100px, 96vw)" :
             "min(96vw, calc(4 * var(--thumb) * 0.5625 + var(--big) * 0.5625 + 402px))",
         }}
       >
-        <div className="flex h-[57px] shrink-0 items-center gap-3 border-b border-border/60 px-5">
+        <div className="flex min-h-[57px] shrink-0 flex-wrap items-center gap-3 border-b border-border/60 px-5 py-2">
           <div className="min-w-0">
             <DialogTitle className="text-[15px]">Styles</DialogTitle>
-            <DialogDescription className="text-[12px]">
+            <DialogDescription className="sr-only">
               {tab === "talking"
-                ? "One click restyles a talking-head video: graphics, captions, camera moves and texture."
-                : "Recipes for whole videos: music and lyric videos, explainers. Fill the blanks and the agent builds it."}
+                ? onSelect ? "Choose a look for your video. Review the request, then press Send." : "Restyle a talking-head video: graphics, captions, camera moves and texture."
+                : tab === "saved" ? "Reuse editing rules on different footage." : "Video presets with scene and asset kits. Fill the blanks and the agent builds it."}
             </DialogDescription>
           </div>
           <Tabs
             value={tab}
-            onValueChange={(v) => setTab(v as "talking" | "video")}
-            className="ml-4"
+            onValueChange={(v) => setTab(v as "talking" | "video" | "saved")}
+            className="max-w-full overflow-x-auto"
           >
             <TabsList>
               <TabsTrigger value="talking" className="gap-1.5 text-[12px]">
@@ -277,9 +261,16 @@ export function StylesGallery({
                 <Clapperboard className="size-3.5" />
                 Video styles
               </TabsTrigger>
+              <TabsTrigger value="saved" className="gap-1.5 text-[12px]">
+                <Bookmark data-icon="inline-start" />
+                Saved editing styles
+              </TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="ml-auto flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={readOnly || chatDisabled} onClick={onSaveCurrentStyle}>
+              <Bookmark data-icon="inline-start" /> Save current style
+            </Button>
             {tab === "talking" && clip ? (
               <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 {clip.status === "captioning" ? (
@@ -309,7 +300,7 @@ export function StylesGallery({
               className="hidden"
               onChange={(event) => void pickFile(event)}
             />
-            {tab === "talking" ? (
+            {tab === "talking" && !onSelect ? (
               <Button
                 type="button"
                 variant="outline"
@@ -332,18 +323,37 @@ export function StylesGallery({
           </div>
         </div>
 
-        {tab === "video" ? (
+        {tab === "saved" ? (
+          <SavedEditingStyles slug={slug} library={library} disabled={readOnly || chatDisabled} onSend={async (text) => {
+            await onSend(text);
+            onOpenChange(false);
+            toast("Style request sent. Follow progress in chat.");
+          }} />
+        ) : tab === "video" ? (
           <VideoStyles
             slug={slug}
             library={library}
             assets={assets}
             readOnly={readOnly}
             chatDisabled={chatDisabled}
-            onSend={(text) => {
-              onSend(text);
+            onSend={async (text) => {
+              await onSend(text);
               onOpenChange(false);
             }}
           />
+        ) : onSelect ? (
+          <ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain">
+            <p className="px-5 pt-4 text-sm text-muted-foreground">Choose a look. Review the request in chat, then press Send.</p>
+            <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4">
+              {styles.map((item) => (
+                <button key={item.id} type="button" onClick={() => { onSelect(item); onOpenChange(false); }} className="group flex flex-col gap-2 rounded-xl border border-border p-2 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
+                  <div className="aspect-[9/16] overflow-hidden rounded-lg"><DemoStill inputProps={demo(item.id)} /></div>
+                  <span className="text-sm font-semibold">{item.name}</span>
+                  <span className="text-xs leading-relaxed text-muted-foreground">{item.description}</span>
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
         ) : (
           <div className="flex min-h-0 flex-1">
             <ScrollArea className="min-h-0 shrink-0" viewportClassName="overscroll-contain">

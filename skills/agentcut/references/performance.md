@@ -11,6 +11,11 @@ part previews choppy but exports perfectly.
 
 ## Measure
 
+For website how-to videos, use the stall recovery in `website-howto.md`. Keep all required
+format, visual, playback and audio checks. Run page-heavy tools in sequence. A timed-out request
+can continue in the page; inspect `page.activeWork` before retrying. A small recovery probe does
+not replace the full review or reduce final render quality.
+
 - `agentcut_preview_check` (from/to in frames) plays a range muted in the user's preview and returns
   per visual clip: frames played and dropped, loading stalls, the longest freeze, the most DOM elements
   the clip drew, and a verdict: `smooth`, `choppy` from 20 % dropped, `heavy` from 40 % (and at least 6

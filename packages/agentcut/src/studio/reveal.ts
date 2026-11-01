@@ -22,7 +22,7 @@ function launch(command: string, args: string[], verbatim = false) {
   const child = spawn(command, args, {
     detached: true,
     stdio: "ignore",
-    windowsHide: false,
+    windowsHide: true,
     windowsVerbatimArguments: verbatim,
   });
   child.on("error", () => undefined);
@@ -52,4 +52,12 @@ function openWithDefaultApp(full: string) {
   if (process.platform === "win32") launch("explorer.exe", [full]);
   else if (process.platform === "darwin") launch("open", [full]);
   else launch("xdg-open", [full]);
+}
+
+/** Open an editor web link without weakening the media-only file opener. */
+export function openWebUrl(value: string) {
+  const url = new URL(value);
+  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password)
+    throw new StudioError("Only HTTP or HTTPS links without credentials can be opened.");
+  openWithDefaultApp(url.href);
 }

@@ -139,6 +139,8 @@
 }
 .studio-chat-simple .simple-quick-actions { order: 4; flex-shrink: 0; padding-top: 4px; gap: 6px; }
 .studio-chat-simple .simple-quick-actions button { border-radius: 14px; background: transparent; }
+.studio-chat-simple .simple-style-actions > button { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.studio-chat-simple .simple-style-actions button[aria-label="Save current style"] { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .studio-chat-simple .chat-context { max-height: min(24dvh, 190px); overflow-y: auto; flex-shrink: 0; }
 .simple-video-input {
   height: calc(100% - 24px);

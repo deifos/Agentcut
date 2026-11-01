@@ -1,4 +1,5 @@
 "use client";
+import { ReleaseVideoStatus } from "./ReleaseVideoStatus";
 
 import { TooltipHint } from "@/components/ui/tooltip";
 import {
@@ -61,6 +62,7 @@ import {
 import ThemeToggle from "@/components/ThemeToggle";
 import { ChatPanel } from "@/components/studio/ChatPanel";
 import { StylesGallery } from "@/components/studio/styles/StylesGallery";
+import { SaveEditingStyle } from "@/components/studio/styles/SaveEditingStyle";
 import { StyleSpy, StyleSpyTab } from "@/components/studio/StyleSpy";
 import { Cinematic, CinematicTab } from "@/components/studio/Cinematic";
 import { Recorder } from "@/components/studio/Recorder";
@@ -244,6 +246,7 @@ export function StudioApp() {
   }
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
+  const [saveStyleOpen, setSaveStyleOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   // Opened from a share link (/s/<id>#<key> forwards to /studio#share=<id>.<key>).
   const [incomingShare, setIncomingShare] = useState(() => shareFromHash(window.location.hash));
@@ -338,6 +341,7 @@ export function StudioApp() {
       if (
         isTypingTarget(event.target) ||
         exportOpen ||
+        saveStyleOpen ||
         newProjectOpen ||
         voicesOpen ||
         cinematicOpen ||
@@ -386,6 +390,7 @@ export function StudioApp() {
     doc?.project?.durationInFrames,
     duplicate,
     exportOpen,
+    saveStyleOpen,
     frameStore,
     newProjectOpen,
     voicesOpen,
@@ -849,6 +854,7 @@ export function StudioApp() {
             )}
           </div>
         </header>
+        {info?.features?.includes("release-videos") ? <ReleaseVideoStatus slug={doc?.slug ?? null} bridge={studio.getBridge()} /> : null}
 
         <div className="studio-body flex min-h-0 flex-1">
         <div className="studio-workspace flex min-h-0 min-w-0 flex-1 gap-2 px-2">
@@ -857,6 +863,7 @@ export function StudioApp() {
               className={cn(
                 PANEL,
                 "studio-chat-panel flex w-[340px] shrink-0 flex-col lg:w-[380px]",
+                !simple && "max-w-[calc(100vw-50px)]",
                 !simple && !chatOpen && "hidden",
                 simple && !doc && "hidden",
               )}
@@ -877,6 +884,8 @@ export function StudioApp() {
                 onOpenMusic={() => musicSidebar.current?.open()}
                 onClearStyle={() => selectStyle(null)}
                 onOpenStyles={() => { setStagingStyle(true); setStylesOpen(true); }}
+                onSaveStyle={() => setSaveStyleOpen(true)}
+                saveStyleDisabled={readOnly || Boolean(chat.running)}
                 onOpenStyleSpy={() => setStyleSpyOpen(true)}
                 slug={doc?.slug ?? null}
                 chat={chat}
@@ -914,6 +923,8 @@ export function StudioApp() {
             <div className="relative -mx-1 w-0 shrink-0">
               <div className="absolute top-12 -left-[5px] z-20 flex flex-col gap-2">
                 <StylesTab
+                  onSave={() => setSaveStyleOpen(true)}
+                  saveDisabled={readOnly || Boolean(chat.running)}
                   style={currentStyle}
                   onClick={() => setStylesOpen(true)}
                 />
@@ -1227,6 +1238,8 @@ export function StudioApp() {
         ) : null}
         {doc?.project ? (
           <StylesGallery
+            key={doc.slug}
+            onSaveCurrentStyle={() => { setStylesOpen(false); setStagingStyle(false); setSaveStyleOpen(true); }}
             onSelect={simple || stagingStyle ? selectStyle : undefined}
             open={stylesOpen}
             onOpenChange={(open) => { setStylesOpen(open); if (!open) setStagingStyle(false); }}
@@ -1239,11 +1252,19 @@ export function StudioApp() {
             slug={doc.slug}
             library={studio.library}
             assets={studio.assets}
-            onSend={(text) => {
+            onSend={async (text) => {
               setChatOpen(true);
-              void sendChat(text, { attachFrame: false });
+              await sendChat(text, { attachFrame: false });
             }}
           />
+        ) : null}
+        {doc?.project ? (
+          <SaveEditingStyle key={`save-style-${doc.slug}`} open={saveStyleOpen} onOpenChange={setSaveStyleOpen}
+            slug={doc.slug} disabled={readOnly || Boolean(chat.running)} onSend={async (text) => {
+              setChatOpen(true);
+              await sendChat(text, { attachFrame: false });
+              toast("Save request sent. Follow progress in chat. The style will appear in Saved editing styles when ready.");
+            }} />
         ) : null}
         {doc?.project ? (
           <ExportDialog

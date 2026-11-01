@@ -18,6 +18,7 @@ import {
   Film,
   Paperclip,
   Palette,
+  Plus,
   ScanEye,
   Scissors,
   Captions,
@@ -751,6 +752,8 @@ export interface ChatPanelProps {
   selectedStyle?: { id: string; name: string } | null;
   onClearStyle?(): void;
   onOpenStyles?(): void;
+  onSaveStyle?(): void;
+  saveStyleDisabled?: boolean;
   onOpenStyleSpy?(): void;
   selectedMusic?: { id: string; name: string } | null;
   onClearMusic?(): void;
@@ -828,6 +831,8 @@ export function ChatPanel({
   selectedStyle,
   onClearStyle,
   onOpenStyles,
+  onSaveStyle,
+  saveStyleDisabled,
   onOpenStyleSpy,
   selectedMusic,
   onClearMusic,
@@ -1309,7 +1314,14 @@ export function ChatPanel({
         </div>
         {simple ? (
           <div className="simple-quick-actions flex flex-wrap justify-center gap-2" aria-label="Prepare a video request">
-            <Button variant="outline" size="sm" onClick={onOpenStyles} disabled={disabled}><Palette data-icon="inline-start" /> Styles</Button>
+            <div className="simple-style-actions flex shrink-0 items-center" role="group" aria-label="Styles">
+              <Button variant="outline" size="sm" className="rounded-r-none" onClick={onOpenStyles} disabled={disabled}><Palette data-icon="inline-start" /> Styles</Button>
+              {onSaveStyle ? <TooltipHint content="Save current style">
+                <Button type="button" variant="outline" size="icon-sm" className="rounded-l-none border-l-0" aria-label="Save current style" onClick={onSaveStyle} disabled={disabled || saveStyleDisabled}>
+                  <Plus />
+                </Button>
+              </TooltipHint> : null}
+            </div>
             <Button variant="outline" size="sm" onClick={onOpenStyleSpy} disabled={disabled}><ScanEye data-icon="inline-start" /> Style Spy</Button>
             <Button variant="outline" size="sm" onClick={onOpenMusic} disabled={disabled}><Music2 data-icon="inline-start" /> Add music</Button>
             {[

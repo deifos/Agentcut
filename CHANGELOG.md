@@ -16,11 +16,33 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Added
 
 - Put text and graphics behind a person. Ask your agent, and it cuts the person out of just the frames it needs, on your computer, and places them on their own layer above the graphic. Preview and exports show the same result. The first use downloads a model of about 26 MB.
+- Save reusable editing rules with the plus action beside Styles in Simple and Advanced view. Name a style, let the agent inspect the project and available edit history, then use it on different footage from Saved editing styles. Keep existing talking-head looks and video preset kits. Add validated helper saves that do not overwrite existing styles.
+
+- Expose the packaged video skill and guides as MCP tools and resources, with a capability index and startup instructions. Let external agents read and edit project files, inspect toolkit code/styles and already allowed app source folders, and copy preset assets without a shared disk. Return capture and contact-sheet images directly through MCP for visual review.
+
+- Build story edits from recorded action times, with editable source cuts, beat headlines, explanations, opening and closing cards, and a persistent demo disclosure. Remove automatic zooms from the default edit.
+- Support paced typing and local-only reply actions in explicitly approved, marked synthetic demos. Keep live send and credential controls blocked.
+
+- Require a browser-based story and shot plan before release capture, with observed evidence, intended visible changes, and a persistent label for explicitly approved demo footage. Refuse a capture made only of static crops.
+- Record a visible cursor, smooth movements, and click feedback through the helper's page recorder, without using Agent Browser's separate cursor encoder.
+
+- Create local announcement drafts from a website URL and release description through MCP. The helper manages Agent Browser, Chrome, FFmpeg, a separate sign-in profile, real page recordings, and editable titles, scene cuts, labels and focus moves.
+- Save release-video jobs with progress, sign-in and preparation pauses, resume, cancellation, restart recovery, and exact project links. Show job status and resume/cancel controls in the studio. Announcement is supported; how-to and promotional remain planned.
+- Add a prepared Chat with Website Instagram sample and an opt-in end-to-end capture test. The sample uses no live account data and sends no messages.
 
 ### Fixed
 
 - Keep person cutouts aligned at different playback speeds, invalidate cached cutouts when source files change, and avoid applying results after timing or track permissions change.
 - Open media without a Windows command shell, and reject links to scripts or folders.
+- Allow browser setup to retry after a failure, close retained release browsers when the helper stops, and block linked MCP paths that could expose private project files or bypass file validation.
+
+- Preserve the full creative and review workflow for website how-to videos while stopping repeated render-timeout retries and serializing heavy page checks so timed-out work cannot build a hidden backlog. Expose the active page check in agent status and reuse working setup.
+
+- Wait for app controls to be visible before recording preparation, and wait for selected tabs to finish switching. Resume failed release jobs with their saved browser profile, keep the visible demo browser open on failure and completion, and reuse a connected editor tab when opening the draft.
+
+- Open the project selected by a studio link instead of the last local project. Local links can select a second helper port for an isolated workspace.
+- Wait for the preview player to update after a project sync before starting an MCP playback check.
+
 - Release decoded audio after computing timeline waveforms, and limit the video thumbnail cache without retaining object URLs.
 - Keep visible video thumbnails after cache eviction, and replace old thumbnails when a clip's video source changes.
 - Capture timeline scene previews as small still images, one at a time, instead of keeping many complex scenes mounted in Advanced view. Limit the still cache and cancel queued captures when their tiles close.

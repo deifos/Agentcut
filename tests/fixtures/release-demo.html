@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Chat with Website — prepared demo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f4f8;color:#202333;font:20px Arial,sans-serif}header{height:90px;display:flex;align-items:center;justify-content:space-between;padding:0 60px;background:white;border-bottom:1px solid #e3e2eb}strong{font-size:24px}nav{display:flex;gap:28px}a{color:#6152cb;text-decoration:none}main{max-width:1120px;margin:65px auto}h1{font-size:48px;letter-spacing:-2px;margin-bottom:12px}.muted{color:#737489}.card{margin-top:35px;border:1px solid #e0dfeb;background:white;border-radius:22px;padding:40px;box-shadow:0 16px 45px #30245b08}.tag{display:inline-block;border-radius:30px;background:#eee9ff;color:#6951c8;padding:10px 16px;font-weight:bold}.green{color:#168667;background:#e1f6ed}button{font:inherit;background:#6554cf;color:white;border:0;padding:14px 25px;border-radius:10px}.bubble{padding:20px 24px;background:#f1eff8;border-radius:16px;max-width:65%;margin:20px 0}.bot{background:#6554cf;color:white;margin-left:auto}.row{display:flex;justify-content:space-between;align-items:center;gap:30px}textarea{width:100%;font:inherit;padding:20px;border:1px solid #ddd;border-radius:12px;height:120px}.notice{font-size:15px;margin-top:40px;color:#777}
+</style>
+<header><strong>Chat with Website</strong><nav><a id="settings" href="/settings">Integrations</a><a id="bot" href="/bot">Bot replies</a><a id="manual" href="/manual">Inbox</a></nav></header>
+<main id="content"></main>
+<script>
+const views={
+settings:`<span class="tag">Instagram integration</span><h1>Your bot. Now in Instagram DMs.</h1><p class="muted">One bot answers questions on your website and Instagram.</p><div class="card row"><div><h2>Instagram Business</h2><p>@prepared_demo_account</p><span class="tag green">Connected</span></div><div><p>Website knowledge</p><strong>Ready for Instagram</strong></div></div>`,
+bot:`<span class="tag">Prepared sample conversation</span><h1>Helpful answers, automatically.</h1><p class="muted">The same website bot answers your Instagram messages.</p><div class="card"><div class="row"><strong>Sample visitor</strong><span class="tag green">Instagram · Bot active</span></div><div class="bubble">Do you offer a free trial?</div><div class="bubble bot">Yes! You can try the service free for 14 days. I can help you get started.</div></div>`,
+manual:`<span class="tag">Prepared sample conversation</span><h1>Jump in when you want.</h1><p class="muted">You can also reply yourself, from the same inbox.</p><div class="card"><div class="row"><strong>Sample visitor</strong><span class="tag">Manual reply</span></div><div class="bubble">Can a person help me choose a plan?</div><textarea aria-label="Prepared reply" readonly>Of course! I can help you choose the right plan.</textarea><p class="muted">Prepared reply · not sent</p><button type="button" disabled>Send reply (disabled in demo)</button></div>`,
+login:`<h1>Sign in to the prepared demo</h1><p>No account or credentials are needed.</p><label>Password field for login detection <input type="password" aria-label="Password" value="" disabled></label><p><a href="/settings">Continue with sample account</a></p>`
+};
+content.innerHTML=views[location.pathname.slice(1)]||views.settings;
+content.insertAdjacentHTML('beforeend','<p class="notice">LOCAL TEST FIXTURE · All accounts and conversations on this page are sample data.</p>');
+</script>
+</html>

@@ -1015,7 +1015,11 @@ export function useStudioController() {
         setInfo(result);
         setProjects(result.projects);
         const current = latest.current.doc?.slug;
-        const wanted = current ?? readLastProject();
+        const linked = new URLSearchParams(window.location.search).get("project");
+        const wanted = current ?? linked ?? readLastProject();
+        if (!current && linked && !result.projects.some(project => project.slug === linked)) {
+          throw new Error(`Project "${linked}" is not in this local workspace. Start the helper with the workspace that contains this project.`);
+        }
         const target =
           result.projects.find((project) => project.slug === wanted)?.slug ??
           result.projects[0]?.slug ??

@@ -4,10 +4,10 @@
 // A preset is a folder in the workspace library, library/presets/<id>/: PROMPT.md (the recipe, with
 // [blanks]), preset.json (name, description, the blanks as form fields), preview.mp4 + poster.jpg, and
 // the scenes and assets the recipe copies. Picking one fills the blanks from the form and hands the
-// recipe to the agent; "Save this video's style" asks the agent to make a new preset from the project.
+// recipe to the agent. Reusable editing rules are saved separately in editing-styles/.
 import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
-import { Bookmark, Clapperboard, Film, Sparkles } from "lucide-react";
+import { Clapperboard, Film, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,14 +151,15 @@ export function VideoStyles({
   assets: AssetEntry[];
   chatDisabled: boolean;
   readOnly: boolean;
-  onSend(text: string): void;
+  onSend(text: string): Promise<void>;
 }) {
   const agentName = useAgentName();
   const presets = useVideoPresets(library);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string | string[]>>({});
   const [target, setTarget] = useState<"new" | "this">("new");
-  const [saveName, setSaveName] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [dictatingFields, setDictatingFields] = useState<string[]>([]);
   const preset = presets?.find((p) => p.id === selectedId) ?? presets?.[0] ?? null;
 
@@ -168,50 +169,39 @@ export function VideoStyles({
   const set = (id: string, next: string | string[]) => setValues((v) => ({ ...v, [id]: next }));
   const missing = preset?.fields.filter((f) => f.required && !(Array.isArray(values[f.id]) ? values[f.id].length : String(values[f.id] ?? "").trim())) ?? [];
 
-  const make = () => {
-    if (!preset || dictatingFields.length) return;
+  const make = async () => {
+    if (!preset || dictatingFields.length || readOnly || chatDisabled || sending || missing.length) return;
+    setSending(true);
+    setSendError(null);
     const lines = preset.fields.map((field) => {
       const v = values[field.id];
       const text = Array.isArray(v) ? v.join(", ") : String(v ?? "").trim();
       const fallback = field.id === "lyrics" ? "transcribe them" : field.type === "images" ? "none" : "(not given; decide from the rest)";
       return `- ${field.label}: ${text || fallback}`;
     });
-    onSend(
+    try { await onSend(
       [
         `Make a video with the "${preset.name}" video style: read library/presets/${preset.id}/PROMPT.md and follow it, with these values for its blanks:`,
         ...lines,
         `(assets/… files are in the "${slug}" project; library:… files are in the library.)`,
         target === "new" ? "Make it as a new project (copy the files it needs into it)." : "Make it in this project, replacing its timeline.",
       ].join("\n"),
-    );
+    ); } catch (error) {
+      setSendError(error instanceof Error ? error.message : "Could not send the preset request.");
+    } finally { setSending(false); }
   };
 
-  const savePreset = () => {
-    const name = saveName.trim() || "my style";
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-style";
-    // Self-contained, so it works even where the skill's references/presets.md isn't there yet.
-    onSend(
-      [
-        `Save this video's style as a reusable video style preset named "${name}" in library/presets/${id}/ (see references/presets.md if you have it):`,
-        "- scenes/ and assets/: the scene files and the assets the look needs (not the song or personal photos), made generic (no names or lyrics baked in; example content goes in *.example.* files).",
-        "- PROMPT.md: the recipe (what to copy, fonts, every rule of the look, timing, sound, workflow), with what changes per video in [brackets].",
-        '- preset.json: { "name", "description" (one sentence), "kind" (e.g. "Music video"), "preview": "preview.mp4", "poster": "poster.jpg", "fields": [{ "id", "label", "type": "text" | "longtext" | "audio" | "images", "required"?, "placeholder"?, "help"? }] } with one field per [bracket].',
-        "- preview.mp4 (~10 s of the latest render, 960×540, H.264, no audio, a stretch without personal photos) and poster.jpg (one strong frame).",
-        "Then tell me it's in the Styles tab under Video styles.",
-      ].join("\n"),
-    );
-    setSaveName("");
-  };
 
   return (
     <div className="flex min-h-0 flex-1">
       <ScrollArea className="min-h-0 flex-1">
+        <p className="px-4 pt-4 text-sm text-muted-foreground">Video presets use scene and asset kits. For reusable editing rules, open Saved editing styles.</p>
         <div className="grid grid-cols-2 gap-3 p-4">
           {presets === null ? (
             <p className="col-span-2 text-[12px] text-muted-foreground">Loading video styles…</p>
           ) : presets.length === 0 ? (
             <div className="col-span-2 rounded-xl border border-dashed border-border/70 p-6 text-center text-[12px] text-muted-foreground">
-              No video styles yet. Make a video you like, then save its style below.
+              No video presets yet. To save editing rules, select Save current style above.
             </div>
           ) : (
             presets.map((p) => <PresetCard key={p.id} preset={p} active={p.id === preset?.id} onSelect={() => setSelectedId(p.id)} />)
@@ -317,19 +307,12 @@ export function VideoStyles({
           ) : null}
         </ScrollArea>
         <div className="space-y-3 border-t border-border/60 p-4">
-          <Button type="button" disabled={!preset || readOnly || chatDisabled || missing.length > 0 || dictatingFields.length > 0} onClick={make} className="h-9 w-full gap-1.5">
+          {sendError ? <p role="alert" className="text-sm text-destructive">{sendError}</p> : null}
+          <Button type="button" disabled={!preset || readOnly || chatDisabled || sending || missing.length > 0 || dictatingFields.length > 0} onClick={() => void make()} className="h-9 w-full gap-1.5">
             <Sparkles className="size-4" />
-            {missing.length ? `Add the ${missing[0].label.toLowerCase()} first` : `Make it with ${agentName}`}
+            {sending ? "Sending…" : missing.length ? `Add the ${missing[0].label.toLowerCase()} first` : `Make it with ${agentName}`}
           </Button>
-          <div className="flex items-center gap-1.5">
-            <Input value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Name this project's style…" className="h-8 text-[12px]" />
-            <TooltipHint content={`Ask ${agentName} to save this video's style as a preset`}>
-              <Button type="button" variant="outline" size="sm" disabled={readOnly || chatDisabled} onClick={savePreset} className="h-8 shrink-0 gap-1.5 text-[12px]">
-                <Bookmark className="size-3.5" />
-                Save style
-              </Button>
-            </TooltipHint>
-          </div>
+
         </div>
       </div>
     </div>

@@ -1,5 +1,8 @@
 # Video style presets
 
+These are scene/asset kits. For Save current style, saved editing rules, or applying an editing style to different
+footage, read `references/editing-styles.md` instead. Existing kits stay in `library/presets/`.
+
 A video style is a recipe for a whole video that isn't a talking head: a music or lyric video, an explainer, a
 promo look. It lives in the workspace library, one folder per preset:
 
@@ -31,7 +34,8 @@ form built from `preset.json` fields. When the user fills it in, you get a messa
 
 ## Saving a video style
 
-When the user asks to save the open video's style ("save this as a preset", the gallery's Save style button):
+Use this workflow only when the user explicitly asks to save a scene/asset kit. The gallery's Save current style
+action saves editing instructions instead; follow `references/editing-styles.md` for it.
 
 1. Copy the project's scene files and the assets the look needs (textures, fonts, overlays: not the user's song or
    personal photos) into `library/presets/<id>/`. Make the scenes generic: no names, personal facts or lyrics baked in

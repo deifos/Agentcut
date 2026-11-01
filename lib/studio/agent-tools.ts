@@ -16,6 +16,9 @@ import {
 import { findClip } from "@/lib/studio/edit";
 import type { StudioCursorTrack } from "@/lib/studio/cursor-track";
 import type { LoadedModule, StudioDoc, StudioLayers } from "@/lib/studio/types";
+import { HEAVY_PAGE_TOOLS, PageWorkGate } from "@/lib/studio/page-work";
+
+const pageWork = new PageWorkGate();
 
 export interface StudioExportJobUpdate {
   slug: string;
@@ -200,6 +203,9 @@ async function checkPreview(
   from: number,
   to: number,
 ) {
+  // ready() can load a new bundle immediately before this call. Let React commit
+  // its new Player before retaining a reference for the playback check.
+  await nextPaint();
   const player = context.getPlayer();
   if (!player) throw new Error("The preview isn't on screen; ask the user to open the project.");
   if (context.previewPerf.get().checking)
@@ -327,12 +333,22 @@ export async function runStudioTool(
   rawParams: unknown,
   context: StudioToolContext,
 ): Promise<unknown> {
+  const run = () => runStudioToolInternal(method, rawParams, context);
+  return HEAVY_PAGE_TOOLS.has(method) ? pageWork.run(method, run) : run();
+}
+
+async function runStudioToolInternal(
+  method: string,
+  rawParams: unknown,
+  context: StudioToolContext,
+): Promise<unknown> {
   const params = asRecord(rawParams);
   switch (method) {
     case "studio_page_status": {
       const doc = context.getDoc();
       const loaded = context.getModule();
       return {
+        activeWork: pageWork.status(),
         activeProject: doc?.slug ?? null,
         projectName: doc?.project?.name ?? null,
         variant: context.getVariant(),

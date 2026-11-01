@@ -531,9 +531,9 @@ async function fetchBridgeStatus() {
  * POST /call on the bridge another process owns. Uses node:http rather than fetch: fetch (undici) gives
  * up waiting for response headers after 300 s, and exports or long captures can take longer.
  */
-function callExternalBridge(method: string, params: unknown, timeoutMs: number) {
+function callExternalBridge(method: string, params: unknown, timeoutMs: number, includeImages = false) {
   const { host, port } = getConfig();
-  const payload = JSON.stringify({ method, params, timeoutMs });
+  const payload = JSON.stringify({ method, params, timeoutMs, includeImages });
   return new Promise<unknown>((resolve, reject) => {
     const req = httpRequest(
       {
@@ -573,7 +573,7 @@ function callExternalBridge(method: string, params: unknown, timeoutMs: number) 
 export async function callEditor(
   method: string,
   params: unknown,
-  options?: { timeoutMs?: number },
+  options?: { timeoutMs?: number; includeImages?: boolean },
 ) {
   const timeoutMs = options?.timeoutMs ?? EDITOR_CALL_TIMEOUT_MS;
   const local = extension?.handleLocalCall(method, params);
@@ -582,7 +582,7 @@ export async function callEditor(
 
   if (!activeEditor || activeEditor.closed) {
     if (!serverPromise) {
-      return callExternalBridge(method, params, timeoutMs);
+      return callExternalBridge(method, params, timeoutMs, options?.includeImages);
     }
     throw new Error(
       "No Agentcut page is connected. Open Agentcut in your browser.",
@@ -725,9 +725,12 @@ async function startBridgeServer() {
           typeof body.timeoutMs === "number" && body.timeoutMs > 0
             ? Math.min(body.timeoutMs, 2 * 60 * 60 * 1000)
             : undefined;
-        const result = persistAgentFrameResult(
-          await callEditor(method, body.params, { timeoutMs }),
-        );
+        const raw = await callEditor(method, body.params, { timeoutMs });
+        // MCP clients need image content for visual review without a shared disk.
+        // Existing HTTP callers retain the persisted-file response by default.
+        const includeImages = body.includeImages === true &&
+          (method === "studio_capture_frames" || method === "studio_contact_sheet");
+        const result = includeImages ? raw : persistAgentFrameResult(raw);
         sendJsonResponse(response, 200, { result });
         return;
       }

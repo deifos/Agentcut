@@ -18,6 +18,7 @@ import {
   listAssets,
   listLibrary,
   listProjects,
+  hashText,
   projectDir,
   readProjectState,
   StudioError,
@@ -28,7 +29,7 @@ import {
 import { installedBrowsers, ReferenceImports } from "./references.js";
 import { cancelLocalRender, runLocalRender } from "./render.js";
 import { importShare, shareProject } from "./share.js";
-import { openFile, projectFile, revealFile } from "./reveal.js";
+import { openFile, openWebUrl, projectFile, revealFile } from "./reveal.js";
 import {
   generateVoice,
   listVoices,
@@ -41,6 +42,9 @@ import {
   type VoiceProviderId,
 } from "./voice.js";
 import { studioMcpServer, type WorkspacePaths } from "./workspace.js";
+import { ReleaseVideos } from "./release-video.js";
+import { listMcpFiles, readMcpFile, writeMcpFile, copyMcpFile, type McpFileScope } from "./mcp-files.js";
+import { saveEditingStyle } from "./editing-styles.js";
 
 /** The hosted studio page, plus `npm run dev` of this repo. More with --origin or AGENTCUT_ORIGINS. */
 export const STUDIO_APP_URL = "https://agentcut.synteq.app";
@@ -84,6 +88,7 @@ export class StudioHost implements BridgeExtension {
   readonly chat: ChatEngine;
   readonly references: ReferenceImports;
   readonly transcription: TranscriptionService;
+  readonly releases: ReleaseVideos;
 
   constructor(options: StudioHostOptions) {
     this.options = options;
@@ -105,6 +110,34 @@ export class StudioHost implements BridgeExtension {
       (job) => this.emit("studio.reference", job),
       (slug) => this.emit("studio.assets", { slug }),
     );
+    const editorOrigin = process.env.AGENTCUT_EDITOR_ORIGIN || STUDIO_APP_URL;
+    if (!this.isOriginAllowed(new URL(editorOrigin).origin)) throw new Error("The editor origin must be in the helper's allowed origins.");
+    this.releases = new ReleaseVideos({
+      paths: this.paths, editorOrigin, bridgePort: options.port,
+      headed: process.env.AGENTCUT_DEMO_HEADLESS !== "1",
+      runAgent: async (job, prompt) => { await this.chat.send(job.slug, prompt, {}, job.input.agent); },
+      cancelAgent: slug => { this.chat.dropQueued(slug); this.chat.cancel(slug); },
+      changed: job => {
+        this.emit("studio.release", job);
+        this.emit("studio.projects", { projects: listProjects(this.paths) });
+        this.emit("studio.assets", { slug: job.slug });
+      },
+      build: async slug => {
+        this.watchProject(slug);
+        const state = readProjectState(this.paths, slug);
+        if (state.issues.some(issue => issue.severity === "error")) throw new Error("The announcement project has validation errors.");
+        const bundle = await this.rebuild(slug);
+        if (!bundle.ok) throw new Error(bundle.errors.map(error => error.text).join("\n"));
+      },
+      open: async url => {
+        if (process.env.AGENTCUT_DEMO_NO_OPEN === "1") throw new Error("Editor opening is disabled for this unattended test.");
+        const project = new URL(url).searchParams.get("project");
+        if (project && getEditorSession()) {
+          try { await callEditor("studio_open_project", { project }, { timeoutMs: 15_000 }); return; } catch {}
+        }
+        openWebUrl(url);
+      },
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -303,6 +336,10 @@ export class StudioHost implements BridgeExtension {
   async handlePageRequest(method: string, params: unknown): Promise<unknown> {
     const p = asRecord(params);
     switch (method) {
+      case "studio.release.list": return this.releases.list();
+      case "studio.release.status": return this.releases.get(String(p.job));
+      case "studio.release.resume": return this.releases.resume(String(p.job));
+      case "studio.release.cancel": return this.releases.cancel(String(p.job));
       case "studio.info":
         return this.info();
       case "studio.projects.list":
@@ -411,7 +448,27 @@ export class StudioHost implements BridgeExtension {
   /** MCP tool calls the helper answers itself (files, not pixels). */
   handleLocalCall(method: string, params: unknown): Promise<unknown> | undefined {
     const p = asRecord(params);
+    const sources = (this.options.addDirs ?? []).map(path => ({ id: hashText(path), path }));
+    const sourceRoot = (id: unknown) => {
+      if (p.scope !== "source") return undefined;
+      const source = sources.find(source => source.id === id);
+      if (!source) throw new StudioError("Unknown source ID. Call agentcut_sources; only folders already configured with --add-dir can be read.", "bad_path");
+      return source.path;
+    };
     switch (method) {
+      case "studio.local.release_create": return Promise.resolve().then(() => this.releases.create(p));
+      case "studio.local.sources": return Promise.resolve({ sources, note: "Read-only source folders configured with --add-dir. Hidden files are not exposed. MCP cannot add folders or write source files." });
+      case "studio.local.list_files": return Promise.resolve().then(() => listMcpFiles(this.paths, p.scope as McpFileScope, p.project as string | undefined ?? this.pageSession?.activeProject ?? undefined, p.path as string, p.offset as number, p.limit as number, sourceRoot(p.source)));
+      case "studio.local.read_file": return Promise.resolve().then(() => readMcpFile(this.paths, p.scope as McpFileScope, p.project as string | undefined ?? this.pageSession?.activeProject ?? undefined, String(p.path), sourceRoot(p.source)));
+      case "studio.local.write_file": return Promise.resolve().then(() => writeMcpFile(this.paths, assertSlug(p.project), String(p.path), String(p.content), p.baseHash as string | null));
+      case "studio.local.save_editing_style": return Promise.resolve().then(() => saveEditingStyle(this.paths, p));
+      case "studio.local.copy_file": return Promise.resolve().then(() => copyMcpFile(this.paths, p.scope as McpFileScope, p.sourceProject as string | undefined, String(p.source), assertSlug(p.project), String(p.destination), sourceRoot(p.sourceRoot)));
+      case "studio.local.release_status": return Promise.resolve().then(() => p.job ? this.releases.get(String(p.job)) : this.releases.list());
+      case "studio.local.release_browser": return this.releases.inspect(String(p.job), p.command);
+      case "studio.local.release_capture": return this.releases.capture(String(p.job), p.plan);
+      case "studio.local.release_pause": return Promise.resolve().then(() => this.releases.pause(String(p.job), String(p.detail)));
+      case "studio.local.release_resume": return this.releases.resume(String(p.job));
+      case "studio.local.release_cancel": return this.releases.cancel(String(p.job));
       case "studio.local.transcription_options": return Promise.resolve({ ...transcriptionSettings(), jobs: this.transcription.status() });
       case "studio.local.cancel_transcription": return Promise.resolve(this.transcription.cancel(String(p.job)));
       case "studio.local.transcribe": return this.transcription.run(assertSlug(p.project ?? this.pageSession?.activeProject), p as unknown as TranscriptionInput);
@@ -506,16 +563,21 @@ export class StudioHost implements BridgeExtension {
     void this.getAgents();
   }
 
-  stop() {
+  async stop() {
     this.watcher?.close();
     this.libraryWatcher?.close();
     this.chat.cancelAll();
     this.references.cancelAll();
     this.transcription.close();
+    await this.releases.close();
   }
 
   emit(event: string, data: unknown) {
     sendToEditor({ type: "studio.event", event, data });
+    if (event === "studio.chat") {
+      const p = asRecord(data);
+      if (p.kind === "done" && typeof p.slug === "string") this.releases?.agentStopped(p.slug, asRecord(p.message).error as string | undefined);
+    }
   }
 
   /** Every agent and whether it's installed (looked up once per helper run). */
@@ -667,6 +729,9 @@ export class StudioHost implements BridgeExtension {
 
   /** Delete a project from disk (the page confirms first). Not while the agent works on it. */
   private deleteProject(slug: string) {
+    if (this.releases.list().some(job => job.slug === slug && !["ready", "failed", "cancelled"].includes(job.stage))) {
+      throw new StudioError("A release video job is using this project. Cancel the video job first.", "busy");
+    }
     if (this.chat.runningSlug() === slug) {
       throw new StudioError("The agent is working on this project. Stop it first, then delete.", "busy");
     }
@@ -737,7 +802,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["styles", "drawing", "share", "person-framing", "transcription-providers"],
+      features: ["styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos"],
     };
   }
 

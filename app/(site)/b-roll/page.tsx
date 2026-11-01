@@ -18,7 +18,8 @@ export default function BrollPage() {
         Old films, <span className="site-cut">new edits.</span>
       </h1>
       <p className="site-rise mt-6 max-w-2xl text-lg text-ink/60" style={{ ["--i" as string]: 2 }}>
-        Public-domain shots cut from industrial films, newsreels and home movies. Describe what you need, like
+        Public-domain shots cut from industrial films, newsreels and home movies, plus a growing set of modern
+        AI-generated clips. Describe what you need, like
         &ldquo;crowd celebrating&rdquo; or &ldquo;lonely city at night&rdquo;, hover to play, download the ones
         you like, or let your agent match a shot to every line in Agentcut.
       </p>
@@ -28,13 +29,17 @@ export default function BrollPage() {
       <section className="mt-20 max-w-3xl text-sm leading-relaxed text-ink/60">
         <h2 className="font-display text-xl font-extrabold tracking-tight text-ink">Licence</h2>
         <p className="mt-3">
-          Every shot comes from a film marked public domain on the{" "}
+          The archival shots come from films marked public domain on the{" "}
           <a href="https://archive.org" className="underline underline-offset-2 hover:text-ink" target="_blank" rel="noreferrer">
             Internet Archive
           </a>{" "}
           (Prelinger Archives, FedFlix, NASA and others): free for personal and commercial use, no credit needed.
           Each card links to its source film. Logos and brand names that appear in a shot can still be
           trademarks, and the descriptions are written by a vision model, so check a shot before you rely on it.
+        </p>
+        <p className="mt-3">
+          Modern clips are AI-generated, not filmed, and not public domain; each is labelled
+          &ldquo;AI-generated&rdquo; on its card. They are free to use in your videos too.
         </p>
       </section>
     </main>

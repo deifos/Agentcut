@@ -4,7 +4,8 @@ Agentcut has a catalog of public-domain shots cut from archive.org films (Prelin
 educational films, newsreels, home movies): 1930s–1970s, colour and black-and-white, silent, free to use
 in any video, commercial included (brand logos seen in a shot are still trademarks). Use it for b-roll
 under a voice-over, for backgrounds behind lyrics or captions, and for "archival" looks (retro tech ads,
-documentary, nostalgic lyric videos).
+documentary, nostalgic lyric videos). It also has a smaller set of modern AI-generated clips (tech, work,
+cities, science, abstract); their film title says "AI-generated" and they aren't archival or public domain.
 
 ## Find shots
 

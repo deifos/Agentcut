@@ -20,7 +20,6 @@ const scope = self as unknown as DedicatedWorkerGlobalScope;
 interface Catalog {
   base: string;
   index: BrollIndex;
-  vectors: Int8Array;
   words: Set<string>[];
 }
 
@@ -35,15 +34,9 @@ function getCatalog(base: string) {
         if (!r.ok) throw new Error(`b-roll catalog: HTTP ${r.status}`);
         return r.json() as Promise<BrollIndex>;
       });
-      // The published index names its own vectors file, so the pair always matches.
-      const vectors = await fetch(`${base}/${index.vectorsFile ?? "vectors.i8"}`).then((r) => {
-        if (!r.ok) throw new Error(`b-roll vectors: HTTP ${r.status}`);
-        return r.arrayBuffer();
-      });
       return {
         base,
         index,
-        vectors: new Int8Array(vectors),
         words: index.shots.map((s) => new Set(words([s.description, s.setting, ...s.subjects, ...s.mood, ...s.tags].join(" ")))),
       };
     })();
@@ -52,6 +45,41 @@ function getCatalog(base: string) {
     });
   }
   return catalog;
+}
+
+// Only a search by meaning needs the vectors (about 18 MB): load them then, not for the first page.
+let vectorsFile: Promise<Int8Array> | null = null;
+
+function getVectors(base: string, index: BrollIndex) {
+  // The published index names its own vectors file, so the pair always matches.
+  vectorsFile ??= fetch(`${base}/${index.vectorsFile ?? "vectors.i8"}`).then(async (r) => {
+    if (!r.ok) throw new Error(`b-roll vectors: HTTP ${r.status}`);
+    return new Int8Array(await r.arrayBuffer());
+  });
+  vectorsFile.catch(() => {
+    vectorsFile = null;
+  });
+  return vectorsFile;
+}
+
+// The opening grid: the first shots of the browse order (see scripts/broll-index/sync.mjs), a tiny file
+// that shows results at once. The full catalog (about 30 MB of JSON) waits for a search or a filter.
+let browseFile: Promise<{ total: number; matches: number; shots: BrollShot[] } | null> | null = null;
+
+async function browsePage(base: string, offset: number, limit: number) {
+  browseFile ??= fetch(`${base}/browse.json`)
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+  const browse = await browseFile;
+  if (!browse || offset + limit > browse.shots.length) return null;
+  return {
+    total: browse.total,
+    matches: browse.matches,
+    offset,
+    mode: "browse" as const,
+    closest: false,
+    results: browse.shots.slice(offset, offset + limit).map((shot) => ({ ...shot, score: 0 })),
+  };
 }
 
 let model: Promise<{ tokenizer: PreTrainedTokenizer; model: PreTrainedModel }> | null = null;
@@ -91,14 +119,21 @@ async function embed(text: string) {
 }
 
 async function search(base: string, q: BrollQuery & { wait?: boolean }) {
-  const { index, vectors, words: shotWords } = await getCatalog(base);
   const text = (q.query ?? "").trim().slice(0, 300);
+  const offset = Math.max(0, q.offset ?? 0);
+  const limit = Math.min(60, Math.max(1, q.limit ?? 24));
+  if (!text && !q.color && !q.backgroundOk && !q.noPeople && !q.calm && !q.minSeconds) {
+    const page = await browsePage(base, offset, limit);
+    if (page) return page;
+  }
+  const { index, words: shotWords } = await getCatalog(base);
   // Without `wait`, answer with keywords now and load the model for the next search.
   let query: Float32Array | null = null;
   if (text) {
     if (q.wait || modelReady) query = await embed(text);
     else void getModel().catch(() => undefined);
   }
+  const vectors = query ? await getVectors(base, index) : null;
   const terms = words(text).filter((w) => w.length > 2);
   const { dim, vectorScale } = index;
   const results: BrollResult[] = [];
@@ -109,7 +144,7 @@ async function search(base: string, q: BrollQuery & { wait?: boolean }) {
     if (q.calm && shot.motion > CALM_MOTION) continue;
     if (q.minSeconds && shot.seconds < q.minSeconds) continue;
     let similarity = 0;
-    if (query) {
+    if (query && vectors) {
       const row = i * dim;
       for (let k = 0; k < dim; k++) similarity += query[k] * vectors[row + k];
       similarity *= vectorScale;
@@ -141,8 +176,6 @@ async function search(base: string, q: BrollQuery & { wait?: boolean }) {
     browsable.sort((a, b) => hash(a.id) - hash(b.id));
     results.splice(0, results.length, ...browsable);
   }
-  const offset = Math.max(0, q.offset ?? 0);
-  const limit = Math.min(60, Math.max(1, q.limit ?? 24));
   return {
     total: index.count,
     matches: results.length,

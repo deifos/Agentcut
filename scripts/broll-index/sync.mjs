@@ -56,6 +56,16 @@ async function put(rel, body, cacheControl) {
   );
 }
 
+const BROWSE_SHOTS = 240;
+
+function browseHash(id) {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
 async function pool(items, worker) {
   let next = 0;
   await Promise.all(
@@ -112,6 +122,16 @@ async function syncOnce() {
   if (ledger["shots.json"] !== liveHash) {
     await put("shots.json", live, INDEX_CACHE);
     ledger["shots.json"] = liveHash;
+    writeJson(LEDGER, ledger);
+  }
+  // The opening grid on the b-roll page: the start of the same stable shuffle the studio's search worker
+  // browses (lib/studio/broll/search.worker.ts), so "Show more" carries on where this file ends.
+  const browsable = index.shots.filter((s) => !s.titleCard && s.brightness >= 35).sort((a, b) => browseHash(a.id) - browseHash(b.id));
+  const browse = JSON.stringify({ total: index.count, matches: browsable.length, shots: browsable.slice(0, BROWSE_SHOTS) });
+  const browseSum = createHash("sha1").update(browse).digest("hex");
+  if (ledger["browse.json"] !== browseSum) {
+    await put("browse.json", browse, INDEX_CACHE);
+    ledger["browse.json"] = browseSum;
     writeJson(LEDGER, ledger);
   }
   console.log(

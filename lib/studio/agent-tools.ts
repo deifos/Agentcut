@@ -929,7 +929,7 @@ async function runStudioToolInternal(
           path: target,
           seconds: shot.seconds,
           size: `${shot.width}x${shot.height}`,
-          credit: `${shot.film.title}${shot.film.year ? ` (${shot.film.year})` : ""}, ${shot.film.url}, public domain`,
+          credit: `${shot.film.title}${shot.film.year ? ` (${shot.film.year})` : ""}, ${shot.film.url}, ${shot.film.license === "ai-generated" ? "AI-generated" : "public domain"}`,
         };
         if (existing.has(target)) {
           results.push({ ...info, note: "already in the project" });

@@ -1562,5 +1562,11 @@
     "collection": "prelinger",
     "width": 640,
     "theme": "future"
+  },
+  {
+    "id": "ai-seedance-2-0-fast-0001",
+    "theme": "ai-generated",
+    "title": "AI-generated b-roll (Seedance 2.0 Fast)",
+    "collection": "ai-generated"
   }
 ]

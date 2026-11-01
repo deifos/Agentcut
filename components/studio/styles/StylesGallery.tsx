@@ -134,6 +134,7 @@ export function StylesGallery({
   onSend,
   onSelect,
   onSaveCurrentStyle,
+  onDeleteStyle,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
@@ -151,6 +152,7 @@ export function StylesGallery({
   /** Send a chat message to the agent (video styles hand it their recipe). */
   onSend(text: string): Promise<void>;
   onSaveCurrentStyle(): void;
+  onDeleteStyle(id: string): Promise<void>;
   /** Stage a style in the composer. Selection does not edit or send. */
   onSelect?(style: MotionStyle): void;
 }) {
@@ -250,9 +252,9 @@ export function StylesGallery({
           <Tabs
             value={tab}
             onValueChange={(v) => setTab(v as "talking" | "video" | "saved")}
-            className="max-w-full overflow-x-auto"
+            className="min-w-0 max-w-full"
           >
-            <TabsList>
+            <TabsList className="h-auto! max-w-full flex-wrap">
               <TabsTrigger value="talking" className="gap-1.5 text-[12px]">
                 <UserRound className="size-3.5" />
                 Talking head
@@ -324,7 +326,7 @@ export function StylesGallery({
         </div>
 
         {tab === "saved" ? (
-          <SavedEditingStyles slug={slug} library={library} disabled={readOnly || chatDisabled} onSend={async (text) => {
+          <SavedEditingStyles slug={slug} library={library} disabled={readOnly || chatDisabled} onDelete={onDeleteStyle} onSend={async (text) => {
             await onSend(text);
             onOpenChange(false);
             toast("Style request sent. Follow progress in chat.");

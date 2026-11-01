@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  symlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createServer } from "node:http";
@@ -12,7 +19,30 @@ import {
   listLibrary,
   createProject,
 } from "../packages/agentcut/src/studio/projects.ts";
-import { saveEditingStyle } from "../packages/agentcut/src/studio/editing-styles.ts";
+import {
+  deleteEditingStyle,
+  saveEditingStyle,
+} from "../packages/agentcut/src/studio/editing-styles.ts";
+
+test("delete removes only the selected style and rejects paths and linked folders", () => {
+  const paths = workspace();
+  const first = saveEditingStyle(paths, input);
+  const second = saveEditingStyle(paths, input);
+  const source = createProject(paths, { name: "Keep video", fonts: [] }).slug;
+  const timeline = join(paths.projects, source, "layers.json");
+  const before = readFileSync(timeline, "utf8");
+  deleteEditingStyle(paths, first.id);
+  assert.deepEqual(editingStyleIds(listLibrary(paths)), [second.id]);
+  assert.equal(readFileSync(timeline, "utf8"), before);
+  assert.throws(() => deleteEditingStyle(paths, "../presets"));
+  symlinkSync(
+    join(paths.projects, source),
+    join(paths.library, "editing-styles", "linked"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
+  assert.throws(() => deleteEditingStyle(paths, "linked"));
+  assert.ok(existsSync(timeline));
+});
 import {
   editingStyleIds,
   parseEditingStyle,

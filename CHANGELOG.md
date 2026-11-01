@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Delete saved editing styles from the Styles dialog, with confirmation. Existing videos are unchanged.
 - Put text and graphics behind a person. Ask your agent, and it cuts the person out of just the frames it needs, on your computer, and places them on their own layer above the graphic. Preview and exports show the same result. The first use downloads a model of about 26 MB.
 - Save reusable editing rules with the plus action beside Styles in Simple and Advanced view. Name a style, let the agent inspect the project and available edit history, then use it on different footage from Saved editing styles. Keep existing talking-head looks and video preset kits. Add validated helper saves that do not overwrite existing styles.
 
@@ -32,6 +33,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Remove the extra scrollbar beside the Styles tabs and wrap the tabs on narrow screens.
 - Keep person cutouts aligned at different playback speeds, invalidate cached cutouts when source files change, and avoid applying results after timing or track permissions change.
 - Open media without a Windows command shell, and reject links to scripts or folders.
 - Allow browser setup to retry after a failure, close retained release browsers when the helper stops, and block linked MCP paths that could expose private project files or bypass file validation.

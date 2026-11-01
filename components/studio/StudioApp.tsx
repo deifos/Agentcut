@@ -1238,6 +1238,12 @@ export function StudioApp() {
         ) : null}
         {doc?.project ? (
           <StylesGallery
+            onDeleteStyle={async (id) => {
+              const bridge = studio.getBridge();
+              if (!bridge) throw new Error("Connect the helper to delete a style.");
+              await bridge.request("studio.editingStyles.delete", { id });
+              toast("Saved editing style deleted.");
+            }}
             key={doc.slug}
             onSaveCurrentStyle={() => { setStylesOpen(false); setStagingStyle(false); setSaveStyleOpen(true); }}
             onSelect={simple || stagingStyle ? selectStyle : undefined}

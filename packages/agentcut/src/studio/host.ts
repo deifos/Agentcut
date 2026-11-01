@@ -44,7 +44,7 @@ import {
 import { studioMcpServer, type WorkspacePaths } from "./workspace.js";
 import { ReleaseVideos } from "./release-video.js";
 import { listMcpFiles, readMcpFile, writeMcpFile, copyMcpFile, type McpFileScope } from "./mcp-files.js";
-import { saveEditingStyle } from "./editing-styles.js";
+import { deleteEditingStyle, saveEditingStyle } from "./editing-styles.js";
 
 /** The hosted studio page, plus `npm run dev` of this repo. More with --origin or AGENTCUT_ORIGINS. */
 export const STUDIO_APP_URL = "https://agentcut.synteq.app";
@@ -336,6 +336,11 @@ export class StudioHost implements BridgeExtension {
   async handlePageRequest(method: string, params: unknown): Promise<unknown> {
     const p = asRecord(params);
     switch (method) {
+      case "studio.editingStyles.delete": {
+        const result = deleteEditingStyle(this.paths, p.id);
+        this.emit("studio.library", {});
+        return result;
+      }
       case "studio.release.list": return this.releases.list();
       case "studio.release.status": return this.releases.get(String(p.job));
       case "studio.release.resume": return this.releases.resume(String(p.job));

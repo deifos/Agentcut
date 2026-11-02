@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, unlinkSync, rmdirSync } from "node:fs";
+import { tempDir } from "./helpers/temp.mjs";
+import { mkdirSync, writeFileSync, unlinkSync, rmdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,7 +10,7 @@ import { listAssets } from "../packages/agentcut/src/studio/projects.ts";
 import { workspacePaths } from "../packages/agentcut/src/studio/workspace.ts";
 
 test("saved timing survives reload; legacy and invalid records have no timing", () => {
-  const dir = mkdtempSync(join(tmpdir(), "agentcut-timing-"));
+  const dir = tempDir(join(tmpdir(), "agentcut-timing-"));
   const video = join(dir, "video.mp4");
   try {
     assert.equal(readRenderDuration(video), undefined);
@@ -34,7 +35,7 @@ test("duration is clear for short and long renders", () => {
 });
 
 test("asset listings attach timing and hide sidecars with uppercase video extensions", () => {
-  const root = mkdtempSync(join(tmpdir(), "agentcut-assets-"));
+  const root = tempDir(join(tmpdir(), "agentcut-assets-"));
   const paths = workspacePaths(root);
   const project = join(paths.projects, "example");
   const renders = join(project, "renders");

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
+import { tempDir } from "./helpers/temp.mjs";
 import test from "node:test";
 import { createServer } from "node:http";
 import {
-  mkdtempSync,
   mkdirSync,
   readFileSync,
   writeFileSync,
@@ -147,7 +147,7 @@ test("helper file handlers support project authoring and preset reuse over MCP w
   const placeholder = createServer();
   const port = await listen(placeholder);
   await new Promise((resolve) => placeholder.close(resolve));
-  const workspace = mkdtempSync(join(root, "mcp-access-"));
+  const workspace = tempDir(join(root, "mcp-access-"));
   const sourceDir = join(workspace, "allowed-app");
   mkdirSync(sourceDir);
   writeFileSync(
@@ -301,7 +301,7 @@ test("helper file handlers support project authoring and preset reuse over MCP w
 
 test("file access blocks traversal, private state, linked escapes, stale writes and asset overwrite", () => {
   const paths = workspacePaths(
-    mkdtempSync(join(tmpdir(), "agentcut-mcp-files-")),
+    tempDir(join(tmpdir(), "agentcut-mcp-files-")),
   );
   mkdirSync(paths.projects, { recursive: true });
   mkdirSync(paths.library);
@@ -322,7 +322,7 @@ test("file access blocks traversal, private state, linked escapes, stale writes 
     () => writeMcpFile(paths, slug, "package.json", "{}", null),
     /Write project.json/,
   );
-  const outside = mkdtempSync(join(tmpdir(), "agentcut-mcp-outside-"));
+  const outside = tempDir(join(tmpdir(), "agentcut-mcp-outside-"));
   writeFileSync(join(outside, "secret.txt"), "outside");
   symlinkSync(
     outside,

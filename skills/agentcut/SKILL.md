@@ -104,7 +104,15 @@ projects/<slug>/
   assets/        voice, music, sfx, images, video, fonts
   notes.md       your cue sheet and the numbers behind sound choices
   renders/       exports; never delete or overwrite
+  .studio/scratch/  your throwaway files (see below); cleared automatically
 ```
+
+- **Scratch goes in `.studio/scratch/`**: test captures, contact sheets, helper scripts, downloaded
+  references you only look at, and `layers.json` / scene backups before a risky edit. Files there
+  are deleted after 14 days, and the oldest go first past 500 MB per project, so never keep anything
+  the video needs there: assets the timeline plays go in `assets/`, decisions go in `notes.md`. Don't
+  put loose files anywhere else in `.studio/`. (Cinematic takes and Style Spy backups keep their own
+  folders, as their guides say.)
 
 - **Everything on the timeline is a clip in `layers.json`**, so the user can edit it. Never hide
   sounds, images or text inside scene code when they could be clips: music, voice and every SFX are

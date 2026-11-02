@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, relative, sep } from "node:path";
 import type { ChildProcess } from "node:child_process";
+import { pruneChatFrames } from "./housekeeping.js";
 import { debugLog } from "../log.js";
 import { EFFORT_ID, getAgent, MODEL_ID, type AgentAdapter, type AgentEvent, type AgentInfo, type AgentParser, type McpServerSpec } from "./agents/index.js";
 import { atomicWrite, projectDir, StudioError } from "./projects.js";
@@ -125,7 +126,6 @@ function collectFramePaths(value: unknown, out: Set<string>, depth: number) {
     else collectFramePaths(item, out, depth + 1);
   }
 }
-const MAX_CHAT_FRAMES = 400;
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -708,10 +708,7 @@ export class ChatEngine {
   }
 
   private pruneFrames(dir: string) {
-    const files = readdirSync(dir)
-      .map((name) => ({ name, mtime: statSync(join(dir, name)).mtimeMs }))
-      .sort((a, b) => b.mtime - a.mtime);
-    for (const old of files.slice(MAX_CHAT_FRAMES)) rmSync(join(dir, old.name), { force: true });
+    pruneChatFrames(dir);
   }
 
   private toolSummary(slug: string, name: string, input: Record<string, unknown>) {

@@ -26,6 +26,12 @@ export interface LocalRenderOptions {
 let running: Promise<unknown> | null = null;
 /** The process the current local render is waiting on (npm install or remotion render). */
 let child: ChildProcess | null = null;
+let runningSlug: string | null = null;
+
+/** The project a local render is using right now, if any. */
+export function localRenderSlug() {
+  return runningSlug;
+}
 let cancelled = false;
 /** Set once the headless shell has crashed: later renders go straight to full Chrome. */
 let fullChrome = false;
@@ -129,6 +135,7 @@ export async function runLocalRender(options: LocalRenderOptions) {
   const exportStarted = performance.now();
   cancelled = false;
   let outPath = "";
+  let mirror: string | null = null;
   const work = (async () => {
     const { paths, slug, variant } = options;
     const root = paths.root;
@@ -151,6 +158,7 @@ export async function runLocalRender(options: LocalRenderOptions) {
 
     // Public dir = this project's assets + the shared library (hard links, no copies when possible).
     const publicDir = join(paths.render, `public-${slug}`);
+    mirror = publicDir;
     rmSync(publicDir, { recursive: true, force: true });
     mirrorDir(join(projectDir(paths, slug), "assets"), join(publicDir, "assets"));
     mirrorDir(paths.library, join(publicDir, "library"));
@@ -264,6 +272,7 @@ export async function runLocalRender(options: LocalRenderOptions) {
     return { path: rel, absolutePath: outPath, renderDurationMs };
   })();
   running = work;
+  runningSlug = options.slug;
   try {
     return await work;
   } catch (error) {
@@ -277,6 +286,14 @@ export async function runLocalRender(options: LocalRenderOptions) {
     throw error;
   } finally {
     running = null;
+    runningSlug = null;
     child = null;
+    // Links to the project's assets, only needed while rendering: kept, they'd hold deleted footage on disk.
+    try {
+      if (mirror) rmSync(mirror, { recursive: true, force: true, maxRetries: 4, retryDelay: 150 });
+    } catch (error) {
+      // A later sweep can retry; cleanup must not change the render's result.
+      debugLog(`Could not remove render links: ${String(error)}`);
+    }
   }
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
+import { tempDir } from "./helpers/temp.mjs";
 import {
-  mkdtempSync,
   mkdirSync,
   readFileSync,
   writeFileSync,
@@ -30,7 +30,7 @@ test("browser setup can retry after a failed attempt", async () => {
 });
 
 test("shutdown closes retained browsers without changing finished job states", async () => {
-  const service = new ReleaseVideos(deps(mkdtempSync(join(tmpdir(), "agentcut-close-"))));
+  const service = new ReleaseVideos(deps(tempDir(join(tmpdir(), "agentcut-close-"))));
   const closed = [];
   for (const stage of ["ready", "failed", "cancelled", "planning"]) {
     service.jobs.set(stage, { id: stage, slug: stage, stage });
@@ -47,7 +47,7 @@ test("shutdown closes retained browsers without changing finished job states", a
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 test("story edit keeps the action between adjacent source cuts and text editable", () => {
-  const root = mkdtempSync(join(tmpdir(), "agentcut-edit-cues-"));
+  const root = tempDir(join(tmpdir(), "agentcut-edit-cues-"));
   const config = deps(root);
   const { slug } = createProject(config.paths, {
     name: "Cue timing",
@@ -154,7 +154,7 @@ function deps(root) {
 }
 
 test("unsupported video types and credential URLs do not create projects", () => {
-  const root = mkdtempSync(join(tmpdir(), "agentcut-release-state-"));
+  const root = tempDir(join(tmpdir(), "agentcut-release-state-"));
   const service = new ReleaseVideos(deps(root));
   for (const videoType of ["how-to", "promotional"]) {
     assert.throws(
@@ -197,7 +197,7 @@ test("capture needs a story, observed shot evidence, action and demo disclosure"
   assert.throws(() =>
     releasePlan.parse({ ...plan, scenes: [{ ...scene, evidence: "" }] }),
   );
-  const root = mkdtempSync(join(tmpdir(), "agentcut-release-story-"));
+  const root = tempDir(join(tmpdir(), "agentcut-release-story-"));
   const service = new ReleaseVideos(deps(root));
   await assert.rejects(
     service.capture("unused", { ...plan, scenes: [{ ...scene, actions: [] }] }),
@@ -206,7 +206,7 @@ test("capture needs a story, observed shot evidence, action and demo disclosure"
 });
 
 test("restart preserves ready jobs and marks unfinished jobs as failed", () => {
-  const root = mkdtempSync(join(tmpdir(), "agentcut-release-restart-"));
+  const root = tempDir(join(tmpdir(), "agentcut-release-restart-"));
   const config = deps(root);
   const folder = join(config.paths.internal, "release-jobs");
   mkdirSync(folder, { recursive: true });

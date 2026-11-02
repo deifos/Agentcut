@@ -4,7 +4,7 @@
 // the original. They sit in .agentcut/proxies, keyed by the file's contents' identity, so they never
 // travel with a project and can always be made again.
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, realpathSync, renameSync, rmSync, statSync, utimesSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { cpus } from "node:os";
 import { join } from "node:path";
 import { ensureFfmpeg, MEDIA_INPUT_ONLY, run } from "./references.js";
@@ -15,7 +15,11 @@ const KEYFRAME_EVERY = 8;
 /** Below this, a keyframe is close enough that a copy wouldn't make seeking noticeably faster. */
 const MAX_SECONDS_BETWEEN_KEYFRAMES = 0.5;
 const MIN_DURATION_SECONDS = 2;
-const MAX_CACHE_BYTES = 20 * 1024 ** 3;
+const MAX_CACHE_BYTES = 10 * 1024 ** 3;
+/** A copy nobody has played for this long is removed; it's made again if the footage comes back. */
+const UNUSED_DAYS = 14;
+/** How often playing a copy refreshes its last-used time. */
+const TOUCH_EVERY_MS = 60 * 60 * 1000;
 const PROBE_TIMEOUT_MS = 2 * 60_000;
 const ENCODE_TIMEOUT_MS = 2 * 60 * 60_000;
 
@@ -116,6 +120,8 @@ export class ProxyStore {
   private readonly known = new Map<string, ProxyAnswer>();
   /** One encode at a time, so the preview that asked for it stays smooth. */
   private tail: Promise<unknown> = Promise.resolve();
+  /** The copy being written, which a sweep must leave alone. */
+  private writing: string | null = null;
 
   constructor(internalDir: string) {
     this.dir = join(internalDir, "proxies");
@@ -125,7 +131,57 @@ export class ProxyStore {
   filePath(name: string) {
     if (!/^[a-f0-9]{40}\.mp4$/.test(name)) return null;
     const file = join(this.dir, name);
-    return existsSync(file) ? file : null;
+    if (!existsSync(file)) return null;
+    try {
+      if (Date.now() - statSync(file).mtimeMs > TOUCH_EVERY_MS) {
+        const now = new Date();
+        utimesSync(file, now, now);
+      }
+    } catch {}
+    return file;
+  }
+
+  /**
+   * Remove what's no longer worth keeping: leftovers of an encode the helper didn't finish, copies whose
+   * footage is gone (deleted, replaced or its project deleted), copies unused for UNUSED_DAYS, then the
+   * least recently used down to MAX_CACHE_BYTES.
+   */
+  sweep() {
+    if (!existsSync(this.dir)) return;
+    for (const name of readdirSync(this.dir)) {
+      const path = join(this.dir, name);
+      const key = /^([a-f0-9]{40})\./.exec(name)?.[1];
+      if (name.endsWith(".part.mp4")) {
+        if (path !== this.writing) rmSync(path, { force: true });
+        continue;
+      }
+      if (!key || !name.endsWith(".mp4")) continue;
+      let source: string | null = null;
+      let identity: { size?: number; mtimeMs?: number } = {};
+      try {
+        const note = JSON.parse(readFileSync(join(this.dir, `${key}.json`), "utf8"));
+        source = typeof note.source === "string" ? note.source : null;
+        identity = note;
+      } catch {}
+      const used = statSync(path).mtimeMs;
+      const gone = source !== null && !existsSync(source);
+      const current = source && !gone ? statSync(source) : null;
+      const replaced = current !== null && identity.size !== undefined && identity.mtimeMs !== undefined &&
+        (current.size !== identity.size || current.mtimeMs !== identity.mtimeMs);
+      if (gone || replaced || Date.now() - used > UNUSED_DAYS * 24 * 60 * 60 * 1000) this.drop(key);
+    }
+    // Notes left without their copy.
+    for (const name of readdirSync(this.dir)) {
+      const key = /^([a-f0-9]{40})\.json$/.exec(name)?.[1];
+      if (key && !existsSync(join(this.dir, `${key}.mp4`))) rmSync(join(this.dir, name), { force: true });
+    }
+    this.evict(null);
+  }
+
+  private drop(key: string) {
+    rmSync(join(this.dir, `${key}.mp4`), { force: true });
+    rmSync(join(this.dir, `${key}.json`), { force: true });
+    this.known.delete(key);
   }
 
   /** Where `file`'s copy stands; asking starts the work if nobody has yet. */
@@ -175,9 +231,15 @@ export class ProxyStore {
       }
       mkdirSync(this.dir, { recursive: true });
       const threads = Math.max(2, Math.floor(cpus().length / 2));
+      this.writing = part;
       const encoded = await run(ffmpeg, proxyArgs(file, part, threads), { timeoutMs: ENCODE_TIMEOUT_MS });
       if (encoded.code !== 0) throw new Error(encoded.stderr.slice(-400));
       renameSync(part, target);
+      // Which file it copies, so the copy goes when that file does.
+      const sourceStat = statSync(file);
+      writeFileSync(join(this.dir, `${key}.json`), JSON.stringify({
+        source: realpathSync(file), size: sourceStat.size, mtimeMs: sourceStat.mtimeMs,
+      }));
       this.known.set(key, { state: "ready", file: `${key}.mp4` });
       this.evict(target);
     } catch (error) {
@@ -185,11 +247,13 @@ export class ProxyStore {
       rmSync(part, { force: true });
       // The preview carries on with the original.
       this.known.set(key, { state: "none", reason: "The copy couldn't be made." });
+    } finally {
+      this.writing = null;
     }
   }
 
   /** Oldest used first, never the one just made. */
-  private evict(keep: string) {
+  private evict(keep: string | null) {
     const files = readdirSync(this.dir)
       .filter((name) => /^[a-f0-9]{40}\.mp4$/.test(name))
       .map((name) => {
@@ -202,8 +266,7 @@ export class ProxyStore {
     for (const file of files) {
       if (total <= MAX_CACHE_BYTES) break;
       if (file.path === keep) continue;
-      rmSync(file.path, { force: true });
-      this.known.delete(file.name.slice(0, -4));
+      this.drop(file.name.slice(0, -4));
       total -= file.size;
     }
   }

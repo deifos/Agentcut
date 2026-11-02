@@ -251,6 +251,15 @@ function ytdlpPath() {
   return join(toolsDir(), "yt-dlp", `yt-dlp${exe}`);
 }
 
+/** ffmpeg builds from earlier Agentcut versions (each lives in its own release folder). */
+export function pruneOldTools() {
+  const dir = join(toolsDir(), "ffmpeg");
+  if (!existsSync(dir)) return;
+  for (const name of readdirSync(dir)) {
+    if (name !== FFMPEG_RELEASE) rmSync(join(dir, name), { recursive: true, force: true });
+  }
+}
+
 export function ensureFfmpeg(onDownload?: () => void) {
   ffmpegReady ??= (async () => {
     const target = ffmpegPath();
@@ -265,6 +274,7 @@ export function ensureFfmpeg(onDownload?: () => void) {
       true,
     );
     writeManifest({ ffmpeg: { version: FFMPEG_RELEASE } });
+    pruneOldTools();
     debugLog(`references: installed ffmpeg ${FFMPEG_RELEASE}`);
     return target;
   })().catch((error) => {

@@ -48,6 +48,11 @@ export function StepImages({
               src={url(path)}
               alt=""
               loading="lazy"
+              // An old picture removed to save space: drop its tile rather than show a broken image.
+              onError={(event) => {
+                const tile = event.currentTarget.parentElement;
+                if (tile) tile.style.display = "none";
+              }}
               className="h-full w-auto max-w-28 object-contain"
             />
             {index === SHOWN - 1 && extra > 0 ? (

@@ -6,6 +6,7 @@ import {
   renameSync,
   rmdirSync,
   unlinkSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -39,7 +40,11 @@ export function deleteEditingStyle(paths: WorkspacePaths, input: unknown) {
     );
   const trash = safeJoin(paths.internal, "deleted-editing-styles");
   mkdirSync(trash, { recursive: true });
-  renameSync(dir, safeJoin(trash, `${id}-${randomUUID()}`));
+  const trashed = safeJoin(trash, `${id}-${randomUUID()}`);
+  renameSync(dir, trashed);
+  // When it was deleted: housekeeping empties the trash after 30 days.
+  const now = new Date();
+  utimesSync(trashed, now, now);
   return { id };
 }
 

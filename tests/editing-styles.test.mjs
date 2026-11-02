@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
+import { tempDir } from "./helpers/temp.mjs";
 import test from "node:test";
 import {
-  mkdtempSync,
   mkdirSync,
   readFileSync,
   writeFileSync,
@@ -58,7 +58,7 @@ const input = {
 };
 function workspace() {
   const paths = workspacePaths(
-    mkdtempSync(join(tmpdir(), "agentcut-editing-styles-")),
+    tempDir(join(tmpdir(), "agentcut-editing-styles-")),
   );
   mkdirSync(paths.library, { recursive: true });
   return paths;

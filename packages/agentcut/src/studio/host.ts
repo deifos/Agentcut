@@ -12,6 +12,8 @@ import { detectAgents, getAgent, type AgentInfo } from "./agents/index.js";
 import { ChatEngine } from "./chat.js";
 import { handleStudioHttp } from "./http.js";
 import { ProxyStore } from "./proxies.js";
+import { forgetProject, sweepWorkspace } from "./housekeeping.js";
+import { pruneOldTools } from "./references.js";
 import {
   assertSlug,
   createProject,
@@ -28,7 +30,7 @@ import {
   type CreateProjectInput,
 } from "./projects.js";
 import { installedBrowsers, ReferenceImports } from "./references.js";
-import { cancelLocalRender, runLocalRender } from "./render.js";
+import { cancelLocalRender, localRenderSlug, runLocalRender } from "./render.js";
 import { importShare, shareProject } from "./share.js";
 import { openFile, openWebUrl, projectFile, revealFile } from "./reveal.js";
 import {
@@ -73,6 +75,9 @@ interface PageSession {
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
+
+/** Housekeeping runs at start and this often after (./housekeeping.ts). */
+const HOUSEKEEPING_EVERY_MS = 6 * 60 * 60 * 1000;
 
 export class StudioHost implements BridgeExtension {
   readonly paths: WorkspacePaths;
@@ -145,6 +150,7 @@ export class StudioHost implements BridgeExtension {
   // BridgeExtension
 
   private proxyStore: ProxyStore | null = null;
+  private housekeepingTimer: ReturnType<typeof setInterval> | undefined;
 
   isOriginAllowed(origin: string | undefined) {
     if (!origin) return true; // local tools (curl, MCP server) send no Origin
@@ -154,7 +160,7 @@ export class StudioHost implements BridgeExtension {
   handleHttp(request: IncomingMessage, response: ServerResponse) {
     return handleStudioHttp(request, response, {
       paths: this.paths,
-      proxies: (this.proxyStore ??= new ProxyStore(this.paths.internal)),
+      proxies: this.proxies(),
       getBundle: (slug) => this.bundles.get(slug) ?? null,
       ensureBundle: async (slug) => {
         if (!this.bundles.has(slug)) await this.rebuild(slug);
@@ -570,9 +576,28 @@ export class StudioHost implements BridgeExtension {
       });
     } catch {}
     void this.getAgents();
+    this.housekeeping();
+    this.housekeepingTimer = setInterval(() => this.housekeeping(), HOUSEKEEPING_EVERY_MS);
+    this.housekeepingTimer.unref?.();
+  }
+
+  /** Keeps Agentcut's own caches and scratch bounded (./housekeeping.ts). */
+  private housekeeping() {
+    try {
+      sweepWorkspace(this.paths, { renderingSlug: localRenderSlug() });
+      this.proxies().sweep();
+      pruneOldTools();
+    } catch (error) {
+      debugLog(`housekeeping failed ${(error as Error).message}`);
+    }
+  }
+
+  private proxies() {
+    return (this.proxyStore ??= new ProxyStore(this.paths.internal));
   }
 
   async stop() {
+    clearInterval(this.housekeepingTimer);
     this.watcher?.close();
     this.libraryWatcher?.close();
     this.chat.cancelAll();
@@ -738,6 +763,9 @@ export class StudioHost implements BridgeExtension {
 
   /** Delete a project from disk (the page confirms first). Not while the agent works on it. */
   private deleteProject(slug: string) {
+    if (localRenderSlug() === slug) {
+      throw new StudioError("A local render is using this project. Stop it first, then delete.", "busy");
+    }
     if (this.releases.list().some(job => job.slug === slug && !["ready", "failed", "cancelled"].includes(job.stage))) {
       throw new StudioError("A release video job is using this project. Cancel the video job first.", "busy");
     }
@@ -754,6 +782,14 @@ export class StudioHost implements BridgeExtension {
       }
     }
     const result = deleteProject(this.paths, slug);
+    // What the helper made for it elsewhere: render links, and copies of its footage.
+    forgetProject(this.paths, slug);
+    try {
+      this.proxies().sweep();
+    } catch (error) {
+      // The project is already deleted; a later sweep can retry locked cache files.
+      debugLog(`Could not clean project copies: ${String(error)}`);
+    }
     if (this.pageSession?.activeProject === slug) this.pageSession.activeProject = null;
     this.emit("studio.projects", { projects: listProjects(this.paths) });
     debugLog(`deleted project ${slug} (${result.bytes} bytes)`);

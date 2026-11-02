@@ -23,6 +23,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - Scenes too heavy to draw during a drag get small pictures rendered while the preview is idle, shown while you drag. Letting go always draws the real frame.
   - Timeline film strips read from the copies too, and decode with WebCodecs where they can.
   - For agents: `agentcut_preview_check` and `agentcut_status` now report how long seeks take, per clip.
+- **Agentcut cleans up after itself.** The helper keeps its own files bounded, when it starts and every six hours, and never touches your projects' files:
+  - Fast-seeking copies: removed when their footage or project is deleted, after 14 days unused, and beyond 10 GB in total, oldest first.
+  - Local renders no longer leave links to your assets in `.agentcut/render`, which kept deleted footage on disk.
+  - Chat pictures are capped at 150 MB per project, oldest first.
+  - Agents keep their throwaway files (test captures, contact sheets, backups before risky edits) in `.studio/scratch/`, cleared after 14 days and kept under 500 MB per project.
+  - Deleted editing styles are emptied after 30 days; interrupted share imports, unfinished copies, old ffmpeg builds and the helper's log are cleaned up too.
+  - Cleanup skips linked scratch folders. Cleanup errors do not change a render's result, and projects cannot be deleted during a local render.
+- Added 50 generated b-roll entries from Sume, with provider credits.
 - **Colour grading.** A real grading toolset, drawn on the GPU so the preview, captures and exports match, with dithering so skies and gradients don't band. Existing grades render exactly as before.
   - Exposure, temperature and tint, highlights, shadows, whites, blacks, vibrance and levels, plus colour wheels, RGB curves, an eight-band colour mixer and skin protection.
   - Waveform, RGB parade, vectorscope with skin line, and histogram in the Color section, rendered with the export's renderer. Hold the eye button to compare with the original.

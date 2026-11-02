@@ -81,16 +81,61 @@ export interface ComponentCatalogEntry {
   id: string;
   props: Record<string, { type: string; min?: number; max?: number; options?: { value: string }[] }>;
 }
-/** Color grade for footage (CSS filters, so the browser export draws it). 1 = unchanged. */
+/** Color grade for footage and images. Neutral: multipliers 1, amounts 0. See references/color.md. */
+const amount = finite.min(-1).max(1);
+const gradeWheelSchema = z.object({ x: amount.optional(), y: amount.optional(), level: amount.optional() }).strict();
+const gradeCurveSchema = z.array(z.tuple([unit, unit])).min(2).max(32);
+const gradeHslSchema = z.object({ hue: amount.optional(), saturation: amount.optional(), luminance: amount.optional() }).strict();
+const gradeFieldsShape = {
+  brightness: finite.min(0).max(3).optional(),
+  contrast: finite.min(0).max(3).optional(),
+  saturation: finite.min(0).max(3).optional(),
+  /** -1 cool … 0 neutral … 1 warm */
+  warmth: amount.optional(),
+  /** degrees */
+  hue: finite.min(-180).max(180).optional(),
+  /** stops */
+  exposure: finite.min(-5).max(5).optional(),
+  temperature: amount.optional(),
+  tint: amount.optional(),
+  highlights: amount.optional(),
+  shadows: amount.optional(),
+  whites: amount.optional(),
+  blacks: amount.optional(),
+  vibrance: amount.optional(),
+  pivot: unit.optional(),
+  blackPoint: unit.optional(),
+  whitePoint: unit.optional(),
+  gamma: finite.min(0.01).max(10).optional(),
+  wheels: z.object({ shadows: gradeWheelSchema.optional(), midtones: gradeWheelSchema.optional(), highlights: gradeWheelSchema.optional() }).strict().optional(),
+  curves: z.object({ master: gradeCurveSchema.optional(), r: gradeCurveSchema.optional(), g: gradeCurveSchema.optional(), b: gradeCurveSchema.optional() }).strict().optional(),
+  hsl: z.object({
+    red: gradeHslSchema.optional(), orange: gradeHslSchema.optional(), yellow: gradeHslSchema.optional(), green: gradeHslSchema.optional(),
+    aqua: gradeHslSchema.optional(), blue: gradeHslSchema.optional(), purple: gradeHslSchema.optional(), magenta: gradeHslSchema.optional(),
+  }).strict().optional(),
+  look: z.string().min(1).optional(),
+  lookStrength: unit.optional(),
+  /** A .cube file inside the project. */
+  lut: z.string().regex(/^assets\/(?!.*(?:^|\/)\.\.(?:\/|$)).+\.cube$/i, "lut must be a .cube file in assets/").optional(),
+  lutStrength: unit.optional(),
+  skinProtect: unit.optional(),
+  match: z.object({
+    gains: z.tuple([finite.positive().max(8), finite.positive().max(8), finite.positive().max(8)]).optional(),
+    contrast: finite.min(0.25).max(4).optional(),
+    saturation: finite.min(0).max(3).optional(),
+    anchor: z.string().optional(),
+  }).strict().optional(),
+  grain: unit.optional(),
+  grainSize: finite.min(0.5).max(4).optional(),
+  halation: unit.optional(),
+  bloom: unit.optional(),
+  vignette: amount.optional(),
+};
 const gradeSchema = z
   .object({
-    brightness: finite.min(0).max(3).optional(),
-    contrast: finite.min(0).max(3).optional(),
-    saturation: finite.min(0).max(3).optional(),
-    /** -1 cool … 0 neutral … 1 warm */
-    warmth: finite.min(-1).max(1).optional(),
-    /** degrees */
-    hue: finite.min(-180).max(180).optional(),
+    ...gradeFieldsShape,
+    /** Grades at clip-local frames: they ease over the fields above, or jump with `hold`. */
+    keys: z.array(z.object({ ...gradeFieldsShape, frame, hold: z.boolean().optional() }).strict()).max(240).optional(),
   })
   .strict();
 const videoCursorSchema = z
@@ -111,6 +156,8 @@ const videoFields = {
   src: srcSchema,
   trimStart: frame.optional(),
   grade: gradeSchema.optional(),
+  /** false keeps the project grade and adjustment layers off this clip. */
+  inheritGrade: z.boolean().optional(),
   volume: finite.min(0).max(4).optional(),
   muted: z.boolean().optional(),
   fit: z.enum(["cover", "contain"]).optional(),
@@ -129,6 +176,9 @@ const videoFields = {
 };
 const imageFields = {
   src: srcSchema,
+  grade: gradeSchema.optional(),
+  /** true also applies the project grade and adjustment layers. */
+  inheritGrade: z.boolean().optional(),
   fit: z.enum(["cover", "contain"]).optional(),
   box: boxSchema.optional(),
   radius: finite.min(0).optional(),
@@ -141,6 +191,9 @@ const textFields = {
 const captionsFields = {
   words: z.array(z.object({ text: z.string(), from: frame, to: frame }).strict()),
   style: captionStyleSchema.optional(),
+};
+const adjustmentFields = {
+  grade: gradeSchema,
 };
 const audioFields = {
   src: srcSchema,
@@ -169,6 +222,7 @@ export const clipSchemas = {
   text: clipSchema(textFields),
   captions: clipSchema(captionsFields),
   audio: clipSchema(audioFields),
+  adjustment: clipSchema(adjustmentFields),
 } as const;
 
 export type TrackKind = keyof typeof clipSchemas;
@@ -190,6 +244,7 @@ export const trackSchema = z.discriminatedUnion("kind", [
   z.object({ ...trackBase, kind: z.literal("text"), clips: z.array(clipSchemas.text) }).strict(),
   z.object({ ...trackBase, kind: z.literal("captions"), clips: z.array(clipSchemas.captions) }).strict(),
   z.object({ ...trackBase, kind: z.literal("audio"), clips: z.array(clipSchemas.audio) }).strict(),
+  z.object({ ...trackBase, kind: z.literal("adjustment"), clips: z.array(clipSchemas.adjustment) }).strict(),
 ]);
 
 export const markerSchema = z
@@ -244,6 +299,8 @@ export const projectSchema = z
       .default([]),
     /** A style id from components/STYLES.md ("clean", "loud", …). */
     style: z.string().min(1).optional(),
+    /** A grade over all footage, after each clip's own grade and any adjustment layers. */
+    grade: gradeSchema.optional(),
   })
   .strict()
   .refine((value) => value.variants[value.defaultVariant] !== undefined, {

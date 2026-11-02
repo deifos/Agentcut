@@ -13,6 +13,8 @@ export interface StudioRuntimeContextValue {
   fps: number;
   assetBase: string;
   libraryBase: string;
+  /** Fast-seeking copies of footage, project path → URL (live preview only). */
+  previewProxies?: Record<string, string>;
 }
 
 const runtimeState: { fps: number; assetBase: string; libraryBase: string } = {

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDestructive } from "@/components/studio/ConfirmHost";
 import { TooltipHint } from "@/components/ui/tooltip";
 import {
   memo,
@@ -31,6 +32,7 @@ import {
   MoreHorizontal,
   Plus,
   Scissors,
+  SlidersHorizontal,
   Trash2,
   Type,
   Volume2,
@@ -98,6 +100,7 @@ const ROW_HEIGHT: Record<TrackKind, number> = {
   text: 40,
   captions: 40,
   audio: 46,
+  adjustment: 34,
 };
 const EDGE_PX = 7;
 const SNAP_PX = 8;
@@ -135,6 +138,11 @@ export const TRACK_KIND_STYLE: Record<
     icon: AudioLines,
     clip: "bg-emerald-100 border-emerald-200 text-emerald-950 dark:bg-emerald-400/20 dark:border-emerald-300/20 dark:text-emerald-100",
     label: "Audio",
+  },
+  adjustment: {
+    icon: SlidersHorizontal,
+    clip: "bg-fuchsia-100 border-fuchsia-200 text-fuchsia-950 dark:bg-fuchsia-400/20 dark:border-fuchsia-300/25 dark:text-fuchsia-100",
+    label: "Adjustment",
   },
 };
 
@@ -190,6 +198,9 @@ export interface StudioTimelineProps {
   selection: string[];
   onSelect(ids: string[]): void;
   onSeek(frame: number): void;
+  /** A drag on the ruler or playhead starts and ends; `onSeek` carries the positions in between. */
+  onScrubStart?(): void;
+  onScrubEnd?(): void;
   onPreview(layers: StudioLayers): void;
   /** `durationInFrames` when the edit also changes the video's length (a ripple trim). */
   onCommit(
@@ -532,6 +543,8 @@ export function StudioTimeline(props: StudioTimelineProps) {
     selection,
     onSelect,
     onSeek,
+    onScrubStart,
+    onScrubEnd,
     onPreview,
     onCommit,
     readOnly,
@@ -770,7 +783,10 @@ export function StudioTimeline(props: StudioTimelineProps) {
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
       dragRef.current = null;
-      if (drag.type === "scrub") return;
+      if (drag.type === "scrub") {
+        onScrubEnd?.();
+        return;
+      }
       if (drag.moved && drag.latest && drag.latest !== drag.base)
         onCommit(
           drag.latest,
@@ -781,13 +797,14 @@ export function StudioTimeline(props: StudioTimelineProps) {
         );
       else if (drag.moved) onPreview(drag.base);
     },
-    [durationInFrames, onCommit, onPreview],
+    [durationInFrames, onCommit, onPreview, onScrubEnd],
   );
 
   const startScrub = (event: ReactPointerEvent) => {
     if (event.button !== 0) return;
     (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
     dragRef.current = { type: "scrub", pointerId: event.pointerId };
+    onScrubStart?.();
     onSeek(frameAtClientX(event.clientX));
   };
 
@@ -1142,9 +1159,16 @@ export function StudioTimeline(props: StudioTimelineProps) {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
-                        onSelect={() =>
-                          onCommit(deleteTrack(layersRef.current, track.id))
-                        }
+                        onSelect={async () => {
+                          const confirmed = await confirmDestructive({
+                            title: `Delete the track “${track.name}”?`,
+                            description: track.clips.length
+                              ? `Its ${track.clips.length === 1 ? "clip goes" : `${track.clips.length} clips go`} with it. You can bring them back with Undo.`
+                              : "You can bring it back with Undo.",
+                            action: "Delete track",
+                          });
+                          if (confirmed) onCommit(deleteTrack(layersRef.current, track.id));
+                        }}
                       >
                         <Trash2 className="size-4" /> Delete track (
                         {track.clips.length} clips)

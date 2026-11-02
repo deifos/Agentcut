@@ -5,12 +5,15 @@ export interface FrameStore {
   get(): number;
   set(frame: number): void;
   subscribe(listener: () => void): () => void;
+  /** A drag owns the playhead: the player's own frame events mustn't pull it back to a frame still drawing. */
+  scrubbing: boolean;
 }
 
 export function createFrameStore(initial = 0): FrameStore {
   let frame = initial;
   const listeners = new Set<() => void>();
   return {
+    scrubbing: false,
     get: () => frame,
     set(next) {
       if (next === frame) return;

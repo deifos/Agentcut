@@ -335,7 +335,7 @@ interface RunResult {
   stderr: string;
 }
 
-function run(
+export function run(
   command: string,
   args: string[],
   { timeoutMs, onLine, onChild }: { timeoutMs: number; onLine?: (line: string) => void; onChild?: (child: ChildProcess | null) => void },

@@ -1,5 +1,8 @@
 "use client";
 import { ReleaseVideoStatus } from "./ReleaseVideoStatus";
+import { useScrubber } from "@/components/studio/useScrubber";
+import { usePreviewProxies } from "@/lib/studio/use-preview-proxies";
+import { ConfirmHost, confirmDestructive, isConfirmOpen } from "@/components/studio/ConfirmHost";
 
 import { TooltipHint } from "@/components/ui/tooltip";
 import {
@@ -164,6 +167,18 @@ const PANEL =
 
 export function StudioApp() {
   const studio = useStudioController();
+  const { toolContext } = studio;
+  const colorTools = useMemo(
+    () => ({
+      getModule: () => toolContext.current?.getModule() ?? null,
+      run: async (method: string, params: Record<string, unknown>) => {
+        if (!toolContext.current) throw new Error("The studio page is still loading.");
+        const { runStudioTool } = await import("@/lib/studio/agent-tools");
+        return runStudioTool(method, params, toolContext.current);
+      },
+    }),
+    [toolContext],
+  );
   const {
     status,
     info,
@@ -290,12 +305,27 @@ export function StudioApp() {
   const layers = doc?.layers ?? null;
   const readOnly = !doc?.layers || status !== "connected";
 
+  const { scrubber, pictures: scrubPictures } = useScrubber({
+    playerRef,
+    frameStore,
+    previewPerf: studio.previewPerf,
+    doc,
+    loaded,
+    variant,
+    playing,
+    busy: Boolean(exporting || chat.running),
+  });
+  const proxies = usePreviewProxies(doc?.slug ?? null, doc?.layers ?? null, playing, studio.assets);
   const seek = useCallback(
     (frame: number) => {
+      if (scrubber.active) {
+        scrubber.to(frame);
+        return;
+      }
       playerRef.current?.seekTo(frame);
       frameStore.set(frame);
     },
-    [frameStore, playerRef],
+    [frameStore, playerRef, scrubber],
   );
 
   const split = useCallback(() => {
@@ -318,11 +348,20 @@ export function StudioApp() {
     }
   }, [frameStore, layers, readOnly, selection, setSelection, studio]);
 
-  const remove = useCallback(() => {
-    if (readOnly || !layers || selection.length === 0) return;
+  const remove = useCallback(async () => {
+    if (readOnly || !layers || selection.length === 0 || isConfirmOpen()) return;
     const ids = selection.filter((id) => !findClip(layers, id)?.track.locked);
     if (ids.length === 0) return;
-    studio.commitLayers(deleteClips(layers, ids), layers);
+    const only = ids.length === 1 ? findClip(layers, ids[0])?.clip : null;
+    const confirmed = await confirmDestructive({
+      title: only ? `Delete “${only.name ?? only.id}”?` : `Delete ${ids.length} clips?`,
+      description: `You can bring ${only ? "it" : "them"} back with Undo.`,
+      action: only ? "Delete clip" : "Delete clips",
+    });
+    if (!confirmed) return;
+    // The agent may have edited the timeline while the dialog was open: delete from what's there now.
+    const current = studio.toolContext.current?.getDoc()?.layers ?? layers;
+    studio.commitLayers(deleteClips(current, ids), current);
     setSelection([]);
   }, [layers, readOnly, selection, setSelection, studio]);
 
@@ -338,6 +377,8 @@ export function StudioApp() {
   // Keyboard shortcuts.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // The confirmation has the keyboard while it is open.
+      if (isConfirmOpen()) return;
       if (
         isTypingTarget(event.target) ||
         exportOpen ||
@@ -377,7 +418,7 @@ export function StudioApp() {
       } else if (!mod && event.key.toLowerCase() === "s") {
         split();
       } else if (event.key === "Delete" || event.key === "Backspace") {
-        remove();
+        void remove();
       } else if (event.key === "Escape") {
         setSelection([]);
       }
@@ -528,8 +569,8 @@ export function StudioApp() {
   const project = doc?.project;
   const slug = doc?.slug;
   const thumbSource = useMemo(
-    () => (project && slug ? { loaded, project, variant, slug } : null),
-    [loaded, project, variant, slug],
+    () => (project && slug ? { loaded, project, variant, slug, proxies: proxies.ready, proxiesChecked: proxies.checked } : null),
+    [loaded, project, variant, slug, proxies.ready, proxies.checked],
   );
 
   const askAt = async (frame: number, text: string) => {
@@ -1014,6 +1055,9 @@ export function StudioApp() {
                   frameStore={frameStore}
                   previewPerf={studio.previewPerf}
                   playerRef={playerRef}
+                  scrubber={scrubber}
+                  scrubPictures={scrubPictures}
+                  previewProxies={proxies.player}
                   selection={selection}
                   playing={playing}
                   onPlayingChange={setPlaying}
@@ -1042,12 +1086,14 @@ export function StudioApp() {
           {!simple && inspectorOpen && doc ? (
             <aside className={cn(PANEL, "w-[340px] shrink-0 xl:w-[360px]")}>
               <StudioInspector
+                getDoc={studio.getDoc}
                 doc={doc}
                 variant={variant}
                 selection={selection}
                 assets={studio.assets}
                 library={studio.library}
                 frameStore={frameStore}
+                colorTools={colorTools}
                 readOnly={readOnly}
                 onPreview={studio.previewLayers}
                 onCommit={studio.commitLayers}
@@ -1136,6 +1182,8 @@ export function StudioApp() {
                 selection={selection}
                 onSelect={setSelection}
                 onSeek={seek}
+                onScrubStart={() => scrubber.begin()}
+                onScrubEnd={() => scrubber.end()}
                 onPreview={studio.previewLayers}
                 onCommit={studio.commitLayers}
                 onSplit={split}
@@ -1307,6 +1355,7 @@ export function StudioApp() {
           slug={doc?.slug ?? null}
           onGenerated={() => void studio.refreshAssets()}
         />
+        <ConfirmHost />
         <DeleteProjectDialog
           project={projectToDelete}
           isOpen={projectToDelete?.slug === doc?.slug}

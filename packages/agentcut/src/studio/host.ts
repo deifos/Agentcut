@@ -11,6 +11,7 @@ import { buildProjectBundle, buildRenderEntrySource, type BundleState } from "./
 import { detectAgents, getAgent, type AgentInfo } from "./agents/index.js";
 import { ChatEngine } from "./chat.js";
 import { handleStudioHttp } from "./http.js";
+import { ProxyStore } from "./proxies.js";
 import {
   assertSlug,
   createProject,
@@ -143,6 +144,8 @@ export class StudioHost implements BridgeExtension {
   // ---------------------------------------------------------------------------
   // BridgeExtension
 
+  private proxyStore: ProxyStore | null = null;
+
   isOriginAllowed(origin: string | undefined) {
     if (!origin) return true; // local tools (curl, MCP server) send no Origin
     return this.options.allowedOrigins.includes(origin.replace(/\/+$/, ""));
@@ -151,6 +154,7 @@ export class StudioHost implements BridgeExtension {
   handleHttp(request: IncomingMessage, response: ServerResponse) {
     return handleStudioHttp(request, response, {
       paths: this.paths,
+      proxies: (this.proxyStore ??= new ProxyStore(this.paths.internal)),
       getBundle: (slug) => this.bundles.get(slug) ?? null,
       ensureBundle: async (slug) => {
         if (!this.bundles.has(slug)) await this.rebuild(slug);

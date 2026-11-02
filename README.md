@@ -14,6 +14,78 @@ You watch the live preview, scrub the timeline, tweak any layer by hand, and exp
 - **Record**: record talking-head takes from your camera right in the studio, then tell the agent what to do.
 - **Edit by hand**: timeline, inspector, components, templates and video styles; export an MP4 in the
   browser or locally with Remotion.
+- **Scrub faster**: use fast preview copies, cached frames and background pictures for slow scenes.
+- **Grade colour**: correct individual shots, match footage, apply looks and LUTs, and check colour scopes.
+- **Reuse your style**: save editing rules from a project and apply them to new footage.
+
+## Preview and timeline
+
+Drag the timeline playhead or the playback slider to find a frame. The playhead follows the pointer
+at once. The preview skips intermediate requests when it cannot draw them fast enough. On release,
+it waits for the exact final frame before it resumes playback, if playback was active before the drag.
+
+For local footage with sparse keyframes or a long edge above 1920 pixels, the helper can make a
+fast-seeking preview copy in the background. It switches to a ready copy while paused. HDR video,
+transparent video and clips shorter than two seconds keep their original files. Copies are stored in
+the workspace's `.agentcut/proxies` cache, with a 20 GB limit and oldest entries removed first.
+Replacing a source file causes the studio to request a new copy.
+
+Recent paused video frames are cached for repeat seeks. Scenes measured as slow can also get small
+pictures rendered while the preview is idle. These pictures appear during a drag. Timeline thumbnails
+use WebCodecs when supported, with a video-element fallback, and use preview copies when available.
+Captures and exports always read the original footage.
+
+The agent can use `agentcut_preview_check` and `agentcut_status` to inspect seek times per clip,
+as well as playback performance. These measurements help identify slow sections.
+
+## Colour grading
+
+In Advanced view, select a video or image clip and open **Color** in the inspector. Use
+**Whole video color** in the project inspector for a common grade across footage.
+
+- Adjust exposure, temperature, tint, contrast, highlights, shadows, whites, blacks and saturation.
+  Use colour wheels, RGB curves, the eight-band mixer and skin protection for further control.
+- Choose from 18 built-in looks, import a 3D `.cube` LUT, adjust its strength, or save a look as a `.cube`.
+- Check a waveform, RGB parade, vectorscope or histogram. Hold the eye button to compare with the original.
+- Match exposure and white balance between shots, copy a clip's grade, or build a look from a reference
+  image or video. The matching tools report measurements before and after the change.
+- Use adjustment layers to grade footage below them for part of the timeline. Add keyframes to change
+  a grade over time. Add grain, halation, bloom or vignette as finishing effects.
+
+A video receives its own grade, then adjustment layers above it, then the project grade. A video clip
+can opt out of inherited grades. Images only inherit them when enabled; text, captions and scene
+graphics keep their own colours. Colour effects use the same grade engine for preview and export.
+
+The agent tools are `agentcut_color_check`, `agentcut_match_shots`, `agentcut_match_look`,
+`agentcut_grade_subject` and `agentcut_color_looks`. See the
+[colour guide](skills/agentcut/references/color.md) for the format and workflow.
+
+## Person cutouts and saved editing styles
+
+Ask the agent to put text or graphics behind a person. It processes the required frames on your
+computer and puts the person on a separate layer. The first use downloads a model of about 26 MB.
+You can also grade the person and background separately, for example to keep the person in colour
+over a monochrome background. Review the edges and rerun the operation after changing framing or trims.
+
+Use the plus action beside **Styles** to save reusable editing rules from a project. The agent reads
+the project and available edit history. Apply the saved style to different footage from
+**Saved editing styles**, or delete it with confirmation. Existing videos remain unchanged.
+The b-roll library includes public-domain archive footage and a separate collection labelled as AI-generated.
+
+The studio asks for confirmation before deleting clips or tracks, discarding a recording, clearing a
+drawing, removing a queued message or removing a provider key. Timeline deletions can be undone.
+If the helper rejects an invalid timeline or project setting, the editor restores the saved value.
+
+## External agents and announcement drafts
+
+External MCP clients can use the packaged guides, project file tools, media tools, colour checks,
+preview checks and exports. Start with `agentcut_capabilities`, `agentcut_guide` and `agentcut_status`.
+See the [helper README](packages/agentcut/README.md#external-mcp-agents) for connection details.
+
+The local announcement prototype records a website through a separate browser profile and builds
+an editable draft from observed actions and a shot plan. Jobs support progress, pause, resume and
+cancellation. Review the draft before export. See the
+[announcement workflow](packages/agentcut/README.md#local-release-announcement-prototype).
 
 ### Search and social sharing
 
@@ -132,9 +204,15 @@ Run `node --import tsx --test tests/render-policy.test.mjs` to check worker sele
 
 1. Add the changes under **Unreleased** in `CHANGELOG.md`, then move them to a new version heading.
 2. Bump `version` in `package.json` (editor) and `packages/agentcut/package.json` (helper) to the same
-   number. If the page now needs the new helper, raise `MIN_HELPER_VERSION` in `lib/version.ts`.
-3. Commit, tag `vX.Y.Z`, push, and publish the helper: `cd packages/agentcut && npm publish`
-   (it syncs the skill and builds first). Publish the helper before the site deploys when the page needs it.
+   number and update `package-lock.json`. If the page now needs the new helper, raise
+   `MIN_HELPER_VERSION` in `lib/version.ts`.
+3. Run the build, type checks and tests. Use `npm pack --dry-run --workspace agentcut` to check the
+   helper package; its prepack step syncs the skill and builds the helper.
+4. Commit, create an annotated tag `vX.Y.Z`, and push the commit and tag.
+5. Publish the helper manually from that release: `cd packages/agentcut` then `npm publish`.
+   This syncs the skill and builds again. Pushing a Git tag does not publish to npm.
+   Normally publish the helper before the site deploys when the page needs it. If npm publication
+   is delayed, the deployed editor can show an update notice before the new helper is available.
 
 ## Deploy
 

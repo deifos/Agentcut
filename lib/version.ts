@@ -3,8 +3,8 @@ import packageJson from "@/package.json";
 /** The studio page's version (package.json at the repo root). See CHANGELOG.md. */
 export const APP_VERSION: string = packageJson.version;
 
-/** Person framing and transcription providers need the matching helper/runtime. */
-export const MIN_HELPER_VERSION = "0.2.16";
+/** Colour grades and adjustment tracks need the matching helper schema and runtime. */
+export const MIN_HELPER_VERSION = "0.2.17";
 
 /**
  * Oldest helper Cinematic Mode works with: the workspace needs its skill references (cinematic.md,

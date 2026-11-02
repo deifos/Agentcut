@@ -32,6 +32,8 @@ import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
 import { findClip } from "@/lib/studio/edit";
 import { formatFrameTime } from "@/lib/studio/format";
 import { useFrame, type FrameStore } from "@/lib/studio/frame-store";
+import { trackPlayerBuffering, type Scrubber } from "@/lib/studio/scrub";
+import type { ScrubFrameCache } from "@/lib/studio/scrub-cache";
 import {
   createPreviewPerfStore,
   currentReport,
@@ -65,6 +67,12 @@ export interface StudioPreviewProps {
   /** Where playback smoothness is recorded for the agent (left out on the website's demo). */
   previewPerf?: PreviewPerfStore;
   playerRef: RefObject<PlayerRef | null>;
+  /** Drags on the playback slider; without it (the website's demo) they seek directly. */
+  scrubber?: Scrubber;
+  /** Pictures shown over the video during a drag. */
+  scrubPictures?: ScrubFrameCache;
+  /** Fast-seeking copies of footage for this preview only: project path → URL. */
+  previewProxies?: Record<string, string>;
   selection: string[];
   playing: boolean;
   onPlayingChange(playing: boolean): void;
@@ -155,6 +163,7 @@ function Transport({
   fps,
   durationInFrames,
   playerRef,
+  scrubber,
   playing,
   loop,
   setLoop,
@@ -177,6 +186,7 @@ function Transport({
   fps: number;
   durationInFrames: number;
   playerRef: RefObject<PlayerRef | null>;
+  scrubber?: Scrubber;
   playing: boolean;
   loop: boolean;
   setLoop(value: boolean): void;
@@ -192,10 +202,15 @@ function Transport({
   const seek = (next: number) => {
     if (disabled || !Number.isFinite(next)) return;
     const clamped = Math.max(0, Math.min(lastFrame, Math.round(next)));
+    if (scrubber?.active) {
+      scrubber.to(clamped);
+      return;
+    }
     playerRef.current?.seekTo(clamped);
     frameStore.set(clamped);
   };
   const finishScrub = () => {
+    scrubber?.end();
     const resume = scrub.current?.resume;
     scrub.current = null;
     if (resume && !disabled) playerRef.current?.play();
@@ -237,6 +252,10 @@ function Transport({
           getThumbAriaValueText: (value) => `${formatFrameTime(value, fps)} of ${formatFrameTime(durationInFrames, fps)}`,
           onPointerDown: () => {
             if (disabled || lastFrame === 0) return;
+            if (scrubber) {
+              scrubber.begin();
+              return;
+            }
             scrub.current = { resume: playerRef.current?.isPlaying() ?? false };
             playerRef.current?.pause();
           },
@@ -312,6 +331,9 @@ export function StudioPreview(props: StudioPreviewProps) {
     frameStore,
     previewPerf,
     playerRef,
+    scrubber,
+    scrubPictures,
+    previewProxies,
     selection,
     playing,
     onPlayingChange,
@@ -347,8 +369,13 @@ export function StudioPreview(props: StudioPreviewProps) {
   const inputProps = useMemo(() => {
     if (!project || !layers) return null;
     const props = buildInputProps(doc.slug, project, layers, variant);
-    return assetBase ? { ...props, assetBase } : props;
-  }, [doc.slug, project, layers, variant, assetBase]);
+    return {
+      ...props,
+      ...(assetBase ? { assetBase } : {}),
+      // Only this Player gets them: captures and exports build their props without, from the originals.
+      ...(previewProxies ? { previewProxies } : {}),
+    };
+  }, [doc.slug, project, layers, variant, assetBase, previewProxies]);
   const ready = Boolean(
     loaded && loaded.slug === doc.slug && project && layers && inputProps,
   );
@@ -374,12 +401,14 @@ export function StudioPreview(props: StudioPreviewProps) {
     }
     // agentcut_preview_check plays the player itself: the play button and playhead stay on the
     // user's side, so a player that remounts mid-check comes back where the user left it.
+    trackPlayerBuffering(player);
     const isChecking = () => previewPerf?.get().checking ?? false;
+    // A drag moves the playhead itself; the player reports frames behind it while it catches up.
     const onFrame = (event: { detail: { frame: number } }) => {
-      if (!isChecking()) frameStore.set(event.detail.frame);
+      if (!isChecking() && !frameStore.scrubbing) frameStore.set(event.detail.frame);
     };
     const onSeeked = (event: { detail: { frame: number } }) => {
-      if (!isChecking()) frameStore.set(event.detail.frame);
+      if (!isChecking() && !frameStore.scrubbing) frameStore.set(event.detail.frame);
     };
     const onPlay = () => {
       if (!isChecking()) onPlayingChange(true);
@@ -546,6 +575,13 @@ export function StudioPreview(props: StudioPreviewProps) {
                   </div>
                 )}
               />
+              {scrubPictures ? (
+                <canvas
+                  ref={(canvas) => scrubPictures.attach(canvas)}
+                  className="pointer-events-none absolute inset-0 size-full"
+                  style={{ visibility: "hidden" }}
+                />
+              ) : null}
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -629,6 +665,7 @@ export function StudioPreview(props: StudioPreviewProps) {
           fps={project.fps}
           durationInFrames={project.durationInFrames}
           playerRef={playerRef}
+          scrubber={scrubber}
           playing={playing}
           loop={loop}
           setLoop={setLoop}

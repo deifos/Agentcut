@@ -3,7 +3,7 @@
 // and cutout-tool.ts applies it.
 import { framingCropAt } from "../../packages/agentcut/template/runtime/framing";
 import { findClip } from "./edit";
-import type { StudioLayers, StudioTrack, VideoClip } from "./types";
+import type { ColorGrade, StudioLayers, StudioTrack, VideoClip } from "./types";
 
 /** MODNet needs sides divisible by 32. 512 keeps hair edges while staying faster than playback on WebGPU. */
 export const MATTE_LONG_SIDE = 512;
@@ -177,7 +177,7 @@ export function cutoutClip(
     ...(source.box ? { box: source.box } : {}),
     ...(source.fit ? { fit: source.fit } : {}),
     ...(source.radius !== undefined ? { radius: source.radius } : {}),
-    ...(source.grade ? { grade: source.grade } : {}),
+    ...(source.grade ? { grade: shiftGradeKeys(source.grade, range.from - source.from) } : {}),
     ...(source.camera ? { camera: source.camera } : {}),
     ...(source.opacity !== undefined ? { opacity: source.opacity } : {}),
     ...(source.framing
@@ -187,6 +187,12 @@ export function cutoutClip(
     ...(!range.partial && source.exit ? { exit: source.exit } : {}),
     ...(variants.length ? { variants: Object.fromEntries(variants) } : {}),
   };
+}
+
+/** A grade for a clip that starts `offset` frames into the original. */
+function shiftGradeKeys(grade: ColorGrade, offset: number): ColorGrade {
+  if (!grade.keys?.length || !offset) return grade;
+  return { ...grade, keys: grade.keys.map((key) => ({ ...key, frame: Math.max(0, key.frame - offset) })) };
 }
 
 export type CutoutPlacement =

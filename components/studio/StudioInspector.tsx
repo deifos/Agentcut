@@ -69,7 +69,7 @@ import type {
   Box,
   CaptionsClip,
   ClipAnim,
-  ColorGrade,
+  AdjustmentClip,
   ImageClip,
   SceneClip,
   StudioClip,
@@ -90,6 +90,9 @@ import {
 } from "@/components/studio/RendersList";
 import type { StudioBridge } from "@/lib/studio/bridge";
 import { useAgentName } from "@/components/studio/StudioAgent";
+import { ColorPanel, type ColorTools } from "@/components/studio/ColorPanel";
+import { confirmDestructive } from "@/components/studio/ConfirmHost";
+import { LIVE_PROJECT, clearLiveClip, setLiveClip } from "@/motion/components/live-clip";
 
 const ANIM_PRESETS: ClipAnim["preset"][] = [
   "none",
@@ -311,7 +314,7 @@ function ColorField({
 }
 
 /** The editor's slider look (label baked into the fill, value badge on the right). */
-function RangeField({
+export function RangeField({
   value,
   min,
   max,
@@ -332,22 +335,41 @@ function RangeField({
   label: string;
   disabled?: boolean;
 }) {
+  // The slider keeps its own value while dragging, so a move re-renders this row and nothing else.
+  const [moving, setMoving] = useState<number | null>(null);
+  const movingRef = useRef<number | null>(null);
+  const finish = (next: number) => {
+    movingRef.current = null;
+    setMoving(null);
+    onCommit(next);
+  };
   return (
-    <LabeledSlider
-      label={label}
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      disabled={disabled}
-      formatValue={format}
-      onChange={onPreview}
-      sliderProps={{ onValueCommit: ([next]) => onCommit(next) }}
-    />
+    <div
+      // A drag that ends back where it started gets no commit from the slider, but the edit still has to end.
+      onPointerUp={() => {
+        if (movingRef.current !== null) finish(movingRef.current);
+      }}
+    >
+      <LabeledSlider
+        label={label}
+        value={moving ?? value}
+        min={min}
+        max={max}
+        step={step}
+        disabled={disabled}
+        formatValue={format}
+        onChange={(next) => {
+          movingRef.current = next;
+          setMoving(next);
+          onPreview(next);
+        }}
+        sliderProps={{ onValueCommit: ([next]) => finish(next) }}
+      />
+    </div>
   );
 }
 
-function Section({
+export function Section({
   title,
   children,
   right,
@@ -373,11 +395,14 @@ function Section({
 
 export interface StudioInspectorProps {
   doc: StudioDoc;
+  getDoc(): StudioDoc | null;
   variant: string;
   selection: string[];
   assets: AssetEntry[];
   library: AssetEntry[];
   frameStore: FrameStore;
+  /** The agent's colour tools, for the colour panel's buttons and scopes. */
+  colorTools?: ColorTools | null;
   readOnly: boolean;
   onPreview(layers: StudioLayers): void;
   onCommit(
@@ -474,12 +499,16 @@ export function StudioInspector(props: StudioInspectorProps) {
 function ClipInspector({
   layers,
   doc,
+  getDoc,
   variant,
   selection,
   readOnly,
-  onPreview,
   onCommit,
   onSelect,
+  frameStore,
+  assets,
+  colorTools,
+  onAssetsChanged,
 }: StudioInspectorProps & { layers: StudioLayers }) {
   const [scope, setScope] = useState<"all" | "variant">("all");
   if (selection.length > 1) {
@@ -488,8 +517,21 @@ function ClipInspector({
         <button
           type="button"
           disabled={readOnly}
-          onClick={() => {
-            onCommit(deleteClips(layers, selection));
+          onClick={async () => {
+            const confirmed = await confirmDestructive({
+              title: `Delete ${selection.length} clips?`,
+              description: "You can bring them back with Undo.",
+              action: "Delete clips",
+            });
+            if (!confirmed) return;
+            const current = getDoc();
+            if (current?.slug !== doc.slug || !current.layers) return;
+            const ids = selection.filter((id) => {
+              const found = findClip(current.layers!, id);
+              return found && !found.track.locked;
+            });
+            if (!ids.length) return;
+            onCommit(deleteClips(current.layers, ids), current.layers);
             onSelect([]);
           }}
           className="flex h-8 items-center gap-1.5 rounded-md border border-red-500/40 px-3 text-xs font-semibold text-red-400 hover:bg-red-500/10"
@@ -518,8 +560,12 @@ function ClipInspector({
     scope === "variant" ? ({ ...clip, ...override } as StudioClip) : clip;
   const hasVariants = Object.keys(doc.project?.variants ?? {}).length > 1;
 
-  /** Patch the clip (or its override for this variant). */
+  /** Patch the clip (or its override for this variant). A preview only reaches the clip being edited. */
   const patch = (fields: Partial<StudioClip>, preview = false) => {
+    if (preview) {
+      setLiveClip(clip.id, fields);
+      return;
+    }
     let next: StudioLayers;
     if (scope === "variant") {
       const variants = {
@@ -531,8 +577,8 @@ function ClipInspector({
     } else {
       next = updateClip(layers, clip.id, fields);
     }
-    if (preview) onPreview(next);
-    else onCommit(next, layers);
+    onCommit(next, layers);
+    clearLiveClip(clip.id);
   };
   const style = TRACK_KIND_STYLE[kind];
   const Icon = style.icon;
@@ -640,6 +686,22 @@ function ClipInspector({
           patch={patch}
         />
       ) : null}
+      {kind === "adjustment" ? (
+        <ColorPanel
+          title="Adjustment"
+          grade={(view as AdjustmentClip).grade}
+          clipFrom={view.from}
+          doc={doc}
+          variant={variant}
+          frameStore={frameStore}
+          assets={assets}
+          disabled={locked}
+          tools={colorTools ?? null}
+          liveId={clip.id}
+          onChange={(grade) => patch({ grade: grade ?? {} } as Partial<StudioClip>)}
+          onAssetsChanged={onAssetsChanged}
+        />
+      ) : null}
       {kind === "text" ? (
         <TextFields
           clip={view as TextClip}
@@ -664,6 +726,36 @@ function ClipInspector({
           kind={kind}
         />
       ) : null}
+      {kind === "image" ? (
+        <>
+          <ColorPanel
+            grade={(view as ImageClip).grade}
+            clip={view as ImageClip}
+            kind="image"
+            clipFrom={view.from}
+            doc={doc}
+            variant={variant}
+            frameStore={frameStore}
+            assets={assets}
+            disabled={locked}
+            tools={colorTools ?? null}
+            liveId={clip.id}
+            onChange={(grade) => patch({ grade } as Partial<StudioClip>)}
+            onAssetsChanged={onAssetsChanged}
+          />
+          <Section title="Inherit">
+            <label className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              Project grade and adjustment layers apply
+              <input
+                type="checkbox"
+                disabled={locked}
+                checked={(view as ImageClip).inheritGrade === true}
+                onChange={(event) => patch({ inheritGrade: event.target.checked ? true : undefined } as Partial<StudioClip>)}
+              />
+            </label>
+          </Section>
+        </>
+      ) : null}
       {kind === "video" ? (
         <>
           <MediaVisualFields
@@ -673,11 +765,38 @@ function ClipInspector({
             kind={kind}
             styleName={getMotionStyle(doc.project?.style)?.name}
           />
-          <GradeFields
+          <ColorPanel
+            grade={(view as VideoClip).grade}
             clip={view as VideoClip}
+            kind="video"
+            clipFrom={view.from}
+            doc={doc}
+            variant={variant}
+            frameStore={frameStore}
+            assets={assets}
             disabled={locked}
-            patch={patch}
+            tools={colorTools ?? null}
+            liveId={clip.id}
+            onChange={(grade) => patch({ grade } as Partial<StudioClip>)}
+            onAssetsChanged={onAssetsChanged}
+            onAddAdjustment={() => {
+              const at = frameStore.get();
+              const id = `adjustment-${Date.now().toString(36)}`;
+              onCommit(addClip(layers, "adjustment", { id, name: "Adjustment", from: at, duration: Math.max(1, Math.round(fps * 3)), grade: {} } as StudioClip).layers, layers);
+              onSelect([id]);
+            }}
           />
+          <Section title="Inherit">
+            <label className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              Project grade and adjustment layers apply
+              <input
+                type="checkbox"
+                disabled={locked}
+                checked={(view as VideoClip).inheritGrade !== false}
+                onChange={(event) => patch({ inheritGrade: event.target.checked ? undefined : false } as Partial<StudioClip>)}
+              />
+            </label>
+          </Section>
           {(view as VideoClip).cursor ? (
             <CursorFields
               cursor={(view as VideoClip).cursor!}
@@ -705,8 +824,18 @@ function ClipInspector({
         <button
           type="button"
           disabled={locked}
-          onClick={() => {
-            onCommit(deleteClips(layers, [clip.id]));
+          onClick={async () => {
+            const confirmed = await confirmDestructive({
+              title: `Delete “${clip.name ?? clip.id}”?`,
+              description: "You can bring it back with Undo.",
+              action: "Delete clip",
+            });
+            if (!confirmed) return;
+            const current = getDoc();
+            if (current?.slug !== doc.slug || !current.layers) return;
+            const found = findClip(current.layers, clip.id);
+            if (!found || found.track.locked) return;
+            onCommit(deleteClips(current.layers, [clip.id]), current.layers);
             onSelect([]);
           }}
           className="flex h-8 items-center gap-1.5 rounded-md border border-red-500/40 px-3 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
@@ -1353,63 +1482,6 @@ function MediaVisualFields({
   );
 }
 
-const GRADE_SLIDERS: {
-  key: keyof ColorGrade;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  neutral: number;
-  format(value: number): string;
-}[] = [
-  {
-    key: "brightness",
-    label: "Brightness",
-    min: 0.5,
-    max: 1.5,
-    step: 0.01,
-    neutral: 1,
-    format: (v) => `${Math.round((v - 1) * 100)}`,
-  },
-  {
-    key: "contrast",
-    label: "Contrast",
-    min: 0.5,
-    max: 1.5,
-    step: 0.01,
-    neutral: 1,
-    format: (v) => `${Math.round((v - 1) * 100)}`,
-  },
-  {
-    key: "saturation",
-    label: "Saturation",
-    min: 0,
-    max: 2,
-    step: 0.01,
-    neutral: 1,
-    format: (v) => `${Math.round((v - 1) * 100)}`,
-  },
-  {
-    key: "warmth",
-    label: "Warmth",
-    min: -1,
-    max: 1,
-    step: 0.01,
-    neutral: 0,
-    format: (v) => `${Math.round(v * 100)}`,
-  },
-  {
-    key: "hue",
-    label: "Hue",
-    min: -180,
-    max: 180,
-    step: 1,
-    neutral: 0,
-    format: (v) => `${Math.round(v)}°`,
-  },
-];
-
-/** Color grade for footage: CSS filters, so the preview and the export match. */
 /** The recorded mouse drawn over a Companion screen recording. */
 function CursorFields({
   cursor,
@@ -1461,74 +1533,6 @@ function CursorFields({
           disabled={disabled}
         />
       </Row>
-    </Section>
-  );
-}
-
-function GradeFields({
-  clip,
-  disabled,
-  patch,
-}: {
-  clip: VideoClip;
-  disabled: boolean;
-  patch: Patch;
-}) {
-  const [preview, setPreview] = useState<ColorGrade | null>(null);
-  const grade = preview ?? clip.grade ?? {};
-  const changed = GRADE_SLIDERS.some(
-    (s) => clip.grade?.[s.key] !== undefined && clip.grade[s.key] !== s.neutral,
-  );
-  const next = (key: keyof ColorGrade, value: number) => {
-    const neutral = GRADE_SLIDERS.find((s) => s.key === key)!.neutral;
-    const merged: ColorGrade = { ...(clip.grade ?? {}), ...(preview ?? {}) };
-    if (Math.abs(value - neutral) < 1e-6) delete merged[key];
-    else merged[key] = value;
-    return Object.keys(merged).length ? merged : undefined;
-  };
-  return (
-    <Section
-      title="Color"
-      right={
-        changed ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={disabled}
-            onClick={() => {
-              setPreview(null);
-              patch({ grade: undefined } as Partial<StudioClip>);
-            }}
-            className="h-5 px-1.5 text-[10px]"
-          >
-            Reset
-          </Button>
-        ) : null
-      }
-    >
-      {GRADE_SLIDERS.map((slider) => (
-        <RangeField
-          key={slider.key}
-          label={slider.label}
-          disabled={disabled}
-          value={grade[slider.key] ?? slider.neutral}
-          min={slider.min}
-          max={slider.max}
-          step={slider.step}
-          format={slider.format}
-          onPreview={(value) => {
-            const merged = next(slider.key, value);
-            setPreview(merged ?? {});
-            patch({ grade: merged } as Partial<StudioClip>, true);
-          }}
-          onCommit={(value) => {
-            const merged = next(slider.key, value);
-            setPreview(null);
-            patch({ grade: merged } as Partial<StudioClip>);
-          }}
-        />
-      ))}
     </Section>
   );
 }
@@ -2218,6 +2222,11 @@ function ProjectInspector({
   stylesSupported,
   onOpenStyles,
   doc,
+  variant,
+  frameStore,
+  assets,
+  colorTools,
+  onAssetsChanged,
 }: StudioInspectorProps & { project: StudioProject }) {
   const agentName = useAgentName();
   const fps = project.fps;
@@ -2225,6 +2234,21 @@ function ProjectInspector({
     onSaveProject({ ...project, ...fields });
   return (
     <div>
+      <ColorPanel
+        title="Whole video color"
+        grade={project.grade}
+        doc={doc}
+        variant={variant}
+        frameStore={frameStore}
+        assets={assets}
+        disabled={readOnly}
+        tools={colorTools ?? null}
+        liveId={LIVE_PROJECT}
+        onChange={(grade) => {
+          save({ grade });
+        }}
+        onAssetsChanged={onAssetsChanged}
+      />
       <Section title="Style">
         <StyleSection
           project={project}

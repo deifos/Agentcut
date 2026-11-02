@@ -29,9 +29,8 @@ Cuts "by transcript" ("remove the part where I say …") work the same way: find
 
 ## Color
 
-Use the `grade` field on each footage clip (copy it to every piece after a cut). Small moves: contrast
-1.05–1.15, saturation 1.05–1.2 for punch, warmth 0.1–0.25 for warmer skin, 0.8–0.9 saturation for a
-muted look. Check with `agentcut_capture_frames` before and after.
+Read `references/color.md`. Measure with `agentcut_color_check`, even out shots with `agentcut_match_shots`,
+then put one look over the whole video (`grade` in `project.json`). Check before and after.
 
 ## Motion graphics over footage
 

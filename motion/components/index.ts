@@ -148,6 +148,20 @@ export { loadMotionFonts, useMotionFonts } from "./lib";
 // Called by the studio runtime for a project with a style: camera on footage, texture, captions.
 export { StyleOverlay, StyledCaptions, styleCamera, styleLookProps } from "./style-layer";
 export { hookSpeakerBox, type SpeakerBox } from "./hook-card/HookCard";
+// Edits in progress: a moving slider reaches its clip directly, without re-rendering the studio.
+export { LIVE_PROJECT, clearLiveClip, getLiveClip, setLiveClip, useLiveClip, useLiveClips } from "./live-clip";
+
+// Colour grading: the runtime draws clip grades with these, the studio builds its tools on them.
+export {
+  GRADE_BANDS, bakeCurve, gradeAtFrame, gradeCssFilter, gradePasses, gradeUniforms, hasCurves, isCssGrade, isNeutralGrade,
+  mixGrades, parseCube, scaleGrade, serializeCube,
+} from "./color/grade";
+export type { ColorGrade, CubeLut, GradeBand, GradeCurvePoint, GradeCurves, GradeFields, GradeHsl, GradeKey, GradeMatch, GradeWheel, GradeWheels } from "./color/grade";
+export { GRADE_LOOKS, gradeLook } from "./color/looks";
+export type { GradeLook } from "./color/looks";
+export { warmGradeShaders, canDrawGrade, cleanupGradeRenderer, drawGrade, gradeEffects, gradeLutPaths, setupGradeRenderer } from "./color/grade-effect";
+export type { GradeDrawParams, GradeRendererState } from "./color/grade-effect";
+
 // Cinematic toolkit for scenes: a 3D camera with lens blur, devices, lifts, glare (see skills/agentcut/references/cinematic.md).
 export {
   Backdrop,

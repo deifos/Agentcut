@@ -28,6 +28,10 @@ export interface TimelineThumbSource {
   slug: string;
   /** Where project files are served from; defaults to the local helper (the website's demo overrides it). */
   assetBase?: string;
+  /** Fast-seeking copies of footage, project path → URL: same pictures, far quicker to grab frames from. */
+  proxies?: Record<string, string>;
+  /** False until the helper has said which copies exist. */
+  proxiesChecked?: boolean;
 }
 
 /** URL of a project file for the film strips and waveforms. */
@@ -165,7 +169,11 @@ function VideoStrip({
   width: number;
   height: number;
 }) {
-  const url = thumbFileUrl(useContext(TimelineThumbs), slug, clip.src);
+  const source = useContext(TimelineThumbs);
+  const fileUrl = thumbFileUrl(source, slug, clip.src);
+  const url = source?.proxies?.[clip.src] ?? fileUrl;
+  // Wait for that answer: decoding a long original first would hold up the quick copy behind it.
+  const waiting = source?.proxiesChecked === false;
   const count = tiles(width, height * (16 / 9), MAX_VIDEO_TILES);
   const rate = clip.playbackRate ?? 1;
   const times = useMemo(
@@ -184,6 +192,7 @@ function VideoStrip({
   }>({ url, images: {} });
   // Grab the frames this strip shows; each lands as soon as it's decoded.
   useEffect(() => {
+    if (waiting) return;
     let cancelled = false;
     for (const time of times) {
       // Keep cache hits in local state too, so eviction cannot blank a visible tile.
@@ -205,13 +214,15 @@ function VideoStrip({
     return () => {
       cancelled = true;
     };
-  }, [url, times]);
+  }, [url, times, waiting]);
   return (
     <div className="pointer-events-none absolute inset-0 flex bg-black/80">
       {times.map((time, i) => {
         const src =
           (frames.url === url ? frames.images[time] : null) ??
-          cachedVideoFrame(url, time);
+          cachedVideoFrame(url, time) ??
+          // A copy just became ready: the original's tile stays until the copy's lands.
+          cachedVideoFrame(fileUrl, time);
         return (
           <div
             key={i}

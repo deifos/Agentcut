@@ -357,9 +357,14 @@ export function useStudioController() {
         toast.error(
           code === "conflict"
             ? "The agent changed the timeline at the same time. Reloaded the latest version; redo your last change."
-            : `Couldn't save the timeline: ${error instanceof Error ? error.message : String(error)}`,
+            : code === "invalid"
+              ? `That change couldn't be saved, so the timeline went back to your last saved version. ${error instanceof Error ? error.message : String(error)}`
+              : `Couldn't save the timeline: ${error instanceof Error ? error.message : String(error)}`,
         );
-        if (code === "conflict") {
+        // Retrying can't help either of these, and an invalid timeline kept in memory would fail every
+        // later save too, whatever it changes. Go back to what's on disk.
+        if (code === "invalid") resetHistory();
+        if (code === "conflict" || code === "invalid") {
           try {
             const fresh = await bridge.request<OpenProjectResult>(
               "studio.project.open",
@@ -381,7 +386,7 @@ export function useStudioController() {
     });
     writeChain.current = task;
     return task;
-  }, []);
+  }, [resetHistory]);
 
   /** Let agent tools waiting for `slug` go on (error = null) or fail. */
   const settlePreviewWaits = useCallback(
@@ -633,6 +638,11 @@ export function useStudioController() {
       toast.error(
         `Couldn't save project settings: ${error instanceof Error ? error.message : String(error)}`,
       );
+      // Don't keep settings the helper refused: they'd fail every later save too.
+      if (error instanceof StudioRequestError && error.code === "invalid" && latest.current.doc?.slug === current.slug) {
+        latest.current.doc = { ...latest.current.doc, project: current.project };
+        setDoc((previous) => (previous && previous.slug === current.slug ? { ...previous, project: current.project } : previous));
+      }
     }
   }, []);
 

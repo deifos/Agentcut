@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, extname, relative } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { assertSlug, projectDir, safeJoin, StudioError, uniquePath } from "./projects.js";
+import type { ProxyStore } from "./proxies.js";
 import type { WorkspacePaths } from "./workspace.js";
 
 const MIME: Record<string, string> = {
@@ -26,6 +27,7 @@ const MIME: Record<string, string> = {
   ".avif": "image/avif",
   ".json": "application/json",
   ".txt": "text/plain; charset=utf-8",
+  ".cube": "text/plain; charset=utf-8",
   ".md": "text/markdown; charset=utf-8",
   ".woff2": "font/woff2",
   ".woff": "font/woff",
@@ -38,6 +40,8 @@ const UPLOAD_ROOTS = ["assets/", "renders/", ".studio/attachments/"];
 
 export interface StudioHttpDeps {
   paths: WorkspacePaths;
+  /** Fast-seeking copies of footage for the preview (./proxies.ts). */
+  proxies: ProxyStore;
   getBundle(slug: string): { code: string | null; revision: number } | null;
   ensureBundle(slug: string): Promise<void>;
   onUploaded(slug: string, relPath: string): void;
@@ -185,6 +189,29 @@ export async function handleStudioHttp(
       const rel = relative(realpathSync(dir), existsSync(file) ? realpathSync(file) : file).split(/[\\/]/).join("/").toLowerCase();
       if (rel.startsWith(".studio/") && !rel.startsWith(".studio/attachments/")) {
         throw new StudioError("Not allowed.", "forbidden");
+      }
+      await sendFile(request, response, file, cors);
+      return true;
+    }
+
+    const proxyMatch = /^\/studio\/proxy\/([a-z0-9-]+)\/(.+)$/.exec(url.pathname);
+    if (proxyMatch && request.method === "GET") {
+      const slug = assertSlug(proxyMatch[1]);
+      const file = safeJoin(projectDir(deps.paths, slug), decodePath(proxyMatch[2]));
+      if (!existsSync(file)) {
+        sendJson(response, 200, { state: "none", reason: "No such file." }, cors);
+        return true;
+      }
+      sendJson(response, 200, deps.proxies.request(file), cors);
+      return true;
+    }
+
+    const proxyFileMatch = /^\/studio\/proxy-file\/([^/]+)$/.exec(url.pathname);
+    if (proxyFileMatch && (request.method === "GET" || request.method === "HEAD")) {
+      const file = deps.proxies.filePath(proxyFileMatch[1]);
+      if (!file) {
+        sendJson(response, 404, { error: "No such copy." }, cors);
+        return true;
       }
       await sendFile(request, response, file, cors);
       return true;

@@ -31,6 +31,7 @@ const TEXT_EXTENSIONS = new Set([
   ".svg",
   ".txt",
   ".css",
+  ".cube",
 ]);
 const MAX_TEXT_BYTES = 2 * 1024 * 1024;
 const MAX_COPY_BYTES = 512 * 1024 * 1024;

@@ -271,6 +271,11 @@ scripts from the project folder (e.g. composing music or fetching CC0 sounds, se
 | `agentcut_create_project` / `_open_project` | new video / switch project |
 | `agentcut_capture_frames` | look at specific frames (same renderer as export); `region` + `scale: 2` for a sharp crop |
 | `agentcut_contact_sheet` | stills sheet of the whole video before export |
+| `agentcut_color_check` | measure exposure, clipping, colour cast, skin and shot-to-shot jumps (see `references/color.md`) |
+| `agentcut_match_shots` | even out exposure and white balance across footage; reports before and after |
+| `agentcut_match_look` | build a `.cube` from a reference image or video and apply it |
+| `agentcut_color_looks` | the built-in looks for `grade.look` |
+| `agentcut_grade_subject` | grade a person and their background separately, on request |
 | `agentcut_media_info` | exact durations (frames) for clips |
 | `agentcut_transcribe` | provider-based transcript and word timings (see `references/transcription.md`) |
 | `agentcut_transcription_options` / `_cancel_transcription` | configured capabilities, progress and cancellation |

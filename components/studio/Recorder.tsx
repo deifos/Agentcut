@@ -3,6 +3,7 @@
 import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState } from "react";
 import { Circle, Square, Trash2 } from "lucide-react";
+import { confirmDestructive } from "@/components/studio/ConfirmHost";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -378,7 +379,17 @@ export function Recorder({
           )}
           {live && (
             <>
-              <Button variant="outline" onClick={() => void discard()}>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const confirmed = await confirmDestructive({
+                    title: "Discard this recording?",
+                    description: "It can't be recovered.",
+                    action: "Discard recording",
+                  });
+                  if (confirmed) void discard();
+                }}
+              >
                 <Trash2 /> Discard
               </Button>
               <Button

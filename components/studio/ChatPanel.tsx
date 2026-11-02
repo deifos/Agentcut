@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDestructive } from "@/components/studio/ConfirmHost";
 import { TooltipHint } from "@/components/ui/tooltip";
 import { STUDIO_COMMAND } from "@/lib/studio/commands";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
@@ -1070,7 +1071,14 @@ export function ChatPanel({
                             message={message}
                             position={queuedIds.indexOf(message.id) + 1}
                             onEdit={(value) => onEditQueued(message.id, value)}
-                            onRemove={() => onRemoveQueued(message.id)}
+                            onRemove={async () => {
+                              const confirmed = await confirmDestructive({
+                                title: "Remove this queued message?",
+                                description: "It hasn't been sent, and it can't be recovered.",
+                                action: "Remove message",
+                              });
+                              if (confirmed) onRemoveQueued(message.id);
+                            }}
                             onRunNow={() => onRunQueuedNow(message.id)}
                           />
                         </MessageContent>

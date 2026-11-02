@@ -10,6 +10,7 @@ The stack, top to bottom: the person cutout, the graphic, the original footage. 
 
 The tool adds a muted video clip to a track named Person cutout. Keep captions on a track above the cutout so the person doesn't cover them.
 
+- To grade a person apart from their background, use `agentcut_grade_subject` instead (see `references/color.md`).
 - It copies the footage clip's trim, speed, box, crop, fit and grade once. After changing those, or moving the footage, run the tool again with the same range; it replaces the earlier cutout on that range.
 - A range can't start or end inside an enter or exit animation of the footage, and a project style camera needs the whole clip: the tool returns needs_full_clip, so omit the range.
 - Works on the person in front; it can't choose between people, and it doesn't handle objects. Fast movement can leave soft or smeared edges. no_person means most of the range has nobody clearly visible.

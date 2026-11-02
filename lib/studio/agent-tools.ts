@@ -9,10 +9,14 @@ import { blobToDataUrl, variantSize } from "@/lib/studio/composition-props";
 import type { FrameStore } from "@/lib/studio/frame-store";
 import {
   PreviewPerfRecorder,
+  ScrubRecorder,
+  SLOW_SCRUB_MS,
   slowClips,
   type PreviewPerfReport,
   type PreviewPerfStore,
+  type ScrubStats,
 } from "@/lib/studio/preview-perf";
+import { seekAndWait } from "@/lib/studio/scrub";
 import { findClip } from "@/lib/studio/edit";
 import type { StudioCursorTrack } from "@/lib/studio/cursor-track";
 import type { LoadedModule, StudioDoc, StudioLayers } from "@/lib/studio/types";
@@ -130,6 +134,38 @@ const PREVIEW_ONLY =
   "Preview only: exports render every frame at full quality. Never lower what the render shows to fix this; see the skill's Preview performance rules.";
 
 /** What the agent needs from a smoothness report: totals and the clips that don't keep up. */
+/** How many seeks a check times: enough for every clip in a typical range without taking long. */
+const CHECK_SEEKS = 24;
+/** A frame a check is still waiting for after this long is recorded as this slow. */
+const CHECK_SEEK_WAIT_MS = 5000;
+
+/** Jumps forward through the range, then back: going backward is the expensive direction for footage. */
+function scrubCheckFrames(from: number, to: number) {
+  const count = Math.min(CHECK_SEEKS, to - from + 1);
+  const half = Math.ceil(count / 2);
+  const forward = Array.from({ length: half }, (_, i) => from + Math.round((i * (to - from)) / Math.max(1, half - 1)));
+  const offset = Math.max(1, Math.round((to - from) / Math.max(1, count - 1)));
+  const back = [...forward].reverse().slice(0, count - half).map((frame) => Math.max(from, frame - offset));
+  return [...forward, ...back];
+}
+
+function summarizeScrub(stats: ScrubStats, currentRevision: number | null) {
+  return {
+    source: stats.source,
+    current: stats.revision === currentRevision,
+    measuredAt: new Date(stats.at).toISOString(),
+    seeks: stats.seeks,
+    ...(stats.picturesShown ? { picturesShown: stats.picturesShown } : {}),
+    medianMs: stats.medianMs,
+    p95Ms: stats.p95Ms,
+    worstMs: stats.worstMs,
+    worstFrame: stats.worstFrame,
+    slowClips: stats.clips.filter((c) => c.p95Ms >= SLOW_SCRUB_MS).sort((a, b) => b.p95Ms - a.p95Ms),
+    clips: stats.clips,
+    note: `Time from a seek to the frame on screen. Above ${SLOW_SCRUB_MS} ms a drag visibly lags; exports are unaffected.`,
+  };
+}
+
 function summarizePerf(report: PreviewPerfReport, currentRevision: number | null) {
   return {
     source: report.source,
@@ -222,6 +258,7 @@ async function checkPreview(
     { slug: doc.slug, variant, revision, fps, layers: doc.layers!, source: "check", lastFrame: to },
     () => player.getContainerNode(),
   );
+  const scrub = new ScrubRecorder({ slug: doc.slug, variant, revision, layers: doc.layers!, source: "check" });
   let timedOut = false;
   const cleanups: (() => void)[] = [];
   try {
@@ -284,6 +321,12 @@ async function checkPreview(
       });
       player.play();
     });
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    player.pause();
+    for (const frame of timedOut ? [] : scrubCheckFrames(from, to)) {
+      if (context.getPlayer() !== player || document.visibilityState !== "visible") break;
+      scrub.seek(frame, await seekAndWait(player, frame, CHECK_SEEK_WAIT_MS));
+    }
   } finally {
     for (const cleanup of cleanups) cleanup();
     recorder.resume();
@@ -299,7 +342,9 @@ async function checkPreview(
   }
   const report = recorder.report();
   context.previewPerf.setReport(report);
-  return { report, timedOut };
+  const scrubStats = scrub.seeks ? scrub.stats() : null;
+  if (scrubStats) context.previewPerf.setScrub(scrubStats);
+  return { report, timedOut, scrubStats };
 }
 
 /** A capture region in composition pixels, clamped to the frame (null: the whole frame). */
@@ -358,17 +403,19 @@ async function runStudioToolInternal(
           loaded?.slug === doc?.slug ? (loaded?.revision ?? null) : null,
         issues: doc?.issues ?? [],
         ...(() => {
-          const { check, playback } = context.previewPerf.get();
+          const { check, playback, scrub } = context.previewPerf.get();
           if (!doc) return {};
           const revision = loaded?.slug === doc.slug ? loaded.revision : null;
           const mine = (report: PreviewPerfReport | null) => (report?.slug === doc.slug ? report : null);
           const lastCheck = mine(check);
           const userPlayback = mine(playback);
-          if (!lastCheck && !userPlayback) return {};
+          const lastScrub = scrub?.slug === doc.slug ? scrub : null;
+          if (!lastCheck && !userPlayback && !lastScrub) return {};
           return {
             previewPerformance: {
               ...(lastCheck ? { lastCheck: summarizePerf(lastCheck, revision) } : {}),
               ...(userPlayback ? { playback: summarizePerf(userPlayback, revision) } : {}),
+              ...(lastScrub ? { scrub: summarizeScrub(lastScrub, revision) } : {}),
             },
           };
         })(),
@@ -392,7 +439,7 @@ async function runStudioToolInternal(
       const cap = from + fps * 60 - 1;
       const capped = to > cap;
       if (capped) to = cap;
-      const { report, timedOut } = await checkPreview(context, doc, loaded.revision, variant, from, to);
+      const { report, timedOut, scrubStats } = await checkPreview(context, doc, loaded.revision, variant, from, to);
       return {
         project: doc.slug,
         from,
@@ -400,6 +447,7 @@ async function runStudioToolInternal(
         ...(capped ? { capped: "Checked the first 60 seconds of the range; check the rest separately." } : {}),
         ...(timedOut ? { timedOut: "Playback didn't reach the end of the range in time; the numbers cover what played." } : {}),
         ...summarizePerf(report, loaded.revision),
+        ...(scrubStats ? { scrub: summarizeScrub(scrubStats, loaded.revision) } : {}),
       };
     }
 
@@ -600,6 +648,37 @@ async function runStudioToolInternal(
       } finally {
         toast.dismiss(toastId);
       }
+    }
+
+    case "studio_color_check": {
+      const doc = await ready(context, params);
+      const { runColorCheck } = await import("@/lib/studio/color/tool");
+      return runColorCheck(params, doc, context);
+    }
+
+    case "studio_match_shots": {
+      const doc = await ready(context, params);
+      const { runMatchShots } = await import("@/lib/studio/color/tool");
+      return runMatchShots(params, doc, context);
+    }
+
+    case "studio_match_look": {
+      const doc = await ready(context, params);
+      const { runMatchLook } = await import("@/lib/studio/color/tool");
+      return runMatchLook(params, doc, context);
+    }
+
+    case "studio_grade_subject": {
+      const doc = await ready(context, params);
+      const { runGradeSubject } = await import("@/lib/studio/color/tool");
+      return runGradeSubject(params, doc, context, (cutoutParams) =>
+        runStudioToolInternal("studio_cutout_person", cutoutParams, context) as Promise<Record<string, unknown>>,
+      );
+    }
+
+    case "studio_color_looks": {
+      const { colorLookCatalog } = await import("@/lib/studio/color/tool");
+      return colorLookCatalog();
     }
 
     case "studio_transcribe": {

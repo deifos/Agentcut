@@ -26,8 +26,15 @@ not replace the full review or reduce final render quality.
   that only sits on top of a slower one: fix the other one. `slowToMount` means the clip drops frames in
   the second before it starts, while it mounts early: its setup work is heavy (see rule 4), even when it
   plays fine afterwards.
-- `agentcut_status` → `page.previewPerformance` has the latest check (`lastCheck`) and the user's own
-  playback (`playback`). `current: false` means it was measured on an older build.
+- `agentcut_status` → `page.previewPerformance` has the latest check (`lastCheck`), the user's own
+  playback (`playback`) and seek timings (`scrub`). `current: false` means it was measured on an older build.
+- A check also returns `scrub`: how long a seek takes to reach the screen (`medianMs`, `p95Ms`, `slowClips`),
+  jumping forward and back through the range. A scene can play well and still lag on a drag, because every
+  seek draws it from nothing. Above 120 ms a drag visibly lags: the same fixes below apply, and work a scene
+  repeats on every frame (not just at mount) is the usual cause.
+- Footage needs nothing from you: the helper makes fast-seeking copies for the preview by itself, and
+  captures and exports always read the original. Only `src` on a video clip gets one, so use a video clip
+  rather than a video inside a scene when footage is slow to scrub.
 - Run a check after building or changing a heavy scene (walls and grids, hundreds of elements, image
   sequences, big blurs, generated images) and before you say you're done. A first run includes loading
   (stalls); run it again to see steady playback. A machine's own jitter varies between runs: act on a

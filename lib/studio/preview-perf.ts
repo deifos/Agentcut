@@ -386,6 +386,121 @@ export class PreviewPerfRecorder {
   }
 }
 
+/** A clip this slow to draw a seek makes a drag visibly lag. */
+export const SLOW_SCRUB_MS = 120;
+
+export interface ScrubClipStats {
+  id: string;
+  label: string;
+  kind: string;
+  from: number;
+  to: number;
+  seeks: number;
+  medianMs: number;
+  p95Ms: number;
+  worstMs: number;
+}
+
+/** How long frames take to appear when seeking: playback numbers reset on every seek and miss this. */
+export interface ScrubStats {
+  slug: string;
+  variant: string;
+  revision: number;
+  /** "drag": the user's own scrubbing; "check": the jumps agentcut_preview_check makes. */
+  source: "drag" | "check";
+  at: number;
+  seeks: number;
+  /** Frames a drag showed from the picture cache, without drawing them. */
+  picturesShown: number;
+  medianMs: number;
+  p95Ms: number;
+  worstMs: number;
+  worstFrame: number | null;
+  clips: ScrubClipStats[];
+}
+
+function percentile(sorted: number[], fraction: number) {
+  if (!sorted.length) return 0;
+  return Math.round(sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))]);
+}
+
+/** Keeps the latest seeks, so an old slow drag ages out once the scene has been fixed. */
+const MAX_SCRUB_SAMPLES = 400;
+
+export class ScrubRecorder {
+  private readonly ranges: Range[];
+  private samples: { frame: number; ms: number }[] = [];
+  private picturesShown = 0;
+
+  constructor(
+    private readonly meta: {
+      slug: string;
+      variant: string;
+      revision: number;
+      layers: StudioLayers;
+      source: ScrubStats["source"];
+    },
+  ) {
+    this.ranges = visualRanges(meta.layers);
+  }
+
+  seek(frame: number, ms: number) {
+    this.samples.push({ frame, ms });
+    if (this.samples.length > MAX_SCRUB_SAMPLES) this.samples.shift();
+  }
+
+  pictureShown() {
+    this.picturesShown += 1;
+  }
+
+  get seeks() {
+    return this.samples.length;
+  }
+
+  stats(): ScrubStats {
+    const sorted = this.samples.map((s) => s.ms).sort((a, b) => a - b);
+    const worst = this.samples.reduce<{ frame: number; ms: number } | null>(
+      (top, s) => (!top || s.ms > top.ms ? s : top),
+      null,
+    );
+    const clips: ScrubClipStats[] = [];
+    for (const r of this.ranges) {
+      const own = this.samples.filter((s) => s.frame >= r.from && s.frame < r.to).map((s) => s.ms).sort((a, b) => a - b);
+      if (!own.length) continue;
+      clips.push({
+        id: r.id,
+        label: r.label,
+        kind: r.kind,
+        from: r.from,
+        to: r.to,
+        seeks: own.length,
+        medianMs: percentile(own, 0.5),
+        p95Ms: percentile(own, 0.95),
+        worstMs: Math.round(own[own.length - 1]),
+      });
+    }
+    return {
+      slug: this.meta.slug,
+      variant: this.meta.variant,
+      revision: this.meta.revision,
+      source: this.meta.source,
+      at: Date.now(),
+      seeks: sorted.length,
+      picturesShown: this.picturesShown,
+      medianMs: percentile(sorted, 0.5),
+      p95Ms: percentile(sorted, 0.95),
+      worstMs: Math.round(worst?.ms ?? 0),
+      worstFrame: worst?.frame ?? null,
+      clips,
+    };
+  }
+}
+
+/** The clips under this frame that were measured as slow to scrub. */
+export function slowScrubClips(stats: ScrubStats | null, frame: number) {
+  return (stats?.clips ?? []).filter((c) => c.p95Ms >= SLOW_SCRUB_MS && frame >= c.from && frame < c.to);
+}
+
 /** The class the runtime puts on a visual clip's wrapper (keep in sync with the runtime's `clipClass`). */
 export function clipClass(id: string) {
   return `${CLIP_CLASS}${id.replace(/\s+/g, "_")}`;
@@ -448,6 +563,8 @@ export interface PreviewPerfState {
   check: PreviewPerfReport | null;
   /** The user's own playback. Kept apart so a few seconds of playing elsewhere don't hide a check. */
   playback: PreviewPerfReport | null;
+  /** The latest seek timings, from a drag or a check. */
+  scrub: ScrubStats | null;
   checking: boolean;
 }
 
@@ -455,12 +572,13 @@ export interface PreviewPerfState {
 export interface PreviewPerfStore {
   get(): PreviewPerfState;
   setReport(report: PreviewPerfReport): void;
+  setScrub(stats: ScrubStats): void;
   setChecking(checking: boolean): void;
   subscribe(listener: () => void): () => void;
 }
 
 export function createPreviewPerfStore(): PreviewPerfStore {
-  let state: PreviewPerfState = { check: null, playback: null, checking: false };
+  let state: PreviewPerfState = { check: null, playback: null, scrub: null, checking: false };
   const listeners = new Set<() => void>();
   const emit = (next: PreviewPerfState) => {
     state = next;
@@ -469,6 +587,7 @@ export function createPreviewPerfStore(): PreviewPerfStore {
   return {
     get: () => state,
     setReport: (report) => emit({ ...state, [report.source]: report }),
+    setScrub: (scrub) => emit({ ...state, scrub }),
     setChecking: (checking) => {
       if (checking !== state.checking) emit({ ...state, checking });
     },

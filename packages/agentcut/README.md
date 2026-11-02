@@ -18,6 +18,32 @@ another folder).
 See the [changelog](https://github.com/deifos/Agentcut/blob/main/CHANGELOG.md) for what's new. If the
 studio says **Update helper**, stop it and run `npx -y agentcut@latest`.
 
+## Preview and colour tools in 0.2.17
+
+The helper makes fast-seeking preview copies of local footage with sparse keyframes or a long edge
+above 1920 pixels. This work runs in the background, one file at a time. The studio applies ready
+copies while paused and also uses them for timeline thumbnails. HDR footage, transparent video and
+clips shorter than two seconds keep their originals. Copies use the workspace's `.agentcut/proxies`
+cache, limited to 20 GB with oldest entries removed first. Captures and exports use original footage.
+
+The studio also caches recent paused frames and can render small pictures for scenes measured as
+slow. During a drag, intermediate seek requests can be skipped. Releasing the pointer waits for
+the exact final frame before playback resumes. `agentcut_preview_check` and `agentcut_status`
+report seek times per clip as well as playback performance.
+
+Colour grading supports clip and project grades, adjustment tracks, keyframes, colour wheels,
+curves, an eight-band mixer, 18 built-in looks, 3D `.cube` LUTs, skin protection and finishing effects.
+The studio includes scopes, shot matching, reference-look matching and separate person/background
+grading. The helper validates the format and supplies the matching runtime and guides.
+
+Use `agentcut_color_check`, `agentcut_match_shots`, `agentcut_match_look`, `agentcut_grade_subject`
+and `agentcut_color_looks` with the connected studio. Read `references/color.md` through
+`agentcut_guide` for the workflow. Person cutouts run locally and download a model on first use.
+
+This version also includes saved editing styles, labelled AI-generated b-roll, external MCP file
+access and the announcement workflow described below. See the
+[main README](https://github.com/deifos/Agentcut#preview-and-timeline) for the editor controls.
+
 MIT
 
 ## External MCP agents

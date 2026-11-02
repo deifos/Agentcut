@@ -5,6 +5,7 @@
 import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { ArrowUp, Clock, Trash2, Undo2, X } from "lucide-react";
+import { confirmDestructive } from "@/components/studio/ConfirmHost";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -228,7 +229,14 @@ export function DrawAsk({
                 size="icon-sm"
                 aria-label="Clear the drawing"
                 disabled={!strokes.length}
-                onClick={() => setStrokes([])}
+                onClick={async () => {
+                  const confirmed = await confirmDestructive({
+                    title: "Clear the drawing?",
+                    description: "Everything you've drawn here goes away.",
+                    action: "Clear drawing",
+                  });
+                  if (confirmed) setStrokes([]);
+                }}
               >
                 <Trash2 />
               </Button>

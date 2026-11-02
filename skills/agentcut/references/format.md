@@ -84,11 +84,13 @@ see `references/components.md`).
 clip's `from` is the cue frame minus the file's onset (see sound.md).
 
 **video** — `{ "src", "trimStart", "volume", "muted", "fit": "cover" | "contain", "box", "playbackRate", "grade" }`.
-`grade` — `{ "brightness": 1, "contrast": 1, "saturation": 1, "warmth": 0, "hue": 0 }` (neutral values;
-brightness/contrast/saturation 0–3, warmth −1…1, hue −180…180 degrees). Leave out what you don't change.
+`grade` — colour: `{ "exposure": 0.2, "contrast": 1.1, "temperature": 0.1, "look": "golden-stock" }` and more (fields and workflow:
+`references/color.md`). Leave out what you don't change. `inheritGrade: false` keeps the project grade and adjustment layers off it.
 Footage from the editor: see `references/footage.md`.
 
-**image** — `{ "src", "fit", "box", "radius" }`.
+**image** — `{ "src", "fit", "box", "radius", "grade", "inheritGrade" }`. `inheritGrade: true` also applies the project grade and adjustment layers.
+
+**adjustment** — `{ "grade" }`. Draws nothing: it grades the footage below it while it runs (`references/color.md`).
 
 **text** — `{ "text", "box", "style": { "fontFamily", "fontSize" (px at the variant size), "fontWeight", "color", "align", "lineHeight", "letterSpacing", "textTransform", "shadow" } }`. For styled kinetic type use a scene instead.
 

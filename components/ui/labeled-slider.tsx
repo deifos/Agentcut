@@ -103,7 +103,7 @@ export function LabeledSlider({
         getThumbAriaValueText={() => displayValue}
         {...sliderProps}
         className="flex-1"
-        trackClassName="rounded-md border border-foreground/10 bg-background/30 backdrop-blur-md backdrop-saturate-150"
+        trackClassName="rounded-md border border-foreground/10 bg-background/30"
         trackStyle={{
           height: "1.375rem",
           boxShadow:
@@ -119,7 +119,7 @@ export function LabeledSlider({
             </span>
           ) : undefined
         }
-        rangeClassName="rounded-l-md backdrop-blur-sm"
+        rangeClassName="rounded-l-md"
         rangeStyle={{
           backgroundImage:
             "linear-gradient(90deg, rgb(4 145 94) 0%, rgb(5 170 111) 52%, rgb(49 196 137) 100%), linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0) 45%, rgba(0,0,0,0.08) 100%)",

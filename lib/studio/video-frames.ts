@@ -1,9 +1,11 @@
-// Small frame grabs from video files for the timeline's film strips. One hidden <video> does all
-// the work, one frame at a time (browsers cap how many media players a page may create), and
-// a bounded cache keeps small JPEG data URLs (no object URLs to leak or revoke while visible).
+// Small frame grabs from video files for the timeline's film strips. WebCodecs decodes each file's
+// frames in one forward pass, in time order. Files or browsers it can't handle fall back to one hidden
+// <video>, one seek at a time (browsers cap how many media players a page may create). A bounded
+// cache keeps small JPEG data URLs (no object URLs to leak or revoke while visible).
 
 const THUMB_HEIGHT = 90;
 const MAX_CACHED_FRAMES = 512;
+const DECODE_TIMEOUT_MS = 60_000;
 const cache = new Map<string, string>();
 const pending = new Map<string, Promise<string | null>>();
 
@@ -14,6 +16,7 @@ interface Job {
 }
 
 const queue: Job[] = [];
+const fallback: Job[] = [];
 let running = false;
 
 const key = (url: string, time: number) => `${url}#${time}`;
@@ -56,8 +59,62 @@ async function grab(
   return canvas.toDataURL("image/jpeg", 0.72);
 }
 
+/** Decode `jobs` (one file's) in time order; returns the ones left for the hidden <video>. */
+async function decodeInOrder(url: string, jobs: Job[]): Promise<Job[]> {
+  if (typeof VideoDecoder === "undefined") return jobs;
+  const left = [...jobs].sort((a, b) => a.time - b.time);
+  try {
+    const { Input, UrlSource, ALL_FORMATS, CanvasSink } = await import("mediabunny");
+    const input = new Input({
+      source: new UrlSource(url, { getRetryDelay: () => null }),
+      formats: ALL_FORMATS,
+    });
+    const timeout = setTimeout(() => input.dispose(), DECODE_TIMEOUT_MS);
+    try {
+      const track = await input.getPrimaryVideoTrack();
+      if (!track || !(await track.canDecode())) return left;
+      const start = await track.getFirstTimestamp();
+      const width = Math.max(1, Math.round((track.displayWidth * THUMB_HEIGHT) / Math.max(1, track.displayHeight)));
+      const sink = new CanvasSink(track, { width, height: THUMB_HEIGHT, fit: "fill", poolSize: 1 });
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = THUMB_HEIGHT;
+      const context = canvas.getContext("2d");
+      const times = left.map((job) => start + Math.max(0, job.time));
+      for await (const frame of sink.canvasesAtTimestamps(times)) {
+        const job = left[0];
+        if (!frame || !context) break;
+        left.shift();
+        context.drawImage(frame.canvas, 0, 0, width, THUMB_HEIGHT);
+        job.resolve(canvas.toDataURL("image/jpeg", 0.72));
+      }
+    } finally {
+      clearTimeout(timeout);
+      input.dispose();
+    }
+  } catch {
+    // Whatever wasn't reached goes through the hidden <video>.
+  }
+  return left;
+}
+
 async function run() {
   if (running) return;
+  running = true;
+  // Everything queued for one file at a time, so it decodes in one pass.
+  while (queue.length) {
+    const url = queue[0].url;
+    const jobs = queue.filter((job) => job.url === url);
+    queue.splice(0, queue.length, ...queue.filter((job) => job.url !== url));
+    fallback.push(...(await decodeInOrder(url, jobs)));
+  }
+  running = false;
+  queue.push(...fallback.splice(0));
+  if (queue.length) await runOnElement();
+  if (queue.length) void run();
+}
+
+async function runOnElement() {
   running = true;
   const video = document.createElement("video");
   video.crossOrigin = "anonymous";

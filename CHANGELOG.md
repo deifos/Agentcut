@@ -13,8 +13,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.17] - 2026-11-02
+
 ### Added
 
+- **Much faster scrubbing.** Dragging the playhead now draws only the frame under the pointer and keeps the last picture on screen until the next is ready, and the playhead follows your pointer at once. Exports and captures are untouched: they always use your original files at full quality.
+  - Footage: the helper makes a fast-seeking copy of slow-to-seek video in the background (sparse keyframes, or larger than 1080p) and the preview switches to it when you pause. In our test with 4K footage, the slowest seeks went from about 800 ms to about 80 ms. Copies live in `.agentcut/proxies` (up to 20 GB, oldest removed first) and can always be made again. HDR and transparent video keep playing from the original.
+  - Going back over frames you've just seen shows them instantly.
+  - Scenes too heavy to draw during a drag get small pictures rendered while the preview is idle, shown while you drag. Letting go always draws the real frame.
+  - Timeline film strips read from the copies too, and decode with WebCodecs where they can.
+  - For agents: `agentcut_preview_check` and `agentcut_status` now report how long seeks take, per clip.
+- **Colour grading.** A real grading toolset, drawn on the GPU so the preview, captures and exports match, with dithering so skies and gradients don't band. Existing grades render exactly as before.
+  - Exposure, temperature and tint, highlights, shadows, whites, blacks, vibrance and levels, plus colour wheels, RGB curves, an eight-band colour mixer and skin protection.
+  - Waveform, RGB parade, vectorscope with skin line, and histogram in the Color section, rendered with the export's renderer. Hold the eye button to compare with the original.
+  - 18 original looks with live previews from your own frame, `.cube` LUT import with a strength slider, and saving a grade as a `.cube`.
+  - Match shots: even out exposure and white balance across a whole timeline in one click. Match a reference: build a LUT from an image or video. Both report the measured result.
+  - Person and background grading using the person cutout, with presets such as Subject pop and Colour on black and white.
+  - Whole-video grades, adjustment layers on the timeline, and grades that change over time with key frames.
+  - Grain, halation, bloom and vignette, sized to the frame so they look the same at any resolution.
+  - For agents: `agentcut_color_check`, `agentcut_match_shots`, `agentcut_match_look`, `agentcut_grade_subject` and `agentcut_color_looks`, and `references/color.md` in the skill.
 - **Modern AI-generated b-roll.** The b-roll library now also has 39 modern clips (tech, science, work, cities, nature, people), labelled as AI-generated, next to the public-domain archive.
 - Delete saved editing styles from the Styles dialog, with confirmation. Existing videos are unchanged.
 - Put text and graphics behind a person. Ask your agent, and it cuts the person out of just the frames it needs, on your computer, and places them on their own layer above the graphic. Preview and exports show the same result. The first use downloads a model of about 26 MB.
@@ -33,6 +50,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Add a prepared Chat with Website Instagram sample and an opt-in end-to-end capture test. The sample uses no live account data and sends no messages.
 
 ### Fixed
+
+- Clip deletion from the inspector preserves edits made while confirmation is open and checks the current project and track locks.
+- Replacing footage at the same path invalidates its preview copy and requests a new one.
+- Releasing the playhead waits for the final frame before resuming playback. A new drag or project change cancels an unfinished wait.
+- Clip colour measurements apply only visible adjustment layers above the clip, in their original order.
 
 - **The b-roll page opens right away.** It shows a small starter set first, instead of downloading the whole catalog (about 23 MB) before the first thumbnail; the full catalog loads on your first search or filter.
 - AI-generated b-roll clips are no longer credited as public domain.
@@ -61,6 +83,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The agent treats file names and downloaded content as data, not instructions.
 
 ### Changed
+
+- Ask for confirmation before deleting clips or tracks, clearing drawings, discarding recordings,
+  removing queued messages or removing provider keys. Inspector sliders preview edits on the affected clip.
+- Restore saved timeline or project settings when the helper rejects invalid edits.
+- Require helper 0.2.17 for the colour format and adjustment tracks.
 
 - Use Moonshine's full-precision decoder for speech input, for more accurate words. The voice model is now about 250 MB, so existing users download it once more.
 - Keep voice download progress below 100% until both model files finish downloading.
@@ -450,7 +477,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.16...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.17...HEAD
+[0.2.17]: https://github.com/deifos/Agentcut/compare/v0.2.16...v0.2.17
 [0.2.16]: https://github.com/deifos/Agentcut/compare/v0.2.15...v0.2.16
 [0.2.15]: https://github.com/deifos/Agentcut/compare/v0.2.14...v0.2.15
 [0.2.14]: https://github.com/deifos/Agentcut/compare/v0.2.13...v0.2.14

@@ -216,7 +216,7 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_preview_check",
-    "Check that the live preview plays smoothly: plays from/to (frames, default the whole video, max 60 s per call) muted in the user's preview at real speed and returns, per visual clip, frames played and dropped (the preview skips frames it can't draw in time), loading stalls and the most DOM elements the clip drew, with a verdict (smooth, choppy, heavy) and slowClips likeliest cause first. Takes as long as the range plays; one check at a time. Stops if the user pauses or seeks. Run it after building or changing a heavy scene (walls, grids, many elements, image sequences, big blurs) and before you say you're done; fix choppy or heavy clips with the skill's Preview performance rules, which never lower render quality. Preview only: exports render every frame at full quality. agentcut_status also reports the user's own playback.",
+    "Check that the live preview plays smoothly: plays from/to (frames, default the whole video, max 60 s per call) muted in the user's preview at real speed and returns, per visual clip, frames played and dropped (the preview skips frames it can't draw in time), loading stalls and the most DOM elements the clip drew, with a verdict (smooth, choppy, heavy) and slowClips likeliest cause first. Then it jumps forward and back through the range and returns scrub: how long each seek took to reach the screen (medianMs, p95Ms, slowClips), since a scene can play well and still lag on a drag. Takes as long as the range plays; one check at a time. Stops if the user pauses or seeks. Run it after building or changing a heavy scene (walls, grids, many elements, image sequences, big blurs) and before you say you're done; fix choppy or heavy clips with the skill's Preview performance rules, which never lower render quality. Preview only: exports render every frame at full quality. agentcut_status also reports the user's own playback.",
     {
       from: z.number().int().min(0).optional(),
       to: z.number().int().min(0).optional(),
@@ -269,6 +269,72 @@ export function registerStudioTools(server: McpServer) {
       behind: z.array(z.string().min(1)).max(32).optional().describe("Clip IDs that should appear behind the person. They must be on tracks above the footage."),
     },
     async (args) => page("studio_cutout_person", args, 30 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_color_check",
+    "Measure colour instead of guessing: exposure, clipped highlights and crushed shadows, colour cast, saturation, skin against the skin line, and how much each shot differs from the longest one. With `frames`, measures finished frames including graphics. Otherwise measures each footage clip alone. `stage` picks what to measure: graded (default), balanced (shot matching only) or source (as recorded). Run it before and after grading, and read references/color.md.",
+    {
+      project,
+      frames: z.array(z.number().int().min(0)).min(1).max(24).optional().describe("Finished frames to measure. Leave out to measure each clip."),
+      clipIds: z.array(z.string().min(1)).max(48).optional().describe("Footage clips to measure. Defaults to all."),
+      stage: z.enum(["graded", "balanced", "source"]).optional(),
+    },
+    async (args) => page("studio_color_check", args, 10 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_match_shots",
+    "Even out exposure, white balance, contrast and saturation across footage so cuts don't jump. Every clip is corrected towards the anchor (default: the longest clip), pieces of one take get the same correction, and the result is measured and reported before and after. Stored in grade.match, under any look. This doesn't copy looks or settings unless copyGrade is true, which gives every clip the anchor's grade, replacing their own. balance: false only copies. Locked and hidden tracks are left out.",
+    {
+      project,
+      anchorClipId: z.string().min(1).optional().describe("The shot the others should match."),
+      clipIds: z.array(z.string().min(1)).max(48).optional().describe("Clips to include. Defaults to all footage."),
+      strength: z.number().min(0).max(1).optional().describe("How far to correct, default 1."),
+      copyGrade: z.boolean().optional().describe("Also give every clip the anchor's look and settings. Default false."),
+      balance: z.boolean().optional().describe("Even out exposure and white balance. Default true."),
+    },
+    async (args) => page("studio_match_shots", args, 15 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_match_look",
+    "Match the footage to a reference's colour: builds a .cube LUT from an image or video in assets/ (for a link, first use agentcut_import_reference), saves it in assets/looks/ and applies it to the clips with skin protection. Reports the distance from the reference before and after. Run agentcut_match_shots first.",
+    {
+      project,
+      reference: projectPath.describe("An image or video under assets/."),
+      clipIds: z.array(z.string().min(1)).max(48).optional().describe("Clips to grade. Defaults to all footage."),
+      strength: z.number().min(0).max(1).optional().describe("grade.lutStrength, default 0.85."),
+    },
+    async (args) => page("studio_match_look", args, 15 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_grade_subject",
+    "On request, grade a person and what's behind them separately, without masks: makes a person cutout of the clip (same local model as agentcut_cutout_person) and applies one grade to the person and another to the footage. Use a preset (pop, mono-background, soft-background, night-background) or your own subject and background grades (same fields as `grade`).",
+    {
+      project,
+      clipId: z.string().min(1).optional().describe("Footage clip. Defaults to the selected or only visible video clip."),
+      preset: z.enum(["pop", "mono-background", "soft-background", "night-background"]).optional(),
+      subject: z.record(z.unknown()).optional().describe("Grade for the person. Overrides the preset's."),
+      background: z.record(z.unknown()).optional().describe("Grade for everything behind them. Overrides the preset's."),
+      fromFrame: z.number().int().min(0).optional(),
+      durationInFrames: z.number().int().positive().optional(),
+      behind: z.array(z.string().min(1)).max(32).optional().describe("Clip IDs that should appear behind the person."),
+    },
+    async (args) => page("studio_grade_subject", args, 30 * MINUTE),
+  );
+
+  defineTool(
+    server,
+    "agentcut_color_looks",
+    "The built-in looks you can set with grade.look, with what each one does, and the person and background presets.",
+    {},
+    async () => page("studio_color_looks", {}, MINUTE),
   );
 
   defineTool(

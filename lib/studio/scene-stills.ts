@@ -6,6 +6,13 @@ let tail: Promise<unknown> = Promise.resolve();
 const caches = new WeakMap<LoadedModule, Map<string, string>>();
 const MAX_STILLS = 128;
 
+/** Run a still render after the ones already waiting, never alongside them. */
+export function queueStill<T>(task: () => Promise<T>): Promise<T> {
+  const result = tail.then(task, task);
+  tail = result.catch(() => null);
+  return result;
+}
+
 export function sceneStill(
   loaded: LoadedModule,
   props: StudioCompositionProps,

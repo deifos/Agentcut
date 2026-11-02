@@ -3,6 +3,7 @@
 // Voice-over providers: the user picks one, pastes their API key once, and the agent can
 // generate voice-overs with it. Keys go straight to the helper on this computer and are
 // never shown again (the field is masked, so it's safe on a stream or screen share).
+import { confirmDestructive } from "@/components/studio/ConfirmHost";
 import { TooltipHint } from "@/components/ui/tooltip";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -363,7 +364,14 @@ export function VoicesDialog({
                                 type="button"
                                 variant="ghost"
                                 size="icon-xs"
-                                onClick={() => void remove(p.id)}
+                                onClick={async () => {
+                                  const confirmed = await confirmDestructive({
+                                    title: `Remove your ${p.name} key?`,
+                                    description: "You'd have to paste it again to use this provider.",
+                                    action: "Remove key",
+                                  });
+                                  if (confirmed) void remove(p.id);
+                                }}
                                 aria-label={`Remove ${p.name} key`}
                                 className="text-muted-foreground hover:text-destructive"
                               >

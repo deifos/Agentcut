@@ -229,6 +229,10 @@ export function trimClip(
     }
     const delta = newFrom - clip.from;
     next = { ...clip, from: newFrom, duration: end - newFrom } as StudioClip;
+    // Grade keys count from the clip's start: keep them on the same picture.
+    const grade = (clip as VideoClip).grade;
+    if (delta && grade?.keys?.length)
+      (next as VideoClip).grade = { ...grade, keys: grade.keys.map((key) => ({ ...key, frame: Math.max(0, key.frame - delta) })) };
     if (hasTrimStart(track.kind)) {
       const rate = (clip as AudioClip | VideoClip).playbackRate ?? 1;
       const trimStart = Math.max(
@@ -355,6 +359,10 @@ export function splitClip(
     if ((clip as AudioClip).fadeOut) delete (first as AudioClip).fadeOut;
     if ((clip as AudioClip).fadeIn) delete (second as AudioClip).fadeIn;
   }
+  // The second piece starts `offset` frames later, so its grade keys move back by that much.
+  const grade = (clip as VideoClip).grade;
+  if (grade?.keys?.length)
+    (second as VideoClip).grade = { ...grade, keys: grade.keys.map((key) => ({ ...key, frame: Math.max(0, key.frame - offset) })) };
   if (track.kind === "captions") {
     first = shiftCaptionWords(first as CaptionsClip, 0, first.duration);
     second = shiftCaptionWords(second as CaptionsClip, offset, second.duration);
@@ -421,6 +429,7 @@ const DEFAULT_TRACK_NAMES: Record<TrackKind, string> = {
   text: "Text",
   captions: "Captions",
   audio: "Audio",
+  adjustment: "Adjustment",
 };
 
 /** Add a track of `kind`. Visual tracks go on top, audio tracks at the bottom. */

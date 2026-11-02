@@ -1,10 +1,11 @@
 // StudioComposition: draws a project's layers.json with Remotion.
 // Tracks are drawn bottom → top (tracks[0] is the top layer) so stacking never
 // depends on z-index, which the browser export ignores.
-import { useEffect, useMemo, useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
 import {
   AbsoluteFill,
   Img,
+  Internals,
   Sequence,
   continueRender,
   delayRender,
@@ -14,6 +15,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { Audio, Video } from "@remotion/media";
+import type { EffectDescriptor } from "remotion";
 import { framingCropAt } from "./framing";
 // The Agentcut component library, provided by the studio page (and by a copy in
 // .agentcut/components for local renders).
@@ -59,9 +61,11 @@ import {
 } from "./helpers";
 import type {
   AudioClip,
+  AdjustmentClip,
   Box,
   CaptionsClip,
   ClipAnim,
+  ColorGrade,
   ImageClip,
   SceneClip,
   SceneProps,
@@ -251,7 +255,7 @@ function boxStyle(box: Box | undefined): CSSProperties {
 // Clip renderers (all frames local to the clip's <Sequence>)
 
 function SceneClipView({
-  clip,
+  clip: saved,
   scenes,
   ctx,
 }: {
@@ -259,6 +263,7 @@ function SceneClipView({
   scenes: SceneRegistry;
   ctx: StudioRuntimeContextValue;
 }) {
+  const clip = useLive(saved);
   const style = useClipStyle(clip);
   if (clip.component) {
     const entry = MOTION_COMPONENTS[clip.component];
@@ -323,16 +328,163 @@ function SceneClipView({
   );
 }
 
-function ImageClipView({ clip }: { clip: ImageClip }) {
+function ImageClipView({ clip: saved, ctx }: { clip: ImageClip; ctx: TrackContext }) {
+  const clip = useLive(saved);
   const style = useClipStyle(clip);
+  const { filter, effects } = useClipGrade(clip, ctx, clip.inheritGrade === true);
   return (
     <div style={{ ...boxStyle(clip.box), ...style, overflow: "hidden", borderRadius: clip.radius }}>
-      <Img
-        src={asset(clip.src)}
-        style={{ width: "100%", height: "100%", objectFit: clip.fit ?? "cover", display: "block" }}
-      />
+      {effects.length ? (
+        // Effects draw images on a canvas, which needs its size in pixels.
+        <Img
+          src={asset(clip.src)}
+          width={Math.max(1, Math.round((clip.box?.width ?? 1) * ctx.width))}
+          height={Math.max(1, Math.round((clip.box?.height ?? 1) * ctx.height))}
+          effects={effects}
+          style={{ width: "100%", height: "100%", display: "block", objectFit: clip.fit ?? "cover" }}
+        />
+      ) : (
+        <Img
+          src={asset(clip.src)}
+          style={{ width: "100%", height: "100%", objectFit: clip.fit ?? "cover", display: "block", filter }}
+        />
+      )}
     </div>
   );
+}
+
+/** The runtime context plus what a clip needs to know about the stack it sits in. */
+type TrackContext = StudioRuntimeContextValue & {
+  adjustments: { clip: AdjustmentClip; order: number }[];
+  /** Position in the stack, bottom to top. */
+  order: number;
+};
+
+// The grade engine comes from the library too. Pages from before it don't provide it: those keep the
+// CSS filter below, which covers the original controls.
+const LIVE_PROJECT = "project";
+type GradeEntry = { grade: ColorGrade; frame: number; strength?: number };
+type GradeEngine = {
+  gradeEffects?: (grades: GradeEntry[], options: { seed: number; luts?: ReadonlyMap<string, unknown> }) => EffectDescriptor<unknown>[];
+  gradeLutPaths?: (grade: ColorGrade | undefined) => string[];
+  isCssGrade?: (grade: ColorGrade | undefined) => boolean;
+  canDrawGrade?: () => boolean;
+  parseCube?: (text: string) => unknown;
+};
+const gradeEngine = ComponentLibrary as GradeEngine;
+
+// A moving slider's value, straight from the inspector. Older pages don't provide it.
+type LiveEdits = {
+  useLiveClip?: <T extends { id: string }>(clip: T, isRendering?: boolean) => T;
+  useLiveClips?: (ids: string[], isRendering?: boolean) => void;
+  getLiveClip?: (id: string) => Record<string, unknown> | undefined;
+};
+const liveEdits = ComponentLibrary as LiveEdits;
+const useLiveClipEngine = liveEdits.useLiveClip;
+const useLiveClipsEngine = liveEdits.useLiveClips;
+
+function useLive<T extends { id: string }>(clip: T): T {
+  const { isRendering } = useRemotionEnvironment();
+  // The library is fixed for the page's lifetime, so this always calls the same hooks.
+  return useLiveClipEngine ? useLiveClipEngine(clip, isRendering) : clip;
+}
+
+const loadedLuts = new Map<string, unknown>();
+const pendingLuts = new Map<string, Promise<void>>();
+
+/** Load a .cube file once. A missing or broken file warns and the grade draws without it. */
+function loadLut(path: string) {
+  let pending = pendingLuts.get(path);
+  if (!pending) {
+    pending = fetch(asset(path))
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      })
+      .then((text) => {
+        loadedLuts.set(path, gradeEngine.parseCube?.(text) ?? null);
+      })
+      .catch((error) => {
+        loadedLuts.set(path, null);
+        console.warn(`Could not load the LUT ${path}: ${error instanceof Error ? error.message : error}`);
+      });
+    pendingLuts.set(path, pending);
+  }
+  return pending;
+}
+
+/** Holds the render until these .cube files have loaded; later additions (preview edits) just redraw. */
+function useGradeLuts(paths: string[]) {
+  const key = paths.join("\n");
+  const [, setLoaded] = useState(0);
+  const [handle] = useState(() =>
+    paths.some((path) => !loadedLuts.has(path)) ? delayRender(`Loading LUT ${paths.join(", ")}`, { timeoutInMilliseconds: 20_000 }) : null,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    const wanted = key ? key.split("\n") : [];
+    Promise.all(wanted.map(loadLut))
+      .then(() => {
+        if (!cancelled) setLoaded((n) => n + 1);
+      })
+      .finally(() => {
+        if (handle !== null) continueRender(handle);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, handle]);
+  return loadedLuts;
+}
+
+/** How far an adjustment clip is faded in at `local`: its enter and exit lengths ramp the grade. */
+function adjustmentStrength(clip: AdjustmentClip, local: number) {
+  let strength = clip.opacity ?? 1;
+  if (clip.enter?.frames) strength *= Math.min(1, (local + 1) / clip.enter.frames);
+  if (clip.exit?.frames) strength *= Math.min(1, (clip.duration - local) / clip.exit.frames);
+  return strength;
+}
+
+/**
+ * What draws a clip's colour: its own grade, then the adjustment layers above it and the project
+ * grade. A lone clip grade using only the original controls stays a CSS filter, so existing projects
+ * render exactly as they did.
+ */
+function useClipGrade(clip: VideoClip | ImageClip, ctx: TrackContext, inherits: boolean) {
+  const local = useCurrentFrame();
+  const frame = local + clip.from;
+  const { isRendering } = useRemotionEnvironment();
+  const liveIds = inherits ? [...ctx.adjustments.map((layer) => layer.clip.id), LIVE_PROJECT] : [];
+  useLiveClipsEngine?.(liveIds, isRendering);
+  const liveGrade = (id: string, saved: ColorGrade | undefined) => {
+    const fields = isRendering ? undefined : liveEdits.getLiveClip?.(id);
+    return fields && "grade" in fields ? (fields.grade as ColorGrade | undefined) : saved;
+  };
+  const grades: GradeEntry[] = [];
+  if (clip.grade) grades.push({ grade: clip.grade, frame: local });
+  const inherited: GradeEntry[] = [];
+  if (inherits) {
+    for (const layer of ctx.adjustments) {
+      if (layer.order <= ctx.order) continue;
+      const at = frame - layer.clip.from;
+      if (at < 0 || at >= layer.clip.duration) continue;
+      const grade = liveGrade(layer.clip.id, layer.clip.grade);
+      if (grade) inherited.push({ grade, frame: at, strength: adjustmentStrength(layer.clip, at) });
+    }
+    const projectGrade = liveGrade(LIVE_PROJECT, ctx.project.grade);
+    if (projectGrade) inherited.push({ grade: projectGrade, frame });
+  }
+  const paths = [...new Set([...grades, ...inherited].flatMap((entry) => gradeEngine.gradeLutPaths?.(entry.grade) ?? []))];
+  const luts = useGradeLuts(paths);
+  const useCss =
+    !gradeEngine.gradeEffects ||
+    !gradeEngine.canDrawGrade?.() ||
+    (inherited.length === 0 && (grades.length === 0 || gradeEngine.isCssGrade?.(grades[0].grade)));
+  if (useCss) return { filter: gradeFilter(clip.grade), effects: [] as EffectDescriptor<unknown>[] };
+  return {
+    filter: undefined,
+    effects: gradeEngine.gradeEffects!([...grades, ...inherited], { seed: frame, luts: luts as ReadonlyMap<string, unknown> }),
+  };
 }
 
 /** CSS filter for a color grade (supported by the browser export). */
@@ -349,8 +501,68 @@ function gradeFilter(grade: VideoClip["grade"]): string | undefined {
   return parts.length ? parts.join(" ") : undefined;
 }
 
+// Frames this preview drew while paused, small and already graded. Coming back to one during a drag
+// (the usual back-and-forth when looking for a cut) puts it on screen at once, over the player, until
+// the decoder has redrawn it. Preview only; a wrong guess lasts only until that redraw.
+const HELD_FRAME_WIDTH = 960;
+/** About 200 MB at 16:9, across every clip. */
+const MAX_HELD_FRAMES = 96;
+const heldFrames = new Map<string, ImageBitmap>();
+
+function holdFrame(key: string, frame: ImageBitmap) {
+  heldFrames.get(key)?.close();
+  heldFrames.delete(key);
+  heldFrames.set(key, frame);
+  if (heldFrames.size > MAX_HELD_FRAMES) {
+    const oldest = heldFrames.keys().next().value!;
+    heldFrames.get(oldest)?.close();
+    heldFrames.delete(oldest);
+  }
+}
+
+function useHeldFrames(version: string, frame: number, enabled: boolean) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+  const latest = useRef({ version, frame, enabled });
+  /** The frame the decoder's picture shows: nothing needs to cover it. */
+  const drawn = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    latest.current = { version, frame, enabled };
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    if (!enabled || drawn.current === frame) {
+      overlay.style.visibility = "hidden";
+      return;
+    }
+    const picture = heldFrames.get(`${version}:${frame}`);
+    if (!picture) return;
+    if (overlay.width !== picture.width) overlay.width = picture.width;
+    if (overlay.height !== picture.height) overlay.height = picture.height;
+    overlay.getContext("2d")?.drawImage(picture, 0, 0);
+    overlay.style.visibility = "visible";
+  }, [version, frame, enabled]);
+  const onDrawn = useCallback(() => {
+    const now = latest.current;
+    drawn.current = now.frame;
+    const overlay = overlayRef.current;
+    if (overlay) overlay.style.visibility = "hidden";
+    if (!now.enabled) return;
+    // The player's own canvas, which has the grade on it (the callback's frame doesn't yet).
+    const canvas = boxRef.current?.querySelector<HTMLCanvasElement>("canvas");
+    if (!canvas || canvas === overlay || !canvas.width || !canvas.height) return;
+    const width = Math.min(HELD_FRAME_WIDTH, canvas.width);
+    const key = `${now.version}:${now.frame}`;
+    void createImageBitmap(canvas, {
+      resizeWidth: width,
+      resizeHeight: Math.max(1, Math.round((canvas.height * width) / canvas.width)),
+      resizeQuality: "low",
+    }).then((picture) => holdFrame(key, picture), () => undefined);
+  }, []);
+  return { boxRef, overlayRef, onDrawn };
+}
+
 function VideoClipView({
-  clip,
+  clip: saved,
   trackMuted,
   gain,
   ctx,
@@ -358,10 +570,20 @@ function VideoClipView({
   clip: VideoClip;
   trackMuted: boolean;
   gain: number;
-  ctx: StudioRuntimeContextValue;
+  ctx: TrackContext;
 }) {
+  const clip = useLive(saved);
   const style = useClipStyle(clip);
   const frame = useCurrentFrame();
+  const grade = useClipGrade(clip, ctx, clip.inheritGrade !== false);
+  const { isRendering } = useRemotionEnvironment();
+  const playing = Internals.Timeline.usePlaying();
+  const source = (!isRendering && ctx.previewProxies?.[clip.src]) || asset(clip.src);
+  const held = useHeldFrames(
+    `${clip.id}|${source}|${clip.trimStart ?? 0}|${clip.playbackRate ?? 1}|${clip.fit ?? ""}|${grade.filter ?? ""}|${JSON.stringify(clip.grade ?? null)}|${JSON.stringify(ctx.project.grade ?? null)}|${ctx.adjustments.length}`,
+    frame,
+    !isRendering && !playing,
+  );
   // The project style's camera (punch-ins, drift, …) moves the footage inside its box.
   const crop = clip.framing ? framingCropAt(clip.framing, (clip.trimStart ?? 0) / ctx.project.fps + frame / ctx.project.fps * (clip.playbackRate ?? 1)) : null;
   const camera =
@@ -371,21 +593,29 @@ function VideoClipView({
   return (
     <div style={{ ...boxStyle(clip.box), ...style, overflow: "hidden", borderRadius: clip.radius }}>
       <div style={{ position: "absolute", inset: 0, ...(clip.framing ? { filter: camera?.filter } : camera) }}>
-      <div style={crop ? {
+      <div ref={held.boxRef} style={crop ? {
         position: "absolute", left: `${-crop.x / crop.width * 100}%`,
         top: `${-crop.y / crop.height * 100}%`,
         width: `${100 / crop.width}%`, height: `${100 / crop.height}%`,
       } : { position: "absolute", inset: 0 }}>
       <Video
-        src={asset(clip.src)}
+        src={source}
         trimBefore={clip.trimStart && clip.trimStart > 0 ? clip.trimStart : undefined}
         volume={(clip.volume ?? 1) * gain}
         muted={trackMuted || clip.muted}
         playbackRate={clip.playbackRate}
         // @remotion/media draws the frame itself: fit has to be its prop (CSS object-fit is ignored).
         objectFit={clip.framing ? "fill" : clip.fit ?? "cover"}
-        style={{ width: "100%", height: "100%", filter: gradeFilter(clip.grade) }}
+        style={{ width: "100%", height: "100%", filter: grade.filter }}
+        {...(grade.effects.length ? { effects: grade.effects } : {})}
+        {...(isRendering ? {} : { onVideoFrame: held.onDrawn })}
       />
+      {isRendering ? null : (
+        <canvas
+          ref={held.overlayRef}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", filter: grade.filter, visibility: "hidden" }}
+        />
+      )}
       {clip.cursor ? <CursorOverlay cursor={clip.cursor} clip={clip} /> : null}
       </div>
       </div>
@@ -613,7 +843,8 @@ function CursorOverlay({ cursor, clip }: { cursor: VideoCursor; clip: VideoClip 
   );
 }
 
-function TextClipView({ clip, ctx }: { clip: TextClip; ctx: StudioRuntimeContextValue }) {
+function TextClipView({ clip: saved, ctx }: { clip: TextClip; ctx: StudioRuntimeContextValue }) {
+  const clip = useLive(saved);
   const style = useClipStyle(clip);
   const s = { ...projectStyle(ctx.project.style)?.text, ...clip.style };
   const align = s.align ?? "center";
@@ -648,7 +879,8 @@ function TextClipView({ clip, ctx }: { clip: TextClip; ctx: StudioRuntimeContext
   );
 }
 
-function CaptionsClipView({ clip, ctx }: { clip: CaptionsClip; ctx: StudioRuntimeContextValue }) {
+function CaptionsClipView({ clip: saved, ctx }: { clip: CaptionsClip; ctx: StudioRuntimeContextValue }) {
+  const clip = useLive(saved);
   const StyledCaptions = styleLayer.StyledCaptions;
   if (ctx.project.style && !clip.style?.preset && StyledCaptions && projectStyle(ctx.project.style)) {
     return (
@@ -750,7 +982,8 @@ function PlainCaptionsClipView({ clip, ctx }: { clip: CaptionsClip; ctx: StudioR
   );
 }
 
-function AudioClipView({ clip, trackMuted, gain }: { clip: AudioClip; trackMuted: boolean; gain: number }) {
+function AudioClipView({ clip: saved, trackMuted, gain }: { clip: AudioClip; trackMuted: boolean; gain: number }) {
+  const clip = useLive(saved);
   const base = (clip.volume ?? 1) * gain;
   const fadeIn = Math.max(0, clip.fadeIn ?? 0);
   const fadeOut = Math.max(0, clip.fadeOut ?? 0);
@@ -787,15 +1020,20 @@ function TrackView({
   scenes,
   ctx,
   masterGain,
+  order,
 }: {
   track: StudioTrack;
   scenes: SceneRegistry;
-  ctx: StudioRuntimeContextValue;
+  ctx: Omit<TrackContext, "order">;
   masterGain: number;
+  order: number;
 }) {
   const visual = track.kind !== "audio";
   const { isRendering } = useRemotionEnvironment();
+  const trackCtx = useMemo<TrackContext>(() => ({ ...ctx, order }), [ctx, order]);
   if (visual && track.hidden) return null;
+  // Adjustment layers draw nothing themselves: the clips below them read them (useClipGrade).
+  if (track.kind === "adjustment") return null;
   const gain = (track.volume ?? 1) * masterGain;
   const trackMuted = Boolean(track.muted);
   return (
@@ -806,19 +1044,19 @@ function TrackView({
         let body: ReactNode = null;
         switch (track.kind) {
           case "scene":
-            body = <SceneClipView clip={clip as SceneClip} scenes={scenes} ctx={ctx} />;
+            body = <SceneClipView clip={clip as SceneClip} scenes={scenes} ctx={trackCtx} />;
             break;
           case "image":
-            body = <ImageClipView clip={clip as ImageClip} />;
+            body = <ImageClipView clip={clip as ImageClip} ctx={trackCtx} />;
             break;
           case "video":
-            body = <VideoClipView clip={clip as VideoClip} trackMuted={trackMuted} gain={gain} ctx={ctx} />;
+            body = <VideoClipView clip={clip as VideoClip} trackMuted={trackMuted} gain={gain} ctx={trackCtx} />;
             break;
           case "text":
-            body = <TextClipView clip={clip as TextClip} ctx={ctx} />;
+            body = <TextClipView clip={clip as TextClip} ctx={trackCtx} />;
             break;
           case "captions":
-            body = <CaptionsClipView clip={clip as CaptionsClip} ctx={ctx} />;
+            body = <CaptionsClipView clip={clip as CaptionsClip} ctx={trackCtx} />;
             break;
           case "audio":
             body = <AudioClipView clip={clip as AudioClip} trackMuted={trackMuted} gain={gain} />;
@@ -887,7 +1125,7 @@ function useStyleIsolation() {
 
 export function createStudioComposition(scenes: SceneRegistry) {
   function StudioComposition(props: StudioCompositionProps) {
-    const { project, layers, variant, assetBase, libraryBase } = props;
+    const { project, layers, variant, assetBase, libraryBase, previewProxies } = props;
     const size = project.variants[variant] ?? project.variants[project.defaultVariant] ?? {
       width: 1920,
       height: 1080,
@@ -904,11 +1142,23 @@ export function createStudioComposition(scenes: SceneRegistry) {
         fps: project.fps,
         assetBase,
         libraryBase,
+        previewProxies,
       }),
-      [project, variant, size.width, size.height, assetBase, libraryBase],
+      [project, variant, size.width, size.height, assetBase, libraryBase, previewProxies],
     );
     const masterGain = props.masterGain ?? 1;
     const ordered = [...layers.tracks].reverse();
+    const adjustments = useMemo(
+      () =>
+        ordered.flatMap((track, order) =>
+          track.kind === "adjustment" && !track.hidden
+            ? (track.clips as AdjustmentClip[]).map((clip) => ({ clip: resolveClip(clip, variant) as AdjustmentClip, order }))
+            : [],
+        ),
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- `ordered` is rebuilt from layers each render
+      [layers, variant],
+    );
+    const stackCtx = useMemo(() => ({ ...ctx, adjustments }), [ctx, adjustments]);
     return (
       <StudioRuntimeContext.Provider value={ctx}>
         <AbsoluteFill
@@ -924,7 +1174,7 @@ export function createStudioComposition(scenes: SceneRegistry) {
         >
           {project.style && projectStyle(project.style) ? <StyleFonts /> : null}
           {ordered.map((track, index) => (
-            <TrackView key={`${track.id}:${index}`} track={track} scenes={scenes} ctx={ctx} masterGain={masterGain} />
+            <TrackView key={`${track.id}:${index}`} track={track} scenes={scenes} ctx={stackCtx} masterGain={masterGain} order={index} />
           ))}
           {project.style && styleLayer.StyleOverlay ? <styleLayer.StyleOverlay styleId={project.style} /> : null}
         </AbsoluteFill>

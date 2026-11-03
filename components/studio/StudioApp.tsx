@@ -89,6 +89,7 @@ import {
 import { ConnectScreen } from "@/components/studio/ConnectScreen";
 import { ExportDialog } from "@/components/studio/ExportDialog";
 import { IncomingShareDialog, ShareDialog } from "@/components/studio/ShareDialogs";
+import { PhoneDialog } from "@/components/studio/PhoneDialog";
 import { SHARE_AVAILABLE, shareFromHash } from "@/lib/studio/share";
 import { Button } from "@/components/ui/button";
 import {
@@ -849,6 +850,7 @@ export function StudioApp() {
               working={Boolean(chat.running)}
               onReconnect={studio.reconnect}
             />
+            <PhoneDialog getBridge={studio.getBridge} supported={Boolean(info?.features?.includes("phone-transfer"))} />
             {SHARE_AVAILABLE ? (
               <TooltipHint content="Send this project to someone with a link (expires in 3 days)">
                 <Button

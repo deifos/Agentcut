@@ -451,6 +451,13 @@ async function runStudioToolInternal(
       };
     }
 
+    // Called by the helper for an explicitly submitted phone job, not exposed as an agent tool.
+    case "studio_phone_open_project": {
+      const slug = String(params.project ?? "");
+      if (!slug) throw new Error("project is required.");
+      await context.openProject(slug);
+      return { opened: context.getDoc()?.slug === slug };
+    }
     case "studio_open_project": {
       const slug = String(params.project ?? params.slug ?? "");
       if (!slug) throw new Error("project is required.");

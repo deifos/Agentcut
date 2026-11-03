@@ -14,6 +14,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:share": "node --import tsx --test tests/share.test.mjs",
+    "test:phone": "node --import tsx --test tests/phone.test.mjs",
     "test:music": "node --import tsx --test tests/music-search.test.mjs",
     "helper": "npm run studio --workspace agentcut",
     "helper:build": "npm run build --workspace agentcut",
@@ -50,6 +51,7 @@
     "mediabunny": "1.61.3",
     "next": "16.4.2",
     "perfect-freehand": "^1.2.3",
+    "qrcode": "^1.5.4",
     "radix-ui": "1.4.3",
     "react": "19.2.8",
     "react-colorful": "5.6.1",
@@ -62,6 +64,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.18",
     "@types/node": "25.3.2",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@types/three": "^0.183.1",

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, watch, writeFileSync, type FSWatcher } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, watch, writeFileSync, type FSWatcher } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join, sep } from "node:path";
 import { callEditor, getEditorSession, sendToEditor, type BridgeExtension } from "../bridge.js";
@@ -48,6 +48,8 @@ import { studioMcpServer, type WorkspacePaths } from "./workspace.js";
 import { ReleaseVideos } from "./release-video.js";
 import { listMcpFiles, readMcpFile, writeMcpFile, copyMcpFile, type McpFileScope } from "./mcp-files.js";
 import { deleteEditingStyle, saveEditingStyle } from "./editing-styles.js";
+import { PhoneTransfers } from "./phone.js";
+import { ReleaseBrowser } from "./release-browser.js";
 
 /** The hosted studio page, plus `npm run dev` of this repo. More with --origin or AGENTCUT_ORIGINS. */
 export const STUDIO_APP_URL = "https://agentcut.synteq.app";
@@ -95,6 +97,8 @@ export class StudioHost implements BridgeExtension {
   readonly references: ReferenceImports;
   readonly transcription: TranscriptionService;
   readonly releases: ReleaseVideos;
+  readonly phones: PhoneTransfers;
+  private phoneBrowser: ReleaseBrowser | null = null;
 
   constructor(options: StudioHostOptions) {
     this.options = options;
@@ -143,6 +147,17 @@ export class StudioHost implements BridgeExtension {
         }
         openWebUrl(url);
       },
+    });
+    this.phones = new PhoneTransfers({
+      internal: this.paths.internal,
+      available: () => !this.chat.runningSlug() && !this.chat.queued().length && !localRenderSlug(),
+      import: manifest => {
+        const imported = this.importFootage({ name: manifest.name, width: manifest.width, height: manifest.height, fps: 30, durationInFrames: Math.ceil(manifest.duration * 30), extension: manifest.extension });
+        return { slug: imported.slug, file: join(projectDir(this.paths, imported.slug), "assets", `footage.${manifest.extension}`) };
+      },
+      edit: (slug, prompt, signal) => this.editPhoneVideo(slug, prompt, editorOrigin, signal),
+      render: async slug => (await this.renderLocal(slug, "", {})).absolutePath,
+      cancel: slug => { this.chat.dropQueued(slug); this.chat.cancel(slug); if (localRenderSlug() === slug) cancelLocalRender(); },
     });
   }
 
@@ -346,6 +361,9 @@ export class StudioHost implements BridgeExtension {
   async handlePageRequest(method: string, params: unknown): Promise<unknown> {
     const p = asRecord(params);
     switch (method) {
+      case "studio.phone.status": return this.phones.status();
+      case "studio.phone.connect": return this.phones.connect(String(p.api ?? ""));
+      case "studio.phone.disconnect": return this.phones.disconnect();
       case "studio.editingStyles.delete": {
         const result = deleteEditingStyle(this.paths, p.id);
         this.emit("studio.library", {});
@@ -561,6 +579,7 @@ export class StudioHost implements BridgeExtension {
   // ---------------------------------------------------------------------------
 
   start() {
+    this.phones.start();
     try {
       this.watcher = watch(this.paths.projects, { recursive: true }, (_event, filename) => {
         if (!filename) return;
@@ -597,6 +616,8 @@ export class StudioHost implements BridgeExtension {
   }
 
   async stop() {
+    this.phones.stop();
+    await this.phoneBrowser?.close();
     clearInterval(this.housekeepingTimer);
     this.watcher?.close();
     this.libraryWatcher?.close();
@@ -763,6 +784,7 @@ export class StudioHost implements BridgeExtension {
 
   /** Delete a project from disk (the page confirms first). Not while the agent works on it. */
   private deleteProject(slug: string) {
+    if (this.phones.isUsing(slug)) throw new StudioError("A phone job is using this project. Wait for it to finish, or remove the phone connection.", "busy");
     if (localRenderSlug() === slug) {
       throw new StudioError("A local render is using this project. Stop it first, then delete.", "busy");
     }
@@ -847,7 +869,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos"],
+      features: ["styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer"],
     };
   }
 
@@ -871,6 +893,60 @@ export class StudioHost implements BridgeExtension {
       layers: state.layersRaw,
       onProgress: (data) => this.emit("studio.render", { slug, variant: chosen, ...data }),
     });
+  }
+
+  private async editPhoneVideo(slug: string, prompt: string, origin: string, signal: AbortSignal) {
+    const previous = asRecord(getEditorSession()).activeProject;
+    let owned: ReleaseBrowser | null = null;
+    try {
+      // First-use dependency installation can take several minutes. Complete it
+      // before a page request starts its much shorter response timeout.
+      const prepared = await this.rebuild(slug);
+      if (!prepared.ok) throw new Error(prepared.errors.map(error => error.text).join("\n"));
+      signal.throwIfAborted();
+      if (!getEditorSession()) {
+        owned = new ReleaseBrowser(`agentcut-phone-${this.options.port}`, join(this.paths.internal, "phone-browser"), false);
+        this.phoneBrowser = owned;
+        await owned.setup(() => {});
+        signal.throwIfAborted();
+        const url = new URL("/studio", origin); url.searchParams.set("project", slug); url.searchParams.set("helperPort", String(this.options.port));
+        await owned.command(["--args", "--disable-features=LocalNetworkAccessChecks", "open", url.toString()]);
+        const deadline = Date.now() + 90_000;
+        while (!getEditorSession()) {
+          signal.throwIfAborted();
+          if (Date.now() > deadline) throw new Error("The background studio could not connect to the helper.");
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      const opened = await callEditor("studio_phone_open_project", { project: slug }, { timeoutMs: 120_000 }) as { opened?: boolean };
+      if (!opened?.opened) throw new Error("The phone project could not be opened in the studio.");
+      signal.throwIfAborted();
+      const sent = await this.chat.send(slug, `${prompt}\n\nThis is an automatic phone edit. The original video is in assets/. Complete the requested edit in this project. Do not ask for confirmation. Use the available media tools to check the result. Do not export: the helper will render and return the finished video after this turn. Before ending, write assets/phone-edit-result.json with {"status":"complete","summary":"what you changed"} only after the requested edit and checks succeed. If the request cannot be completed, write {"status":"failed","summary":"the reason"}. This file is required for the helper to return a result.`, { activeProject: slug });
+      const deadline = Date.now() + 45 * 60_000;
+      while (true) {
+        signal.throwIfAborted();
+        const history = this.chat.history(slug);
+        const index = history.messages.findIndex(message => message.id === sent.userMessageId);
+        const answer = history.messages.slice(index + 1).find(message => message.role === "assistant");
+        if (answer && answer.status !== "running") {
+          if (answer.status !== "done") throw new Error(answer.error ?? "The edit stopped before it was complete.");
+          break;
+        }
+        if (Date.now() > deadline) { this.chat.dropQueued(slug); this.chat.cancel(slug); throw new Error("The phone edit exceeded 45 minutes."); }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      const receipt = JSON.parse(readFileSync(join(projectDir(this.paths, slug), "assets", "phone-edit-result.json"), "utf8"));
+      if (receipt.status !== "complete") throw new Error(typeof receipt.summary === "string" ? receipt.summary : "The agent could not complete this edit.");
+      const state = readProjectState(this.paths, slug);
+      if (state.issues.some(issue => issue.severity === "error")) throw new Error("The edited project contains errors. Open it on your computer to continue.");
+      const bundle = await this.rebuild(slug);
+      if (!bundle.ok) throw new Error("The edited project could not be built.");
+    } finally {
+      if (owned) { await owned.close(); if (this.phoneBrowser === owned) this.phoneBrowser = null; }
+      else if (typeof previous === "string" && previous !== slug && this.pageSession?.activeProject === slug) {
+        try { await callEditor("studio_phone_open_project", { project: previous }, { timeoutMs: 10_000 }); } catch {}
+      }
+    }
   }
 }
 

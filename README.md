@@ -167,6 +167,43 @@ Both users need helper 0.2.12 or newer. For self-hosting, deploy the
 [share Worker](workers/share/README.md) and set `NEXT_PUBLIC_SHARE_API_URL` before building the site.
 The Share button is hidden when this setting is empty.
 
+## Send a video from your phone
+
+Start the updated helper and open the desktop studio. Select **Phone → Connect a phone**, then scan
+the QR code and select **Connect phone**. The private link expires after ten minutes and can connect
+one phone. The phone remembers the connection in this browser.
+
+On `/phone`, record or select a video, add optional edit instructions, and select **Send and edit**.
+Enable automatic sending to start as soon as you accept a recording or select a file. Instructions
+are saved on the phone. With no instructions, the agent makes a clean edit and preserves the format.
+
+Keep the phone page open until the upload completes. Input files and results are limited to 1 GB each;
+videos can be up to two hours long. The helper must be running and the computer must be awake, with
+an installed, signed-in coding agent. Jobs wait while another agent or local render is running. If
+the desktop studio is open, the helper uses it for the edit and then restores the previous project.
+Otherwise it starts a separate background browser. The first job can take longer while browser and
+render dependencies are installed. Agent and media-provider usage uses your existing local accounts.
+
+The phone encrypts video parts and edit instructions before upload. The relay stores job status and
+file sizes but does not receive the encryption key. The helper deletes the temporary input after
+saving it locally. Results and uncollected uploads expire three days after the job was created.
+Select **Open video** to open its private result page. Opening the page loads only video details.
+Select **Watch video** to load and play it, or **Download** to save a copy. **Delete online video**
+removes the online copy and disables its link; the project and rendered file on the computer stay.
+The page shows the expiry time. Anyone with the complete private link can watch, download, or delete
+that one result, so keep the link private. It cannot send new edit requests or open other results.
+Playback decrypts the video into browser memory before it starts; large videos need enough available
+memory. Watching does not save a file to your phone. The local render remains in `renders/`.
+
+Remove the connection from the desktop Phone dialog or the phone page to revoke access. If the helper
+stops during an edit, the job reports an error and is not edited twice automatically. Open the saved
+project on the computer to continue. Clearing the phone browser's storage requires a new connection.
+
+Self-hosting: deploy the updated [transfer Worker](workers/share/README.md), including the `PhoneInbox`
+Durable Object migration. Set `NEXT_PUBLIC_PHONE_API_URL` at site build time, or use the existing
+`NEXT_PUBLIC_SHARE_API_URL`. Configure `AGENTCUT_EDITOR_ORIGIN` on the helper for a self-hosted studio
+and allow that origin with `--origin`. No router port forwarding is required.
+
 ## Versions
 
 The studio shows its version next to the logo (hover for the helper's). The editor and the helper are

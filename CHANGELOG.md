@@ -13,6 +13,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Phone connection limits cannot be bypassed with alternate initialization paths. Slow uploads no longer use the coordinator's 30-second lock, and cleanup runs in order with transfers.
+
+### Added
+
+- Finished phone videos now open on a private result page with Watch, Download, and Delete actions. Opening a link loads only the video details. Deleting the online copy disables the link and keeps local project files. Links have access to one result and expire with the video after three days.
+
+- Connect a phone once with a private QR link. Record or select a video at `/phone`, add edit instructions, and send it to the computer helper. An optional automatic-send setting uses saved instructions.
+- Encrypted phone uploads and results, with a persistent queue, transfer retries, three-day expiry, and connection removal from either device. The helper saves the original, runs the local agent, renders the edit, and returns a downloadable video. It opens a background studio when no desktop studio is connected.
+- Interrupted edits are reported without starting the same agent turn again. Local project files remain available for recovery. Phone transfer requires the updated share Worker with its Durable Object binding and an updated helper.
+
 ## [0.2.18] - 2026-11-03
 
 ### Added

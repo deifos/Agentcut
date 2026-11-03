@@ -8,6 +8,15 @@ compatibility_date = "2026-10-01"
 ALLOWED_ORIGINS = "https://agentcut.synteq.app,http://localhost:3000,http://127.0.0.1:3000"
 # Set to "false" to stop new shares (existing links keep working until they expire).
 SHARING_ENABLED = "true"
+PHONE_ENABLED = "true"
+
+[[durable_objects.bindings]]
+name = "PHONES"
+class_name = "PhoneInbox"
+
+[[migrations]]
+tag = "phone-v1"
+new_sqlite_classes = ["PhoneInbox"]
 
 [[r2_buckets]]
 binding = "BUCKET"
@@ -30,6 +39,11 @@ routes = [{ pattern = "share.vladpalacio.com", custom_domain = true }]
 [env.production.vars]
 ALLOWED_ORIGINS = "https://agentcut.synteq.app"
 SHARING_ENABLED = "true"
+PHONE_ENABLED = "true"
+
+[[env.production.durable_objects.bindings]]
+name = "PHONES"
+class_name = "PhoneInbox"
 
 [[env.production.r2_buckets]]
 binding = "BUCKET"

@@ -16,7 +16,12 @@
  * Keep the limits in sync with packages/agentcut/src/studio/share.ts.
  */
 
+import { routePhone, type PhoneEnv } from "./phone";
+export { PhoneInbox } from "./phone";
+
 interface Env {
+  PHONES?: PhoneEnv["PHONES"];
+  PHONE_ENABLED?: string;
   BUCKET: R2Bucket;
   CREATE_LIMITER?: RateLimit;
   /** `wrangler secret put SIGNING_SECRET`: any long random string. */
@@ -36,6 +41,7 @@ interface R2ObjectBody extends R2Object {
   size: number;
 }
 interface R2Bucket {
+  delete(keys: string[]): Promise<void>;
   get(key: string): Promise<R2ObjectBody | null>;
   put(
     key: string,
@@ -67,7 +73,9 @@ const worker = {
     const cors = corsHeaders(request, env);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     try {
-      const response = await route(request, env, ctx);
+      const routed = await route(request, env, ctx);
+      // Durable Object responses have immutable headers at this boundary.
+      const response = new Response(routed.body, routed);
       for (const [name, value] of Object.entries(cors)) response.headers.set(name, value);
       return response;
     } catch (error) {
@@ -91,6 +99,7 @@ class HttpError extends Error {
 
 async function route(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === "/v1/phone" || url.pathname.startsWith("/v1/phone/")) return routePhone(request, env);
   const enabled = env.SHARING_ENABLED !== "false";
 
   if (url.pathname === "/v1/status" && request.method === "GET") {
@@ -180,7 +189,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   return {
     "access-control-allow-origin": origin,
     "access-control-allow-methods": "GET, HEAD, POST, PUT, OPTIONS",
-    "access-control-allow-headers": "content-type, x-share-token, x-share-chunks, x-share-created",
+    "access-control-allow-headers": "content-type, authorization, x-share-token, x-share-chunks, x-share-created",
     "access-control-expose-headers": "x-share-expires",
     "access-control-max-age": "600",
     vary: "origin",

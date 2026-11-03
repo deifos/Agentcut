@@ -118,6 +118,36 @@ async function embed(text: string) {
   return v;
 }
 
+// How many of the newest shots lead the browse order, and how many any one film may give them, so a new
+// archive film can't fill the first rows.
+const LATEST_SHOTS = 96;
+const LATEST_PER_FILM = 2;
+
+function browseHash(id: string) {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  // Avalanche (murmur3 finalizer): ids differing only in the last digits land far apart.
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/** Shots in catalog order (the build appends new films at the end) → newest films first, then the shuffle. */
+function browseOrder<T extends BrollShot>(shots: T[]) {
+  const browsable = shots.filter((s) => !s.titleCard && s.brightness >= 35);
+  const byFilm = new Map<string, T[]>();
+  for (const shot of browsable) byFilm.set(shot.film.id, [...(byFilm.get(shot.film.id) ?? []), shot]);
+  const latest: T[] = [];
+  for (const film of [...byFilm.keys()].reverse()) {
+    if (latest.length >= LATEST_SHOTS) break;
+    const picks = [...byFilm.get(film)!].sort((a, b) => browseHash(a.id) - browseHash(b.id));
+    latest.push(...picks.slice(0, Math.min(LATEST_PER_FILM, LATEST_SHOTS - latest.length)));
+  }
+  const first = new Set(latest);
+  const rest = browsable.filter((s) => !first.has(s)).sort((a, b) => browseHash(a.id) - browseHash(b.id));
+  return [...latest, ...rest];
+}
+
 async function search(base: string, q: BrollQuery & { wait?: boolean }) {
   const text = (q.query ?? "").trim().slice(0, 300);
   const offset = Math.max(0, q.offset ?? 0);
@@ -162,20 +192,9 @@ async function search(base: string, q: BrollQuery & { wait?: boolean }) {
       results.splice(0, results.length, ...(closest ? results.slice(0, CLOSEST) : strong));
     }
   }
-  // No query: a stable shuffle across every film, without title cards and near-black frames.
-  else {
-    const hash = (id: string) => {
-      let h = 2166136261;
-      for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
-      // Avalanche (murmur3 finalizer): ids differing only in the last digits land far apart.
-      h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
-      h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-      return (h ^ (h >>> 16)) >>> 0;
-    };
-    const browsable = results.filter((r) => !r.titleCard && r.brightness >= 35);
-    browsable.sort((a, b) => hash(a.id) - hash(b.id));
-    results.splice(0, results.length, ...browsable);
-  }
+  // No query: the latest additions first, then a stable shuffle across every film, without title cards
+  // and near-black frames. Keep in sync with browseOrder in scripts/broll-index/sync.mjs (browse.json).
+  else results.splice(0, results.length, ...browseOrder(results));
   return {
     total: index.count,
     matches: results.length,

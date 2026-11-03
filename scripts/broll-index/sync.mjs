@@ -66,6 +66,26 @@ function browseHash(id) {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
+// The latest additions lead the browse order (newest film first, at most 2 shots each), then the shuffle.
+// Same rule as browseOrder in lib/studio/broll/search.worker.ts, so "Show more" carries on seamlessly.
+const LATEST_SHOTS = 96;
+const LATEST_PER_FILM = 2;
+
+function browseOrder(shots) {
+  const browsable = shots.filter((s) => !s.titleCard && s.brightness >= 35);
+  const byFilm = new Map();
+  for (const shot of browsable) byFilm.set(shot.film.id, [...(byFilm.get(shot.film.id) ?? []), shot]);
+  const latest = [];
+  for (const film of [...byFilm.keys()].reverse()) {
+    if (latest.length >= LATEST_SHOTS) break;
+    const picks = [...byFilm.get(film)].sort((a, b) => browseHash(a.id) - browseHash(b.id));
+    latest.push(...picks.slice(0, Math.min(LATEST_PER_FILM, LATEST_SHOTS - latest.length)));
+  }
+  const first = new Set(latest);
+  const rest = browsable.filter((s) => !first.has(s)).sort((a, b) => browseHash(a.id) - browseHash(b.id));
+  return [...latest, ...rest];
+}
+
 async function pool(items, worker) {
   let next = 0;
   await Promise.all(
@@ -126,7 +146,7 @@ async function syncOnce() {
   }
   // The opening grid on the b-roll page: the start of the same stable shuffle the studio's search worker
   // browses (lib/studio/broll/search.worker.ts), so "Show more" carries on where this file ends.
-  const browsable = index.shots.filter((s) => !s.titleCard && s.brightness >= 35).sort((a, b) => browseHash(a.id) - browseHash(b.id));
+  const browsable = browseOrder(index.shots);
   const browse = JSON.stringify({ total: index.count, matches: browsable.length, shots: browsable.slice(0, BROWSE_SHOTS) });
   const browseSum = createHash("sha1").update(browse).digest("hex");
   if (ledger["browse.json"] !== browseSum) {

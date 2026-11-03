@@ -13,6 +13,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.18] - 2026-11-03
+
+### Added
+
+- **Agentcut cleans up after itself.** The helper keeps its own files bounded, when it starts and every six hours, and never touches your projects' files:
+  - Fast-seeking copies: removed when their footage or project is deleted, after 14 days unused, and beyond 10 GB in total, oldest first.
+  - Local renders no longer leave links to your assets in `.agentcut/render`, which kept deleted footage on disk.
+  - Chat pictures are capped at 150 MB per project, oldest first.
+  - Agents keep their throwaway files (test captures, contact sheets, backups before risky edits) in `.studio/scratch/`, cleared after 14 days and kept under 500 MB per project.
+  - Deleted editing styles are emptied after 30 days; interrupted share imports, unfinished copies, old ffmpeg builds and the helper's log are cleaned up too.
+  - Cleanup skips linked scratch folders. Cleanup errors do not change a render's result, and projects cannot be deleted during a local render.
+- Added 50 generated b-roll entries from Sume, with provider credits.
+
+### Changed
+
+- Show the latest additions first on the b-roll page.
+
 ## [0.2.17] - 2026-11-02
 
 ### Added
@@ -23,14 +40,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - Scenes too heavy to draw during a drag get small pictures rendered while the preview is idle, shown while you drag. Letting go always draws the real frame.
   - Timeline film strips read from the copies too, and decode with WebCodecs where they can.
   - For agents: `agentcut_preview_check` and `agentcut_status` now report how long seeks take, per clip.
-- **Agentcut cleans up after itself.** The helper keeps its own files bounded, when it starts and every six hours, and never touches your projects' files:
-  - Fast-seeking copies: removed when their footage or project is deleted, after 14 days unused, and beyond 10 GB in total, oldest first.
-  - Local renders no longer leave links to your assets in `.agentcut/render`, which kept deleted footage on disk.
-  - Chat pictures are capped at 150 MB per project, oldest first.
-  - Agents keep their throwaway files (test captures, contact sheets, backups before risky edits) in `.studio/scratch/`, cleared after 14 days and kept under 500 MB per project.
-  - Deleted editing styles are emptied after 30 days; interrupted share imports, unfinished copies, old ffmpeg builds and the helper's log are cleaned up too.
-  - Cleanup skips linked scratch folders. Cleanup errors do not change a render's result, and projects cannot be deleted during a local render.
-- Added 50 generated b-roll entries from Sume, with provider credits.
 - **Colour grading.** A real grading toolset, drawn on the GPU so the preview, captures and exports match, with dithering so skies and gradients don't band. Existing grades render exactly as before.
   - Exposure, temperature and tint, highlights, shadows, whites, blacks, vibrance and levels, plus colour wheels, RGB curves, an eight-band colour mixer and skin protection.
   - Waveform, RGB parade, vectorscope with skin line, and histogram in the Color section, rendered with the export's renderer. Hold the eye button to compare with the original.
@@ -485,7 +494,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.17...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.18...HEAD
+[0.2.18]: https://github.com/deifos/Agentcut/compare/v0.2.17...v0.2.18
 [0.2.17]: https://github.com/deifos/Agentcut/compare/v0.2.16...v0.2.17
 [0.2.16]: https://github.com/deifos/Agentcut/compare/v0.2.15...v0.2.16
 [0.2.15]: https://github.com/deifos/Agentcut/compare/v0.2.14...v0.2.15

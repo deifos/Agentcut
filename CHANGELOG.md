@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- The phone editing choices heading sits inside its panel without overlapping the border.
+
 ## [0.2.20] - 2026-11-03
 
 ### Fixed

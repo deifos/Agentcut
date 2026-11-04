@@ -436,8 +436,8 @@ export function PhoneApp() {
             Your next video starts here.
           </h1>
         </div>
-        <fieldset disabled={busy} className="space-y-4 rounded-xl border bg-card p-5">
-          <legend className="px-1 font-semibold">Editing choices</legend>
+        <fieldset disabled={busy} aria-labelledby="phone-editing-heading" className="min-w-0 space-y-4 rounded-xl border bg-card p-5">
+          <h2 id="phone-editing-heading" className="font-semibold">Editing choices</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {([
               ["mode", "Editing mode", [["social", "Social video"], ["cleanup", "Light cleanup"]]],

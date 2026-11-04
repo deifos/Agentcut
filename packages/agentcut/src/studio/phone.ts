@@ -12,11 +12,11 @@ import {
 import { open, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { hostname } from "node:os";
+import { phoneEditPrompt, type PhoneEditing } from "./phone-editing.js";
 import { atomicWrite } from "./projects.js";
 import { debugLog } from "../log.js";
 import {
   PHONE_CHUNK,
-  PHONE_DEFAULT_PROMPT,
   PHONE_MAX_BYTES,
   PHONE_TTL,
   phoneSecret,
@@ -59,7 +59,7 @@ export interface PhoneDeps {
   available(): boolean;
   import(manifest: PhoneManifest): { slug: string; file: string };
   edit(slug: string, prompt: string, signal: AbortSignal): Promise<void>;
-  render(slug: string): Promise<string>;
+  render(slug: string, editing?: PhoneEditing): Promise<string>;
   cancel(slug: string): void;
 }
 
@@ -345,7 +345,7 @@ export class PhoneTransfers {
         this.editAbort = new AbortController();
         await this.deps.edit(
           local.slug,
-          local.manifest.prompt.trim() || PHONE_DEFAULT_PROMPT,
+          phoneEditPrompt(local.manifest.prompt, local.manifest.editing),
           this.editAbort.signal,
         );
         this.active(c);
@@ -367,7 +367,7 @@ export class PhoneTransfers {
       local.stage = "rendering";
       this.save(local);
       try {
-        local.result = await this.deps.render(local.slug);
+        local.result = await this.deps.render(local.slug, local.manifest.editing);
         this.active(c);
         local.stage = "rendered";
         this.save(local);

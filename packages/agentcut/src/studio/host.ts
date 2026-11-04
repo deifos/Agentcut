@@ -50,6 +50,9 @@ import { listMcpFiles, readMcpFile, writeMcpFile, copyMcpFile, type McpFileScope
 import { deleteEditingStyle, saveEditingStyle } from "./editing-styles.js";
 import { PhoneTransfers } from "./phone.js";
 import { ReleaseBrowser } from "./release-browser.js";
+import { exportQuality } from "./export-quality.js";
+import { exportResolution } from "./export-resolution.js";
+import { cancelResize, resizeRender, resizeRunning, resizeSlug } from "./resize-render.js";
 
 /** The hosted studio page, plus `npm run dev` of this repo. More with --origin or AGENTCUT_ORIGINS. */
 export const STUDIO_APP_URL = "https://agentcut.synteq.app";
@@ -150,13 +153,13 @@ export class StudioHost implements BridgeExtension {
     });
     this.phones = new PhoneTransfers({
       internal: this.paths.internal,
-      available: () => !this.chat.runningSlug() && !this.chat.queued().length && !localRenderSlug(),
+      available: () => !this.chat.runningSlug() && !this.chat.queued().length && !localRenderSlug() && !resizeRunning(),
       import: manifest => {
         const imported = this.importFootage({ name: manifest.name, width: manifest.width, height: manifest.height, fps: 30, durationInFrames: Math.ceil(manifest.duration * 30), extension: manifest.extension });
         return { slug: imported.slug, file: join(projectDir(this.paths, imported.slug), "assets", `footage.${manifest.extension}`) };
       },
       edit: (slug, prompt, signal) => this.editPhoneVideo(slug, prompt, editorOrigin, signal),
-      render: async slug => (await this.renderLocal(slug, "", {})).absolutePath,
+      render: async (slug, editing) => (await this.renderLocal(slug, "", editing ? { resolution: editing.resolution, quality: "high" } : {})).absolutePath,
       cancel: slug => { this.chat.dropQueued(slug); this.chat.cancel(slug); if (localRenderSlug() === slug) cancelLocalRender(); },
     });
   }
@@ -361,6 +364,13 @@ export class StudioHost implements BridgeExtension {
   async handlePageRequest(method: string, params: unknown): Promise<unknown> {
     const p = asRecord(params);
     switch (method) {
+      case "studio.render.resize": {
+        if (localRenderSlug()) throw new StudioError("Wait for the current render to finish before creating a smaller copy.", "busy");
+        const slug = assertSlug(p.slug);
+        const result = await resizeRender(this.paths, slug, String(p.path ?? ""), p.resolution, p.quality);
+        this.emit("studio.assets", { slug });
+        return result;
+      }
       case "studio.phone.status": return this.phones.status();
       case "studio.phone.connect": return this.phones.connect(String(p.api ?? ""));
       case "studio.phone.disconnect": return this.phones.disconnect();
@@ -616,6 +626,7 @@ export class StudioHost implements BridgeExtension {
   }
 
   async stop() {
+    cancelResize();
     this.phones.stop();
     await this.phoneBrowser?.close();
     clearInterval(this.housekeepingTimer);
@@ -784,6 +795,7 @@ export class StudioHost implements BridgeExtension {
 
   /** Delete a project from disk (the page confirms first). Not while the agent works on it. */
   private deleteProject(slug: string) {
+    if (resizeSlug() === slug) throw new StudioError("A smaller copy is being created in this project. Wait for it to finish before deleting the project.", "busy");
     if (this.phones.isUsing(slug)) throw new StudioError("A phone job is using this project. Wait for it to finish, or remove the phone connection.", "busy");
     if (localRenderSlug() === slug) {
       throw new StudioError("A local render is using this project. Stop it first, then delete.", "busy");
@@ -869,11 +881,14 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer"],
+      features: ["styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "resize-render"],
     };
   }
 
   private async renderLocal(slug: string, variant: string, params: Record<string, unknown>) {
+    if (resizeRunning()) throw new StudioError("Wait for the smaller copy to finish before starting a render.", "busy");
+    const quality = exportQuality(params.quality);
+    const resolution = exportResolution(params.resolution);
     const state = readProjectState(this.paths, slug);
     if (!state.project) throw new StudioError("project.json is invalid; fix it before rendering.");
     const chosen = variant || state.project.defaultVariant;
@@ -889,6 +904,8 @@ export class StudioHost implements BridgeExtension {
       entryPath,
       port: this.options.port,
       masterGain,
+      quality,
+      resolution,
       project: state.project,
       layers: state.layersRaw,
       onProgress: (data) => this.emit("studio.render", { slug, variant: chosen, ...data }),

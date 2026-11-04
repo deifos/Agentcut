@@ -6,14 +6,9 @@ import { Monitor, Smartphone, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StudioProject } from "@/lib/studio/types";
 import { toast } from "sonner";
+import { VIDEO_FORMATS, sameRatio } from "@/lib/studio/video-formats";
 
-const FORMATS = [
-  { id: "landscape", label: "Landscape", ratio: "16:9", width: 1920, height: 1080, icon: Monitor },
-  { id: "portrait", label: "Portrait", ratio: "9:16", width: 1080, height: 1920, icon: Smartphone },
-  { id: "square", label: "Square", ratio: "1:1", width: 1080, height: 1080, icon: Square },
-  { id: "portrait-4-5", label: "Portrait", ratio: "4:5", width: 1080, height: 1350, icon: Smartphone },
-];
-const sameRatio = (a: { width: number; height: number }, b: { width: number; height: number }) => Math.abs(a.width / a.height - b.width / b.height) < 0.001;
+const FORMATS = VIDEO_FORMATS.map((format) => ({ ...format, icon: format.id === "landscape" ? Monitor : format.id === "square" ? Square : Smartphone }));
 
 /** Reuse a matching project format, preserving its resolution and per-format edits. */
 export function VideoFormatPicker({ project, variant, disabled, onSave, onChange }: {
@@ -29,7 +24,7 @@ export function VideoFormatPicker({ project, variant, disabled, onSave, onChange
   const choose = async (format: typeof FORMATS[number]) => {
     const existing = variants.find(([key, size]) => key === variant && sameRatio(size, format)) ?? variants.find(([, size]) => sameRatio(size, format));
     if (existing) { onChange(existing[0]); return; }
-    let id = format.id;
+    let id: string = format.id;
     for (let n = 2; project.variants[id]; n++) id = `${format.id}-${n}`;
     setSaving(true);
     try {

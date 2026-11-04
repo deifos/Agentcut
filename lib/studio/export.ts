@@ -2,6 +2,7 @@ import { STUDIO_BRIDGE_ORIGIN } from "@/lib/studio/bundle";
 import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
 import { captureFrame } from "@/lib/studio/capture";
 import type { LoadedModule, StudioDoc } from "@/lib/studio/types";
+import { exportSize, type ExportResolution } from "@/packages/agentcut/src/studio/export-resolution";
 
 export const EXPORT_TARGET_LUFS = -14;
 export const EXPORT_MAX_TRUE_PEAK_DB = -1;
@@ -69,6 +70,7 @@ export interface BrowserExportOptions {
   normalizeLoudness?: boolean;
   coverFrame?: number;
   quality?: "medium" | "high" | "very-high";
+  resolution?: ExportResolution;
   /** H.264 by default (plays everywhere). VP9/AV1 only for browsers without an H.264 encoder. */
   videoCodec?: "h264" | "vp9" | "av1";
   signal?: AbortSignal;
@@ -120,6 +122,7 @@ export async function exportInBrowser(options: BrowserExportOptions): Promise<Br
   if (!doc.project || !doc.layers) throw new Error("The project files are invalid; fix them before exporting.");
   const { canRenderMediaOnWeb, renderMediaOnWeb } = await import("@remotion/web-renderer");
   const size = variantSize(doc.project, variant);
+  const outputSize = exportSize(size, options.resolution);
 
   const videoCodec = options.videoCodec ?? "h264";
   const check = await canRenderMediaOnWeb({
@@ -128,6 +131,7 @@ export async function exportInBrowser(options: BrowserExportOptions): Promise<Br
     audioCodec: "pcm-s16",
     width: size.width,
     height: size.height,
+    scale: outputSize.scale,
   });
   if (!check.canRender) {
     const reasons = check.issues.filter((issue) => issue.severity === "error").map((issue) => issue.message);
@@ -164,6 +168,7 @@ export async function exportInBrowser(options: BrowserExportOptions): Promise<Br
     videoCodec,
     audioCodec: "pcm-s16",
     videoBitrate: options.quality ?? "high",
+    scale: outputSize.scale,
     licenseKey: "free-license",
     signal: signal ?? null,
     delayRenderTimeoutInMilliseconds: 60_000,
@@ -184,15 +189,16 @@ export async function exportInBrowser(options: BrowserExportOptions): Promise<Br
   });
   const blob = mastered?.blob ?? rendered;
   const stamp = exportStamp();
-  const fileName = `${doc.slug}-${variant}-${stamp}${videoCodec === "h264" ? "" : `-${videoCodec}`}.mp4`;
+  const resolutionSuffix = options.resolution && options.resolution !== "project" ? `-${options.resolution}` : "";
+  const fileName = `${doc.slug}-${variant}-${stamp}${resolutionSuffix}${videoCodec === "h264" ? "" : `-${videoCodec}`}.mp4`;
   options.onProgress?.("uploading", 0, "Saving to renders/");
   const path = await uploadToProject(doc.slug, `renders/${fileName}`, blob, signal);
 
   let coverPath: string | null = null;
   try {
     const coverFrame = options.coverFrame ?? Math.round(doc.project.durationInFrames * 0.2);
-    const cover = await captureFrame({ doc, loaded, variant, frame: coverFrame, format: "png" });
-    coverPath = await uploadToProject(doc.slug, `renders/${doc.slug}-${variant}-${stamp}-cover.png`, cover, signal);
+    const cover = await captureFrame({ doc, loaded, variant, frame: coverFrame, scale: outputSize.scale, format: "png" });
+    coverPath = await uploadToProject(doc.slug, `renders/${doc.slug}-${variant}-${stamp}${resolutionSuffix}-cover.png`, cover, signal);
   } catch (error) {
     console.warn("[studio] cover capture failed", error);
   }

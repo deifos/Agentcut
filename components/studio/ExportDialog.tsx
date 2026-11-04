@@ -26,6 +26,9 @@ import {
   type RenderExtra,
 } from "@/components/studio/RendersList";
 import type { AssetEntry, LoadedModule, StudioDoc } from "@/lib/studio/types";
+import type { StudioProject } from "@/lib/studio/types";
+import { exportFormats } from "@/lib/studio/video-formats";
+import { exportSize, type ExportResolution } from "@/packages/agentcut/src/studio/export-resolution";
 
 interface Props {
   open: boolean;
@@ -39,6 +42,9 @@ interface Props {
   job: ExportJob | null;
   setJob(job: ExportJob | null): void;
   getBridge(): StudioBridge | null;
+  onSaveProject(project: StudioProject): Promise<void>;
+  qualitySupported: boolean;
+  resolutionSupported: boolean;
 }
 
 type Mode = "browser" | "local";
@@ -63,19 +69,42 @@ export function ExportDialog({
   job,
   setJob,
   getBridge,
+  onSaveProject,
+  qualitySupported,
+  resolutionSupported,
 }: Props) {
   const variants = Object.keys(doc.project?.variants ?? {});
   const [chosen, setChosen] = useState<string[]>(() => variants);
   const [normalize, setNormalize] = useState(true);
+  const [quality, setQuality] = useState<"high" | "maximum">("high");
+  const [resolution, setResolution] = useState<ExportResolution>("project");
+  const [addingFormat, setAddingFormat] = useState(false);
   const [mode, setMode] = useState<Mode | null>(null);
   const [extras, setExtras] = useState<Record<string, RenderExtra>>({});
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef(false);
-  const busy = mode !== null;
+  const busy = mode !== null || addingFormat;
+  const formats = doc.project ? exportFormats(doc.project) : [];
   const renders = rendersFrom(assets);
   const files = useRenderFileActions(doc.slug, getBridge);
 
   const selected = chosen.filter((variant) => variants.includes(variant));
+  const localSupported = qualitySupported && (resolution === "project" || resolutionSupported);
+
+  const toggleFormat = async (format: typeof formats[number]) => {
+    if (busy || !doc.project) return;
+    if (!format.existing) {
+      setAddingFormat(true);
+      try {
+        await onSaveProject({ ...doc.project, variants: { ...doc.project.variants, [format.id]: { width: format.width, height: format.height } } });
+        setChosen((previous) => [...previous, format.id]);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not add this format.");
+      } finally { setAddingFormat(false); }
+      return;
+    }
+    setChosen((previous) => previous.includes(format.id) ? previous.filter((id) => id !== format.id) : [...previous, format.id]);
+  };
 
   const runBrowser = async () => {
     if (!loaded || selected.length === 0) return;
@@ -98,6 +127,8 @@ export function ExportDialog({
             loaded,
             variant,
             normalizeLoudness: normalize,
+            quality: quality === "maximum" ? "very-high" : "high",
+            resolution,
             coverFrame,
             signal: controller.signal,
             onProgress: (stage, progress, message) =>
@@ -146,7 +177,7 @@ export function ExportDialog({
 
   const runLocal = async () => {
     const bridge = getBridge();
-    if (!bridge || selected.length === 0) return;
+    if (!bridge || selected.length === 0 || !localSupported) return;
     setMode("local");
     cancelledRef.current = false;
     try {
@@ -166,7 +197,7 @@ export function ExportDialog({
         if (cancelledRef.current) return;
         await bridge.request(
           "studio.render.local",
-          { slug: doc.slug, variant, masterGain: gain },
+          { slug: doc.slug, variant, masterGain: gain, quality, resolution },
           60 * 60 * 1000,
         );
       }
@@ -214,7 +245,7 @@ export function ExportDialog({
       onOpenChange={onOpenChange}
     >
       {/* min-w-0 on the grid children: a long file name must truncate, not stretch the dialog. */}
-      <DialogContent className="sm:max-w-lg [&>*]:min-w-0">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg [&>*]:min-w-0">
         <DialogHeader>
           <DialogTitle>Export video</DialogTitle>
           <DialogDescription>
@@ -228,8 +259,9 @@ export function ExportDialog({
             <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Sizes
             </p>
-            {variants.map((variant) => {
-              const size = doc.project!.variants[variant];
+            {formats.map((size) => {
+              const variant = size.id;
+              const outputSize = exportSize(size, resolution);
               const checked = selected.includes(variant);
               return (
                 <Label
@@ -242,17 +274,11 @@ export function ExportDialog({
                   <Checkbox
                     checked={checked}
                     disabled={busy}
-                    onCheckedChange={() =>
-                      setChosen(
-                        checked
-                          ? selected.filter((v) => v !== variant)
-                          : [...selected, variant],
-                      )
-                    }
+                    onCheckedChange={() => void toggleFormat(size)}
                   />
-                  <span className="font-semibold">{variant}</span>
+                  <span className="font-semibold">{size.label}</span>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {size.width}×{size.height}
+                    {outputSize.width}×{outputSize.height}
                   </span>
                   {variant === currentVariant ? (
                     <Badge variant="secondary" className="ml-auto text-[10px]">
@@ -262,7 +288,32 @@ export function ExportDialog({
                 </Label>
               );
             })}
+            <p className="text-xs text-muted-foreground">Selecting a new format adds it to your project. Preview it before exporting to check crops and text.</p>
           </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="export-resolution" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Resolution</Label>
+            <select id="export-resolution" value={resolution} disabled={busy} onChange={(event) => setResolution(event.target.value as ExportResolution)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <option value="project">Project size</option>
+              <option value="1080p">1080p — social media</option>
+              <option value="720p">720p — smaller file</option>
+            </select>
+            <p className="text-xs text-muted-foreground">Changes only the exported copy. Keeps the aspect ratio and frame rate; smaller projects are not enlarged. Dimensions above show the output size.</p>
+          </div>
+
+          <fieldset disabled={busy} className="space-y-2">
+            <legend className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Quality</legend>
+            {([
+              ["high", "High quality, smaller file", "Recommended for sharing."],
+              ["maximum", "Maximum quality", "Larger files to retain more fine detail."],
+            ] as const).map(([value, title, description]) => (
+              <label key={value} className="flex cursor-pointer items-start gap-2.5 rounded-md border border-border/70 px-3 py-2 text-sm">
+                <input type="radio" name="export-quality" value={value} checked={quality === value} onChange={() => setQuality(value)} className="mt-1 accent-primary" />
+                <span><span className="block font-semibold">{title}</span><span className="text-xs text-muted-foreground">{description}</span></span>
+              </label>
+            ))}
+            <p className="text-xs text-muted-foreground">Both keep the selected resolution and frame rate. Computer renders use slower compression for smaller files. Browser results can differ.</p>
+          </fieldset>
 
           <Label
             className={cn(
@@ -278,7 +329,9 @@ export function ExportDialog({
             Normalize loudness to −14 LUFS (peaks ≤ −1 dBTP)
           </Label>
 
-          {busy ? (
+          {addingFormat ? <p role="status" className="text-xs text-muted-foreground">Adding format…</p> : null}
+
+          {mode !== null ? (
             <div className="space-y-1.5 rounded-md border border-border/70 bg-muted/30 p-3">
               <p className="flex min-w-0 items-center gap-2 text-xs">
                 <Loader2 className="size-3.5 shrink-0 animate-spin" />
@@ -342,7 +395,7 @@ export function ExportDialog({
                 <Button
                   variant="outline"
                   className="h-10"
-                  disabled={busy || selected.length === 0}
+                  disabled={busy || selected.length === 0 || !localSupported}
                   onClick={() => void runLocal()}
                 >
                   <Laptop className="size-4" /> Render on this computer
@@ -350,6 +403,8 @@ export function ExportDialog({
               </TooltipHint>
             )}
           </div>
+
+          {!localSupported ? <p className="text-xs text-muted-foreground">Update the helper to use these export settings for computer renders. Browser export is available now.</p> : null}
 
           {renders.length > 0 ? (
             <div className="space-y-1.5">

@@ -1,3 +1,23 @@
+/** Phone-only defaults. Existing jobs without settings keep their original behavior. */
+export interface PhoneEditing {
+  mode: "social" | "cleanup";
+  style: "automatic" | "clean" | "bold";
+  resolution: "1080p" | "720p" | "project";
+}
+
+export const DEFAULT_PHONE_EDITING: PhoneEditing = {
+  mode: "social", style: "automatic", resolution: "1080p",
+};
+
+export function validatePhoneEditing(value: unknown): PhoneEditing {
+  const s = value as PhoneEditing;
+  if (!s || !["social", "cleanup"].includes(s.mode) ||
+      !["automatic", "clean", "bold"].includes(s.style) ||
+      !["1080p", "720p", "project"].includes(s.resolution))
+    throw new Error("Choose a valid editing mode, style, and output size.");
+  return { mode: s.mode, style: s.style, resolution: s.resolution };
+}
+
 /** Shared browser/helper wire format. Never send the encryption secret to the relay. */
 export const PHONE_CHUNK = 8 * 1024 * 1024;
 export const PHONE_MAX_BYTES = 1024 * 1024 * 1024;
@@ -29,6 +49,7 @@ export interface PhoneConnection {
   secret: string;
 }
 export interface PhoneManifest {
+  editing?: PhoneEditing;
   name: string;
   prompt: string;
   bytes: number;
@@ -212,5 +233,5 @@ export function validatePhoneManifest(
     throw new Error(
       "The video details are invalid. Use a video of up to two hours.",
     );
-  return m;
+  return m.editing === undefined ? m : { ...m, editing: validatePhoneEditing(m.editing) };
 }

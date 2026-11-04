@@ -1335,6 +1335,14 @@ export function StudioApp() {
             job={studio.exportJob}
             setJob={studio.setExportJob}
             getBridge={studio.getBridge}
+            qualitySupported={Boolean(info?.features?.includes("export-quality"))}
+            resolutionSupported={Boolean(info?.features?.includes("export-resolution"))}
+            onSaveProject={async (project) => {
+              const bridge = studio.getBridge();
+              if (!bridge) throw new Error("The studio helper is not connected.");
+              await bridge.request("studio.project.write", { slug: doc.slug, project });
+              await studio.syncProject();
+            }}
           />
         ) : null}
         {doc?.project && SHARE_AVAILABLE ? (

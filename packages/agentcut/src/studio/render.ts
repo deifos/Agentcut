@@ -10,6 +10,8 @@ import { missingManagedDependencies, type WorkspacePaths } from "./workspace.js"
 import { renderLines, renderPolicy, renderProgress } from "./render-policy.js";
 import { availableRenderMemory } from "./render-memory.js";
 import { saveRenderDuration } from "./render-metadata.js";
+import { localEncodingArgs, type ExportQuality } from "./export-quality.js";
+import { exportSize, type ExportResolution } from "./export-resolution.js";
 
 export interface LocalRenderOptions {
   paths: WorkspacePaths;
@@ -18,6 +20,8 @@ export interface LocalRenderOptions {
   entryPath: string;
   port: number;
   masterGain: number;
+  quality?: ExportQuality;
+  resolution?: ExportResolution;
   project: StudioProject;
   layers: unknown;
   onProgress(data: Record<string, unknown>): void;
@@ -138,6 +142,7 @@ export async function runLocalRender(options: LocalRenderOptions) {
   let mirror: string | null = null;
   const work = (async () => {
     const { paths, slug, variant } = options;
+    const outputSize = exportSize(options.project.variants[variant], options.resolution);
     const root = paths.root;
     const missing = missingManagedDependencies(root);
     if (missing.length > 0) {
@@ -179,7 +184,8 @@ export async function runLocalRender(options: LocalRenderOptions) {
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+$/, "").replace("T", "-");
     const rendersDir = join(projectDir(paths, slug), "renders");
     mkdirSync(rendersDir, { recursive: true });
-    outPath = uniquePath(join(rendersDir, `${slug}-${variant}-${stamp}-local.mp4`));
+    const resolutionSuffix = options.resolution && options.resolution !== "project" ? `-${options.resolution}` : "";
+    outPath = uniquePath(join(rendersDir, `${slug}-${variant}-${stamp}${resolutionSuffix}-local.mp4`));
     const args = [
       "remotion",
       "render",
@@ -189,11 +195,8 @@ export async function runLocalRender(options: LocalRenderOptions) {
       `--props=${propsPath}`,
       `--public-dir=${publicDir}`,
       "--codec=h264",
-      // Keep full resolution/fps and browser-compatible H.264. Spend more time
-      // encoding to reduce transfer size; CRF keeps quality adaptive to detail
-      // instead of imposing a bitrate cap that can damage complex scenes.
-      "--crf=20",
-      "--x264-preset=slow",
+      ...localEncodingArgs(options.quality),
+      `--scale=${outputSize.scale}`,
       "--audio-codec=aac",
     ];
     if (process.platform === "win32") args.push("--gl=angle");

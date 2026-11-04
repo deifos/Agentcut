@@ -13,8 +13,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Projects cannot be deleted while a smaller copy is being created. Smaller copies accept accented file names, and a timing-record error does not mark a saved video as failed.
+
+### Added
+
+- The phone upload page recommends recording at 1080p for faster uploads and editing, and explains that output size does not change camera settings or the original upload size.
+
+- Phone uploads have saved Social video / Light cleanup modes, Automatic / Clean / Bold visual styles, and 1080p / 720p / Project size output choices. New uploads default to Social video at 1080p with high quality. Written instructions override editing mode and style; retries keep the original job settings. The helper uses a dedicated editing guide with timestamped audio, caption, and visual review notes. Desktop defaults and existing jobs are preserved.
+
+- Rendered video cards include Create smaller copy with 1080p/720p and quality choices. The helper resizes the finished video without another AI edit, preserves the original, and saves a separate MP4. Existing phone links are unchanged.
+
 ### Changed
 
+- Export includes Project size, 1080p, and 720p resolution choices for browser and computer renders. Smaller exports preserve the composition layout and frame rate without changing the saved project or enlarging smaller videos.
+- Export offers all four standard formats directly, preserves existing format resolutions, and provides High quality / smaller file and Maximum quality choices for browser and computer renders. Computer quality controls require an updated helper.
 - Local and automatic phone exports use high-quality H.264 compression with a slower encoding preset to reduce file sizes. Resolution, frame rate, and audio settings stay unchanged. Encoding can take longer; the size reduction depends on the video.
 
 ## [0.2.19] - 2026-11-03

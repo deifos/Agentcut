@@ -5,6 +5,13 @@ description: "Create and edit videos in an Agentcut workspace, including website
 
 # Agentcut
 
+## Phone editing modes
+
+For phone requests with Social video or Light cleanup selected, read
+`references/social-video.md`. Its scope and format rules apply to that phone job.
+The written request takes priority over mode and visual style. Desktop edits keep their
+existing defaults unless the user selects this workflow.
+
 ## External MCP agents
 
 Use the same creative and review workflow whether you work inside Agentcut or through MCP.

@@ -5,11 +5,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createPhoneResultLink } from "@/lib/studio/phone-result";
 import {
+  DEFAULT_PHONE_EDITING,
+  validatePhoneEditing,
+  type PhoneEditing,
   PHONE_API,
   PHONE_CHUNK,
   PHONE_MAX_BYTES,
   PHONE_TTL,
-  PHONE_DEFAULT_PROMPT,
   PhoneRequestError,
   phoneSecret,
   phoneRequest,
@@ -32,7 +34,7 @@ const LABELS: Record<PhoneJob["stage"], string> = {
   error: "Job stopped. Check the project or helper on your computer.",
 };
 type Pairing = { id: string; invite: string; secret: string };
-type Pending = { id: string; fingerprint: string; prompt: string };
+type Pending = { id: string; fingerprint: string; prompt: string; editing?: PhoneEditing };
 
 function initialPhoneState() {
   const initial = {
@@ -41,6 +43,7 @@ function initialPhoneState() {
     pending: null as Pending | null,
     prompt: "",
     auto: false,
+    editing: { ...DEFAULT_PHONE_EDITING },
     error: "",
   };
   try {
@@ -70,6 +73,12 @@ function initialPhoneState() {
       if (initial.pairing?.id === c.id) initial.pairing = null;
     }
     initial.prompt = localStorage.getItem(`${STORAGE}.prompt`) || "";
+    const editing = localStorage.getItem(`${STORAGE}.editing`);
+    // A stale preference must not prevent an interrupted upload from resuming.
+    if (editing) {
+      try { initial.editing = validatePhoneEditing(JSON.parse(editing)); }
+      catch { /* Keep the defaults for new uploads. */ }
+    }
     initial.auto = localStorage.getItem(`${STORAGE}.auto`) === "true";
     initial.pending = JSON.parse(
       localStorage.getItem(`${STORAGE}.pending`) || "null",
@@ -125,6 +134,7 @@ export function PhoneApp() {
   const [file, setFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState(initial.prompt);
   const [auto, setAuto] = useState(initial.auto);
+  const [editing, setEditing] = useState(initial.editing);
   const [jobs, setJobs] = useState<PhoneJob[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(initial.error);
@@ -246,7 +256,8 @@ export function PhoneApp() {
         pending.current = {
           id: crypto.randomUUID(),
           fingerprint,
-          prompt: prompt.trim() || PHONE_DEFAULT_PROMPT,
+          prompt: prompt.trim(),
+          editing: { ...editing },
         };
       const p = pending.current;
       const extension = selected.name.split(".").pop()?.toLowerCase() || "mp4";
@@ -255,6 +266,7 @@ export function PhoneApp() {
           ...details,
           name: selected.name.slice(0, 200),
           prompt: p.prompt,
+          editing: p.editing,
           extension,
           bytes: selected.size,
         },
@@ -424,6 +436,35 @@ export function PhoneApp() {
             Your next video starts here.
           </h1>
         </div>
+        <fieldset disabled={busy} className="space-y-4 rounded-xl border bg-card p-5">
+          <legend className="px-1 font-semibold">Editing choices</legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {([
+              ["mode", "Editing mode", [["social", "Social video"], ["cleanup", "Light cleanup"]]],
+              ["style", "Visual style", [["automatic", "Automatic"], ["clean", "Clean"], ["bold", "Bold"]]],
+              ["resolution", "Output size", [["1080p", "1080p"], ["720p", "720p"], ["project", "Project size"]]],
+            ] as const).map(([key, label, options]) => (
+              <label key={key} className="space-y-2 text-sm">
+                <span className="block font-medium">{label}</span>
+                <select value={editing[key]} className="w-full rounded-lg border bg-background p-2"
+                  onChange={(e) => {
+                    const next = validatePhoneEditing({ ...editing, [key]: e.target.value });
+                    setEditing(next);
+                    localStorage.setItem(`${STORAGE}.editing`, JSON.stringify(next));
+                  }}>
+                  {options.map(([value, name]) => <option key={value} value={value}>{name}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {editing.mode === "social"
+              ? "A clear opening, natural cuts, readable captions, and useful graphics."
+              : "Remove clear mistakes and long gaps. Keep the original look and order."}
+            {" "}Your instructions take priority over mode and style. Output uses the size selected here, with high quality and no enlargement.
+          </p>
+          <p className="text-xs text-muted-foreground">Saved on this phone for new uploads. A retry keeps the original upload settings. Requires the updated computer helper.</p>
+        </fieldset>
         {!PHONE_API ? (
           <p role="status">Phone transfer is not configured on this site.</p>
         ) : pairing ? (
@@ -457,6 +498,15 @@ export function PhoneApp() {
                 >
                   Disconnect
                 </button>
+              </div>
+              <div className="space-y-1 rounded-lg bg-muted/50 p-3 text-sm">
+                <p className="font-medium">Record at 1080p for faster uploads and editing</p>
+                <p className="text-muted-foreground">
+                  1080p is a good choice for social videos. Before recording,
+                  check that your phone camera is set to 1080p (Full HD), not 4K.
+                  The output size above does not change your camera settings
+                  or reduce the original upload size.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <label
@@ -519,8 +569,8 @@ export function PhoneApp() {
                 />
               </label>
               <p className="text-xs text-muted-foreground">
-                With no instructions, Agentcut removes long pauses and mistakes
-                and keeps the original format.
+                With no instructions, Agentcut uses your editing choices above
+                and keeps the original video shape.
               </p>
               <label className="flex items-start gap-3 text-sm">
                 <input

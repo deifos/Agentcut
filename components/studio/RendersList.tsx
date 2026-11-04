@@ -11,6 +11,7 @@ import { studioFileUrl } from "@/lib/studio/bundle";
 import { fileName, formatBytes, formatRenderDuration } from "@/lib/studio/format";
 import type { StudioBridge } from "@/lib/studio/bridge";
 import type { AssetEntry } from "@/lib/studio/types";
+import { SmallerRenderCopy } from "./SmallerRenderCopy";
 
 /** Extras a browser export from this session knows about its file. */
 export interface RenderExtra {
@@ -97,6 +98,7 @@ export function RendersList({
           }
           onReveal={() => actions.reveal(item.path)}
           onOpen={() => actions.open(item.path)}
+          resizeControl={<SmallerRenderCopy slug={slug} path={item.path} getBridge={getBridge} />}
         />
       ))}
       {limit && renders.length > limit ? (
@@ -122,6 +124,7 @@ function RenderRow({
   onTogglePlay,
   onReveal,
   onOpen,
+  resizeControl,
 }: {
   item: AssetEntry;
   extra?: RenderExtra;
@@ -131,6 +134,7 @@ function RenderRow({
   onTogglePlay(): void;
   onReveal(): void;
   onOpen(): void;
+  resizeControl: React.ReactNode;
 }) {
   const name = fileName(item.path);
   const local = /-local(-\d+)?\.mp4$/i.test(name);
@@ -208,7 +212,7 @@ function RenderRow({
           <span className="truncate text-muted-foreground">{when}</span>
         </p>
         <p className="truncate text-[11px] text-muted-foreground">
-          {local ? "Rendered on this computer" : "Exported in browser"}
+          {/-smaller(-\d+)?\.mp4$/i.test(name) ? "Smaller copy" : local ? "Rendered on this computer" : "Exported in browser"}
           {item.size ? ` · ${formatBytes(item.size)}` : ""}
           {extra?.lufs != null ? ` · ${extra.lufs.toFixed(1)} LUFS` : ""}
         </p>
@@ -282,6 +286,7 @@ function RenderRow({
           {playing ? player : null}
         </>
       )}
+      {resizeControl}
     </div>
   );
 }

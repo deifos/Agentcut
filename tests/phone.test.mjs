@@ -15,6 +15,7 @@ import workerModule from "../workers/share/src/index.ts";
 const worker = workerModule.default ?? workerModule;
 import { PhoneInbox } from "../workers/share/src/phone.ts";
 import { PhoneTransfers } from "../packages/agentcut/src/studio/phone.ts";
+import { DEFAULT_PHONE_EDITING, phoneEditPrompt } from "../packages/agentcut/src/studio/phone-editing.ts";
 import {
   phoneSecret,
   sealPhone,
@@ -308,7 +309,8 @@ test("cleanup waits for an active upload before deleting expired objects", async
   }
 });
 
-test("complete transfer: encrypted upload, local edit, render, encrypted result, no duplicate edit", async (t) => {
+for (const editing of [undefined, DEFAULT_PHONE_EDITING]) {
+test(`complete transfer (${editing ? "social" : "legacy"}): encrypted upload, local edit, render, encrypted result, no duplicate edit`, async (t) => {
   const r = relay();
   let failResultOnce = true;
   const server = createServer(async (req, res) => {
@@ -353,7 +355,7 @@ test("complete transfer: encrypted upload, local edit, render, encrypted result,
     },
     edit: async (_slug, prompt) => {
       edits++;
-      assert.equal(prompt, "Remove pauses.");
+      assert.equal(prompt, phoneEditPrompt("Remove pauses.", editing));
       assert.deepEqual(
         new Uint8Array(
           readFileSync(join(root, "project", "assets", "footage.mp4")),
@@ -361,7 +363,8 @@ test("complete transfer: encrypted upload, local edit, render, encrypted result,
         original,
       );
     },
-    render: async () => {
+    render: async (_slug, receivedEditing) => {
+      assert.deepEqual(receivedEditing, editing);
       renders++;
       const path = join(root, "finished.mp4");
       writeFileSync(path, result);
@@ -403,6 +406,7 @@ test("complete transfer: encrypted upload, local edit, render, encrypted result,
     await sealPhone(pairing.secret, id, "input/0", original),
   );
   const manifest = {
+    editing,
     name: "phone.mp4",
     prompt: "Remove pauses.",
     bytes: original.length,
@@ -564,6 +568,8 @@ test("complete transfer: encrypted upload, local edit, render, encrypted result,
   assert.equal((await call(`jobs/${id}/result/0`)).status, 410);
   assert.equal((await privateCall(`results/${id}`)).status, 410);
 });
+
+}
 
 test("an interrupted edit is reported, never silently repeated", async () => {
   const root = mkdtempSync(join(tmpdir(), "agentcut-phone-restart-"));

@@ -13,6 +13,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.20] - 2026-11-03
+
 ### Fixed
 
 - Projects cannot be deleted while a smaller copy is being created. Smaller copies accept accented file names, and a timing-record error does not mark a saved video as failed.
@@ -526,7 +528,9 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.18...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.20...HEAD
+[0.2.20]: https://github.com/deifos/Agentcut/compare/v0.2.19...v0.2.20
+[0.2.19]: https://github.com/deifos/Agentcut/compare/v0.2.18...v0.2.19
 [0.2.18]: https://github.com/deifos/Agentcut/compare/v0.2.17...v0.2.18
 [0.2.17]: https://github.com/deifos/Agentcut/compare/v0.2.16...v0.2.17
 [0.2.16]: https://github.com/deifos/Agentcut/compare/v0.2.15...v0.2.16

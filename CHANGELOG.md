@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Local and automatic phone exports use high-quality H.264 compression with a slower encoding preset to reduce file sizes. Resolution, frame rate, and audio settings stay unchanged. Encoding can take longer; the size reduction depends on the video.
+
 ## [0.2.19] - 2026-11-03
 
 ### Fixed

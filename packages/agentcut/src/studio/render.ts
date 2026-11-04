@@ -189,6 +189,11 @@ export async function runLocalRender(options: LocalRenderOptions) {
       `--props=${propsPath}`,
       `--public-dir=${publicDir}`,
       "--codec=h264",
+      // Keep full resolution/fps and browser-compatible H.264. Spend more time
+      // encoding to reduce transfer size; CRF keeps quality adaptive to detail
+      // instead of imposing a bitrate cap that can damage complex scenes.
+      "--crf=20",
+      "--x264-preset=slow",
       "--audio-codec=aac",
     ];
     if (process.platform === "win32") args.push("--gl=angle");

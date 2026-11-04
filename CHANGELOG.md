@@ -13,6 +13,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.19] - 2026-11-03
+
 ### Fixed
 
 - Phone connection limits cannot be bypassed with alternate initialization paths. Slow uploads no longer use the coordinator's 30-second lock, and cleanup runs in order with transfers.

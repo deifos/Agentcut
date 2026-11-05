@@ -1,3 +1,4 @@
+import { parseTokenUsage } from "./usage.js";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -46,7 +47,7 @@ class CodexParser implements AgentParser {
       case "item.completed":
         return this.item(asRecord(event.item), true);
       case "turn.completed":
-        return [{ type: "result", ok: true }];
+        return [{ type: "result", ok: true, usage: parseTokenUsage(event.usage, "codex") }];
       case "turn.failed": {
         const message = asRecord(event.error).message;
         return [{ type: "result", ok: false, error: typeof message === "string" && message ? message.slice(0, 1200) : "Codex stopped." }];

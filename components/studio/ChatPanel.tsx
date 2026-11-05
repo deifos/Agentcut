@@ -300,6 +300,11 @@ function AssistantMessage({
               : ""}
           </MessageFooter>
         ) : null}
+        {message.usage ? (
+          <MessageFooter className="px-0 text-[10px] font-normal" title={`${message.usage.inputTokens.toLocaleString()} input · ${message.usage.outputTokens.toLocaleString()} output · ${message.usage.cachedInputTokens.toLocaleString()} cached input (included)`}>
+            {message.usage.totalTokens.toLocaleString()} tokens
+          </MessageFooter>
+        ) : null}
       </MessageContent>
     </Message>
   );
@@ -990,6 +995,9 @@ export function ChatPanel({
     <ChatSlugContext.Provider value={slug}>
       <div className={cn("studio-chat flex h-full min-h-0 flex-col", simple && "studio-chat-simple")}>
         {!simple ? agentControls : null}
+        <div className="shrink-0 border-b border-border/60 px-3 py-1 text-[10px] text-muted-foreground" title="Reported input and output tokens for this project. Includes cached input. Updates when a request ends. Earlier requests without usage data are excluded.">
+          {chat.projectTokens === undefined ? "Project tokens: not reported yet" : `Project tokens: ${chat.projectTokens.toLocaleString()}`}
+        </div>
 
         <div id="studio-conversation" className="chat-history min-h-0 flex-1">
         <MessageScrollerProvider autoScroll>

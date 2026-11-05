@@ -13,7 +13,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- The project picker groups projects by date and keeps name/date search visible above the scrolling list. All projects are available. Projects can be created inside a date group or moved with drag and drop or a date picker, without changing their files or agent sessions.
+
+- Chat shows reported token use for each request and a saved project total, including cached input. Totals update when a request ends and remain after starting a new conversation.
+
 ### Fixed
+
+- Clearing a running conversation keeps its token total correct and prevents late results from restoring cleared messages.
+
+- Running chat requests keep their project when the user opens or creates another project. Queued requests keep their original editor context. External agents cannot move an unrelated running conversation when they create a project.
 
 - The phone editing choices heading sits inside its panel without overlapping the border.
 

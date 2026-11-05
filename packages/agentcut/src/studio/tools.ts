@@ -11,7 +11,7 @@ const project = z
   .string()
   .regex(/^[a-z0-9][a-z0-9-]{0,63}$/)
   .optional()
-  .describe("Project slug. Defaults to the project open in the studio page.");
+  .describe("Project slug. Defaults to the project assigned to this agent request, or the open project for external agents.");
 const variant = z.string().optional().describe('Variant to render, e.g. "wide" or "mobile". Defaults to the one on screen.');
 const projectPath = z
   .string()
@@ -89,7 +89,14 @@ function defineTool<T extends z.ZodRawShape>(
   index.push({ name, description });
   toolIndexes.set(server, index);
   const handler = async (args: unknown) => {
-    const parsed = z.object(shape).strict().parse(args ?? {});
+    const input = { ...((args ?? {}) as Record<string, unknown>) };
+    // A chat agent stays on its assigned project when the user changes editor tabs.
+    if (process.env.AGENTCUT_PROJECT) {
+      for (const key of ["project", "sourceProject"]) {
+        if (shape[key] && input[key] === undefined) input[key] = process.env.AGENTCUT_PROJECT;
+      }
+    }
+    const parsed = z.object(shape).strict().parse(input);
     return text(await run(parsed as z.objectOutputType<T, z.ZodTypeAny>));
   };
   // Parsing is handled above. Keep the SDK's dual Zod 3/4 generics out of this boundary.
@@ -149,7 +156,7 @@ export function registerStudioTools(server: McpServer) {
       } catch (error) {
         pageStatus = { connected: false, note: error instanceof Error ? error.message : String(error) };
       }
-      const active = slug ?? (typeof pageStatus?.activeProject === "string" ? pageStatus.activeProject : null) ?? process.env.AGENTCUT_PROJECT ?? null;
+      const active = slug ?? process.env.AGENTCUT_PROJECT ?? (typeof pageStatus?.activeProject === "string" ? pageStatus.activeProject : null) ?? null;
       const state = active ? await callEditor("studio.local.project_state", { slug: active }, { timeoutMs: 2 * MINUTE }) : null;
       return { workspace, page: pageStatus, project: state };
     },
@@ -169,7 +176,11 @@ export function registerStudioTools(server: McpServer) {
       background: z.string().optional(),
       fonts: z.array(z.string()).optional().describe('Google Fonts specs like "Inter:400;800".'),
     },
-    async (args) => callEditor("studio.local.create_project", args, { timeoutMs: 30_000 }),
+    async (args) => {
+      const created = await callEditor("studio.local.create_project", { ...args, fromProject: process.env.AGENTCUT_PROJECT }, { timeoutMs: 30_000 }) as { slug: string };
+      if (process.env.AGENTCUT_PROJECT) process.env.AGENTCUT_PROJECT = created.slug;
+      return created;
+    },
   );
 
   defineTool(

@@ -21,6 +21,7 @@ import {
   listAssets,
   listLibrary,
   listProjects,
+  moveProjectToDate,
   hashText,
   projectDir,
   readProjectState,
@@ -392,6 +393,11 @@ export class StudioHost implements BridgeExtension {
         this.emit("studio.projects", { projects: listProjects(this.paths) });
         return created;
       }
+      case "studio.projects.move": {
+        const result = moveProjectToDate(this.paths, assertSlug(p.slug), p.date);
+        this.emit("studio.projects", { projects: listProjects(this.paths) });
+        return result;
+      }
       case "studio.projects.delete":
         return this.deleteProject(assertSlug(p.slug));
       case "studio.project.open":
@@ -522,8 +528,8 @@ export class StudioHost implements BridgeExtension {
           const created = createProject(this.paths, p as unknown as CreateProjectInput);
           // The chat that asked for it follows the new project. The page follows too, but only if it
           // shows that chat's project (`from`): elsewhere the user is busy with their own work.
-          const from = this.chat.runningSlug();
-          this.chat.moveRunningTurn(created.slug);
+          const from = typeof p.fromProject === "string" ? p.fromProject : null;
+          if (from && this.chat.runningSlug() === from) this.chat.moveRunningTurn(created.slug);
           this.emit("studio.projects", { projects: listProjects(this.paths) });
           this.emit("studio.open", { slug: created.slug, from });
           this.watchProject(created.slug);
@@ -881,7 +887,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "resize-render"],
+      features: ["project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "resize-render"],
     };
   }
 

@@ -1,4 +1,6 @@
 "use client";
+import { ProjectPicker } from "./ProjectPicker";
+import { dateLabel, localDateKey } from "@/lib/studio/project-folders";
 import { ReleaseVideoStatus } from "./ReleaseVideoStatus";
 import { useScrubber } from "@/components/studio/useScrubber";
 import { usePreviewProxies } from "@/lib/studio/use-preview-proxies";
@@ -17,10 +19,8 @@ import {
 import Link from "next/link";
 import { MusicSidebar, type MusicChoice, type MusicSidebarHandle } from "@/components/studio/MusicPicker";
 import {
-  ChevronsUpDown,
   Download,
   FilePlus2,
-  FolderOpen,
   Loader2,
   Mic,
   PanelLeftClose,
@@ -37,14 +37,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -291,7 +284,7 @@ export function StudioApp() {
       : null,
   );
   const [newProjectOpen, setNewProjectOpen] = useState(false);
-  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  const [newProjectDate, setNewProjectDate] = useState<string | undefined>();
   const [projectToDelete, setProjectToDelete] = useState<ProjectSummary | null>(
     null,
   );
@@ -696,83 +689,22 @@ export function StudioApp() {
               v{APP_VERSION}
             </a>
           </TooltipHint>
-          <DropdownMenu
-            open={projectMenuOpen}
-            onOpenChange={setProjectMenuOpen}
-          >
-            <DropdownMenuTrigger asChild>
-              <TooltipHint content={doc?.dir ?? "Switch project"}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="max-w-80 gap-2 bg-background pl-3 pr-2.5 text-sm font-semibold"
-                >
-                  <FolderOpen className="text-muted-foreground" />
-                  <span className="truncate">
-                    {doc?.project?.name ??
-                      (studio.opening ? "Opening…" : "Choose a project")}
-                  </span>
-                  {studio.opening ? (
-                    <Loader2 className="animate-spin text-muted-foreground" />
-                  ) : (
-                    <ChevronsUpDown className="text-muted-foreground" />
-                  )}
-                </Button>
-              </TooltipHint>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              <DropdownMenuItem
-                onSelect={() => setNewProjectOpen(true)}
-                disabled={status !== "connected"}
-              >
-                <FilePlus2 className="size-4" /> New project…
-              </DropdownMenuItem>
-              {studio.projects.length > 0 ? <DropdownMenuSeparator /> : null}
-              {studio.projects.length > 0 ? (
-                <DropdownMenuLabel>Projects</DropdownMenuLabel>
-              ) : null}
-              {studio.projects.slice(0, 20).map((project) => (
-                <DropdownMenuItem
-                  key={project.slug}
-                  onSelect={() => void studio.openProject(project.slug)}
-                  className="group pr-1"
-                >
-                  <span
-                    className={cn(
-                      "min-w-0 flex-1 truncate",
-                      project.slug === doc?.slug && "font-semibold",
-                    )}
-                  >
-                    {project.name}
-                  </span>
-                  {project.durationInFrames && project.fps ? (
-                    <span className="text-[10px] tabular-nums text-muted-foreground group-focus:text-accent-foreground/85">
-                      {(project.durationInFrames / project.fps).toFixed(1)}s
-                    </span>
-                  ) : null}
-                  <TooltipHint content="Delete project">
-                    <button
-                      type="button"
-                      aria-label={`Delete ${project.name}`}
-                      disabled={status !== "connected"}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        // Don't open the project: close the menu and ask first.
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setProjectMenuOpen(false);
-                        setProjectToDelete(project);
-                      }}
-                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-60 hover:bg-destructive hover:text-white hover:opacity-100 group-focus:text-accent-foreground group-focus:opacity-100 disabled:pointer-events-none"
-                    >
-                      <Trash2 className="size-3.5 text-current" />
-                    </button>
-                  </TooltipHint>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ProjectPicker
+            projects={studio.projects}
+            currentSlug={doc?.slug}
+            name={doc?.project?.name}
+            opening={studio.opening}
+            connected={status === "connected"}
+            canMove={info?.features?.includes("project-folders") ?? false}
+            onOpen={slug => void studio.openProject(slug)}
+            onCreate={date => { setNewProjectDate(date); setNewProjectOpen(true); }}
+            onDelete={setProjectToDelete}
+            onMove={async (slug, date) => {
+              const bridge = studio.getBridge();
+              if (!bridge) throw new Error("Connect the helper to move a project.");
+              await bridge.request("studio.projects.move", { slug, date });
+            }}
+          />
 
           {variants.length > 1 ? (
             <div className="studio-variants ml-2 flex items-center rounded-full bg-background p-0.5 shadow-sm">
@@ -1374,9 +1306,11 @@ export function StudioApp() {
         />
         <NewProjectDialog
           open={newProjectOpen}
-          onOpenChange={setNewProjectOpen}
+          folderDate={newProjectDate}
+          onOpenChange={value => { setNewProjectOpen(value); if (!value) setNewProjectDate(undefined); }}
           onCreate={async (name, vertical) => {
-            await studio.createProject(name, { vertical });
+            await studio.createProject(name, { vertical, folderDate: newProjectDate ?? localDateKey() });
+            setNewProjectDate(undefined);
             setNewProjectOpen(false);
           }}
         />
@@ -1584,10 +1518,12 @@ function DeleteProjectDialog({
 
 function NewProjectDialog({
   open,
+  folderDate,
   onOpenChange,
   onCreate,
 }: {
   open: boolean;
+  folderDate?: string;
   onOpenChange(open: boolean): void;
   onCreate(name: string, vertical: boolean): Promise<void>;
 }) {
@@ -1601,6 +1537,7 @@ function NewProjectDialog({
         <DialogHeader>
           <DialogTitle>New video</DialogTitle>
           <DialogDescription>
+            {folderDate ? `Date folder: ${dateLabel(folderDate)}. ` : ""}
             Every project has a wide (16:9) and a mobile (9:16) version.{" "}
             {agentName} can change this.
           </DialogDescription>

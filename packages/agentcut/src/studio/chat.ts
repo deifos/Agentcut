@@ -1,3 +1,4 @@
+import type { TokenUsage } from "./agents/usage.js";
 import { randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { basename, isAbsolute, join, relative, sep } from "node:path";
@@ -40,6 +41,7 @@ export interface ChatMessage {
   status?: "running" | "done" | "error" | "cancelled" | "queued";
   error?: string;
   costUsd?: number;
+  usage?: TokenUsage;
   durationMs?: number;
   attachments?: string[];
   /** Project files the user pointed at with this message (assets panel, drag and drop). */
@@ -52,6 +54,7 @@ export interface ChatReference {
 }
 
 interface ChatFile {
+  projectTokens?: number;
   version: 1;
   sessionId: string | null;
   /** The agent the session belongs to (chats from before agents were pluggable are Claude's). */
@@ -72,6 +75,8 @@ interface Turn {
   child: ChildProcess;
   startedAt: number;
   cancelled: boolean;
+  /** Usage already saved when the user cleared this running conversation. */
+  resetUsage?: number;
   stderr: string;
   /** The last problem the agent reported (shown if the turn ends without a result). */
   lastError: string | null;
@@ -158,7 +163,7 @@ export class ChatEngine {
       const raw = JSON.parse(readFileSync(this.chatPath(slug), "utf8")) as Partial<ChatFile>;
       if (raw && Array.isArray(raw.messages)) {
         const sessionId = raw.sessionId ?? null;
-        return { version: 1, sessionId, agent: raw.agent ?? (sessionId ? LEGACY_AGENT : null), messages: raw.messages };
+        return { version: 1, sessionId, agent: raw.agent ?? (sessionId ? LEGACY_AGENT : null), messages: raw.messages, projectTokens: raw.projectTokens };
       }
     } catch {}
     return { version: 1, sessionId: null, agent: null, messages: [] };
@@ -174,6 +179,10 @@ export class ChatEngine {
   private upsertMessage(slug: string, message: ChatMessage) {
     const file = this.load(slug);
     const index = file.messages.findIndex((m) => m.id === message.id);
+    if (message.usage) {
+      const previous = index >= 0 ? file.messages[index].usage?.totalTokens ?? 0 : 0;
+      file.projectTokens = (file.projectTokens ?? 0) + message.usage.totalTokens - previous;
+    }
     if (index >= 0) file.messages[index] = message;
     else file.messages.push(message);
     this.save(slug, file);
@@ -206,6 +215,7 @@ export class ChatEngine {
     }
     if (stale) this.save(slug, file);
     return {
+      projectTokens: file.projectTokens,
       sessionId: file.sessionId,
       agent: file.agent,
       messages: file.messages,
@@ -215,10 +225,21 @@ export class ChatEngine {
 
   reset(slug: string) {
     this.dropQueued(slug);
+    const turn = this.turns.get(slug);
+    if (turn) turn.resetUsage ??= turn.message.usage?.totalTokens ?? 0;
     this.cancel(slug);
-    this.save(slug, { version: 1, sessionId: null, agent: null, messages: [] });
+    this.save(slug, { version: 1, sessionId: null, agent: null, messages: [], projectTokens: this.load(slug).projectTokens });
     this.deps.emit("studio.chat", { slug, kind: "reset" });
     return { ok: true };
+  }
+
+  private finishResetTurn(turn: Turn) {
+    const file = this.load(turn.slug);
+    if (turn.message.usage) {
+      file.projectTokens = (file.projectTokens ?? 0) + turn.message.usage.totalTokens - (turn.resetUsage ?? 0);
+      this.save(turn.slug, file);
+    }
+    this.deps.emit("studio.chat", { slug: turn.slug, kind: "reload" });
   }
 
   cancel(slug: string) {
@@ -315,12 +336,13 @@ export class ChatEngine {
    * sends it (a queued message keeps the playhead it was sent with).
    */
   private buildContext(slug: string, context: Record<string, unknown>, agent: AgentAdapter) {
-    const page = { ...(this.deps.getPageContext() ?? {}), ...context };
+    const page = context;
     const dir = projectDir(this.deps.paths, slug);
     const lines = [
       `<studio-context>`,
       `You are working inside Agentcut. The user watches the studio page: chat, live preview, timeline. Follow the agentcut skill.`,
       `Active project: ${slug} (folder: ${dir})`,
+      `Keep working on this project if the user opens another project. Pass this project explicitly to tools. Only change projects when this request asks you to.`,
     ];
     if (this.deps.addDirs.length) {
       lines.push(
@@ -402,11 +424,13 @@ export class ChatEngine {
   ) {
     const trimmed = text.trim();
     if (!trimmed) throw new StudioError("Type a message first.", "empty");
+    const currentPage = this.deps.getPageContext();
+    const frozen = structuredClone({ ...(currentPage?.activeProject === slug ? currentPage : {}), ...context });
     const resolved = await this.resolveAgent(slug, agentId, model, effort);
     const { adapter } = resolved;
 
     // The context (playhead, selection, pointed-at files) is taken now, when the user sent it.
-    const { attachments, references } = this.buildContext(slug, context, adapter);
+    const { attachments, references } = this.buildContext(slug, frozen, adapter);
     const busy = this.turns.size > 0 || this.queue.length > 0;
     const userMessage: ChatMessage = {
       id: randomUUID(),
@@ -421,7 +445,6 @@ export class ChatEngine {
     this.deps.emit("studio.chat", { slug, kind: "user", message: userMessage });
 
     // Frozen now: a queued message keeps the playhead and selection it was sent with.
-    const frozen = { ...(this.deps.getPageContext() ?? {}), ...context };
     if (busy) {
       // One agent at a time: two runs writing the same workspace overwrite each other.
       this.queue.push({ slug, messageId: userMessage.id, text: trimmed, agentId: adapter.id, model: resolved.model, effort: resolved.effort, context: frozen });
@@ -561,14 +584,15 @@ export class ChatEngine {
       sessionId,
       images,
       workspace: this.deps.paths.root,
-      mcp: this.deps.mcp,
-      mcpConfigPath: this.deps.paths.mcpConfig,
+      mcp: { ...this.deps.mcp, env: { ...this.deps.mcp.env, AGENTCUT_PROJECT: slug } },
+      mcpConfigPath: join(this.deps.paths.internal, "chat-mcp.json"),
       settingsPath: this.deps.paths.agentSettings,
       allowShell: this.deps.allowBash,
       readDirs: this.deps.addDirs,
       shellDomains: this.deps.shellDomains,
       ...settings,
     };
+    atomicWrite(run.mcpConfigPath, `${JSON.stringify({ mcpServers: { [run.mcp.name]: { command: run.mcp.command, args: run.mcp.args, env: run.mcp.env } } }, null, 2)}\n`);
     const agentSettings = agent.settings?.(run);
     if (agentSettings) atomicWrite(run.settingsPath, `${JSON.stringify(agentSettings, null, 2)}\n`);
     const args = agent.buildArgs(run);
@@ -629,6 +653,11 @@ export class ChatEngine {
       if (buffer.trim()) handleLine(buffer.trim());
       const slug = turn.slug; // may have moved to a new project mid-turn
       this.turns.delete(slug);
+      if (turn.resetUsage !== undefined) {
+        this.finishResetTurn(turn);
+        void this.drain().catch((error) => debugLog(`chat queue: ${error instanceof Error ? error.message : String(error)}`));
+        return;
+      }
       if (!turn.cancelled && !turn.gotResult && sessionId && agent.isLostSession(turn.stderr) && !turn.retriedWithoutResume) {
         // The saved session is gone (e.g. cleared); start a fresh one.
         debugLog(`chat ${slug}: resume failed, starting a new session`);
@@ -645,7 +674,7 @@ export class ChatEngine {
       }
       this.finishRunningTools(assistant, assistant.status === "done" ? "done" : "error");
       this.upsertMessage(slug, assistant);
-      this.deps.emit("studio.chat", { slug, kind: "done", message: assistant });
+      this.deps.emit("studio.chat", { slug, kind: "done", message: assistant, projectTokens: this.load(slug).projectTokens });
       void this.drain().catch((error) => debugLog(`chat queue: ${error instanceof Error ? error.message : String(error)}`));
     });
   }
@@ -751,6 +780,10 @@ export class ChatEngine {
 
   /** Apply one agent event to the running turn: chat parts, session, result. */
   private handleEvent(turn: Turn, event: AgentEvent) {
+    if (turn.resetUsage !== undefined) {
+      if (event.type === "result" && event.usage) turn.message.usage = event.usage;
+      return;
+    }
     const { slug } = turn;
     const parts = (turn.message.parts ??= []);
     switch (event.type) {
@@ -800,6 +833,7 @@ export class ChatEngine {
         turn.gotResult = true;
         turn.message.status = event.ok ? "done" : "error";
         if (!event.ok) turn.message.error = event.error ?? turn.lastError ?? `${turn.agent.name} stopped.`;
+        if (event.usage) turn.message.usage = event.usage;
         if (event.costUsd !== undefined) turn.message.costUsd = event.costUsd;
         turn.message.durationMs = event.durationMs ?? Date.now() - turn.startedAt;
         if (event.sessionId) this.saveSession(slug, turn.agent.id, event.sessionId);

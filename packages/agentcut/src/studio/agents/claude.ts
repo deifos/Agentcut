@@ -1,3 +1,4 @@
+import { parseTokenUsage } from "./usage.js";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { resolveCommand } from "../proc.js";
@@ -187,6 +188,7 @@ class ClaudeParser implements AgentParser {
             ok,
             text: ok ? result : undefined,
             error: ok ? undefined : result ? result.slice(0, 1200) : `Claude stopped (${String(event.subtype)}).`,
+            usage: parseTokenUsage(event.usage, "claude"),
             costUsd: typeof event.total_cost_usd === "number" ? event.total_cost_usd : undefined,
             durationMs: typeof event.duration_ms === "number" ? event.duration_ms : undefined,
             sessionId: typeof event.session_id === "string" ? event.session_id : undefined,

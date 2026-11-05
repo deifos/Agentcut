@@ -124,8 +124,45 @@ export interface ProjectSummary {
   slug: string;
   name: string;
   updatedAt: number;
+  createdAt?: number;
+  folderDate?: string;
   durationInFrames?: number;
   fps?: number;
+}
+
+function assertFolderDate(value: unknown): asserts value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
+      !Number.isFinite(Date.parse(`${value}T12:00:00Z`)) ||
+      new Date(`${value}T12:00:00Z`).toISOString().slice(0, 10) !== value) {
+    throw new StudioError("Choose a valid date.", "invalid_date");
+  }
+}
+
+function readProjectOrganization(dir: string): { createdAt: number; folderDate?: string } {
+  const stats = statSync(dir);
+  const createdAt = stats.birthtimeMs > 0 ? stats.birthtimeMs : stats.mtimeMs;
+  try {
+    const raw = JSON.parse(readFileSync(join(dir, ".studio", "organization.json"), "utf8"));
+    if (raw.folderDate !== undefined) assertFolderDate(raw.folderDate);
+    return {
+      createdAt: typeof raw.createdAt === "number" && Number.isFinite(raw.createdAt) && raw.createdAt > 0 ? raw.createdAt : createdAt,
+      folderDate: raw.folderDate,
+    };
+  } catch {
+    return { createdAt };
+  }
+}
+
+/** Organization only: paths, editor state and agent sessions stay unchanged. */
+export function moveProjectToDate(paths: WorkspacePaths, slug: string, date: unknown) {
+  assertFolderDate(date);
+  const dir = projectDir(paths, slug);
+  if (!existsSync(join(dir, "project.json"))) throw new StudioError("Project not found.", "not_found");
+  const organization = readProjectOrganization(dir);
+  const path = safeJoin(dir, ".studio/organization.json");
+  mkdirSync(join(path, ".."), { recursive: true });
+  atomicWrite(path, JSON.stringify({ ...organization, folderDate: date }));
+  return { slug, folderDate: date };
 }
 
 export function listProjects(paths: WorkspacePaths): ProjectSummary[] {
@@ -156,7 +193,8 @@ export function listProjects(paths: WorkspacePaths): ProjectSummary[] {
         updatedAt = Math.max(updatedAt, statSync(join(dir, file)).mtimeMs);
       } catch {}
     }
-    out.push({ slug, name, updatedAt, durationInFrames, fps });
+    const organization = readProjectOrganization(dir);
+    out.push({ slug, name, updatedAt, ...organization, durationInFrames, fps });
   }
   return out.sort((a, b) => b.updatedAt - a.updatedAt);
 }
@@ -197,6 +235,7 @@ export function deleteProject(paths: WorkspacePaths, slug: string) {
 
 export interface CreateProjectInput {
   name: string;
+  folderDate?: string;
   slug?: string;
   fps?: number;
   durationInFrames?: number;
@@ -207,6 +246,7 @@ export interface CreateProjectInput {
 }
 
 export function createProject(paths: WorkspacePaths, input: CreateProjectInput) {
+  if (input.folderDate !== undefined) assertFolderDate(input.folderDate);
   const name = String(input.name ?? "").trim() || "Untitled video";
   let slug = input.slug ? assertSlug(input.slug) : slugify(name);
   if (!input.slug) {
@@ -242,6 +282,7 @@ export function createProject(paths: WorkspacePaths, input: CreateProjectInput) 
     join(dir, "layers.json"),
     `${JSON.stringify({ version: 1, tracks: [], markers: [] }, null, 2)}\n`,
   );
+  atomicWrite(join(dir, ".studio", "organization.json"), JSON.stringify({ createdAt: Date.now(), folderDate: input.folderDate }));
   writeFileSync(join(dir, "notes.md"), `# ${name}\n\nCue sheet and decisions.\n`);
   return { slug };
 }

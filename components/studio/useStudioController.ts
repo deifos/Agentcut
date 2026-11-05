@@ -119,7 +119,7 @@ function applyChatEvent(
     messages.map((message) => (message.id === id ? fn(message) : message));
   switch (kind) {
     case "reset":
-      return { sessionId: null, messages: [], running: null };
+      return { sessionId: null, messages: [], running: null, projectTokens: chat.projectTokens };
     case "user":
     case "start": {
       const message = data.message as ChatMessage;
@@ -184,6 +184,7 @@ function applyChatEvent(
       const exists = messages.some((m) => m.id === message.id);
       return {
         ...chat,
+        projectTokens: typeof data.projectTokens === "number" ? data.projectTokens : chat.projectTokens,
         messages: exists
           ? replace(message.id, () => message)
           : [...messages, message],
@@ -521,7 +522,7 @@ export function useStudioController() {
   }, [flushWrite, loadBundle]);
 
   const createProject = useCallback(
-    async (name: string, options: { vertical?: boolean } = {}) => {
+    async (name: string, options: { vertical?: boolean; folderDate?: string } = {}) => {
       const bridge = bridgeRef.current;
       if (!bridge) return;
       try {
@@ -533,7 +534,7 @@ export function useStudioController() {
           : undefined;
         const created = await bridge.request<{ slug: string }>(
           "studio.projects.create",
-          { name, variants },
+          { name, variants, folderDate: options.folderDate },
         );
         await openProject(created.slug);
       } catch (error) {
@@ -744,6 +745,15 @@ export function useStudioController() {
       const bridge = bridgeRef.current;
       const current = latest.current.doc;
       if (!bridge || !current) return;
+      const context = {
+        variant: latest.current.variant,
+        playheadFrame: frameStore.get(),
+        fps: current.project?.fps ?? 30,
+        selectedClipIds: [...latest.current.selection],
+        attachments: extra.attachments ?? [],
+        references: extra.references ?? [],
+        ...(extra.drawing ? { drawing: extra.drawing } : {}),
+      };
       await flushWrite();
       try {
         await bridge.request("studio.chat.send", {
@@ -752,15 +762,7 @@ export function useStudioController() {
           agent: extra.agent,
           ...(extra.model ? { model: extra.model } : {}),
           ...(extra.effort ? { effort: extra.effort } : {}),
-          context: {
-            variant: latest.current.variant,
-            playheadFrame: frameStore.get(),
-            fps: current.project?.fps ?? 30,
-            selectedClipIds: latest.current.selection,
-            attachments: extra.attachments ?? [],
-            references: extra.references ?? [],
-            ...(extra.drawing ? { drawing: extra.drawing } : {}),
-          },
+          context,
         });
       } catch (error) {
         toast.error(error instanceof Error ? error.message : String(error));

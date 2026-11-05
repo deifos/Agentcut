@@ -362,6 +362,8 @@ export interface BundleSummary {
 }
 
 export interface ProjectSummary {
+  createdAt?: number;
+  folderDate?: string;
   slug: string;
   name: string;
   updatedAt: number;
@@ -435,6 +437,14 @@ export type ChatPart =
       images?: string[];
     };
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cachedInputTokens: number;
+  cacheWriteTokens: number;
+  totalTokens: number;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -446,6 +456,7 @@ export interface ChatMessage {
   status?: "running" | "done" | "error" | "cancelled" | "queued";
   error?: string;
   costUsd?: number;
+  usage?: TokenUsage;
   durationMs?: number;
   attachments?: string[];
   /** Project files the user pointed Claude at with this message. */
@@ -459,6 +470,7 @@ export interface ChatReference {
 }
 
 export interface ChatHistory {
+  projectTokens?: number;
   sessionId: string | null;
   /** The agent the session belongs to. */
   agent?: string | null;

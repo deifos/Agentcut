@@ -1,3 +1,4 @@
+import type { TokenUsage } from "./usage.js";
 /**
  * A coding agent CLI the studio chat can drive (Claude Code, Codex, …).
  *
@@ -106,7 +107,7 @@ export type AgentEvent =
   /** A problem the CLI reported; used as the turn's error if it ends without a result. */
   | { type: "error"; message: string }
   /** The turn finished. */
-  | { type: "result"; ok: boolean; error?: string; text?: string; costUsd?: number; durationMs?: number; sessionId?: string };
+  | { type: "result"; ok: boolean; error?: string; text?: string; costUsd?: number; usage?: TokenUsage; durationMs?: number; sessionId?: string };
 
 /** Turns the CLI's stdout lines into events. One parser per turn (it may keep state). */
 export interface AgentParser {

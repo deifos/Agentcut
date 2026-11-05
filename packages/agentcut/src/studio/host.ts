@@ -14,6 +14,7 @@ import { handleStudioHttp } from "./http.js";
 import { ProxyStore } from "./proxies.js";
 import { forgetProject, sweepWorkspace } from "./housekeeping.js";
 import { pruneOldTools } from "./references.js";
+import { createCut, readCanvas } from "./canvas.js";
 import {
   assertSlug,
   createProject,
@@ -386,6 +387,14 @@ export class StudioHost implements BridgeExtension {
       case "studio.release.cancel": return this.releases.cancel(String(p.job));
       case "studio.info":
         return this.info();
+      case "studio.canvas.read":
+        return readCanvas(this.paths, assertSlug(p.project));
+      case "studio.canvas.create": {
+        const result = await createCut(this.paths, p);
+        this.emit("studio.canvas.created", { project: p.project, slug: result.slug });
+        this.emit("studio.projects", { projects: listProjects(this.paths) });
+        return result;
+      }
       case "studio.projects.list":
         return listProjects(this.paths);
       case "studio.projects.create": {
@@ -521,6 +530,8 @@ export class StudioHost implements BridgeExtension {
       case "studio.local.transcription_options": return Promise.resolve({ ...transcriptionSettings(), jobs: this.transcription.status() });
       case "studio.local.cancel_transcription": return Promise.resolve(this.transcription.cancel(String(p.job)));
       case "studio.local.transcribe": return this.transcription.run(assertSlug(p.project ?? this.pageSession?.activeProject), p as unknown as TranscriptionInput);
+      case "studio.local.canvas_read": return this.handlePageRequest("studio.canvas.read", { ...p, project: p.project ?? this.pageSession?.activeProject });
+      case "studio.local.canvas_create": return this.handlePageRequest("studio.canvas.create", p);
       case "studio.local.workspace":
         return Promise.resolve(this.workspaceSummary());
       case "studio.local.create_project":
@@ -889,7 +900,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
+      features: ["clip-canvas", "project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
     };
   }
 

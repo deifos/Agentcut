@@ -137,7 +137,9 @@ test("a seek that never finishes gives up", async () => {
 test("a drag skips frames it can't get to, and lands on the exact last one", async () => {
   const player = fakePlayer({ decodeMs: 20 });
   const frameStore = fakeStore();
-  const scrubber = new Scrubber({ getPlayer: () => player, frameStore });
+  let onSettled;
+  const settled = new Promise(resolve => { onSettled = resolve; });
+  const scrubber = new Scrubber({ getPlayer: () => player, frameStore, onSettled });
   scrubber.begin();
   assert.equal(frameStore.scrubbing, true);
   for (let frame = 1; frame <= 50; frame += 1) {
@@ -146,7 +148,7 @@ test("a drag skips frames it can't get to, and lands on the exact last one", asy
     assert.equal(frameStore.get(), frame);
   }
   scrubber.end();
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await settled;
   assert.equal(player.seeks.at(-1), 50);
   assert.ok(player.seeks.length <= 3, `drew ${player.seeks.length} of 50`);
   assert.equal(frameStore.scrubbing, false);
@@ -155,12 +157,14 @@ test("a drag skips frames it can't get to, and lands on the exact last one", asy
 test("playback carries on after a drag only if it was playing", async () => {
   const player = fakePlayer();
   player.playing = true;
-  const scrubber = new Scrubber({ getPlayer: () => player, frameStore: fakeStore() });
+  let onSettled;
+  const settled = new Promise(resolve => { onSettled = resolve; });
+  const scrubber = new Scrubber({ getPlayer: () => player, frameStore: fakeStore(), onSettled });
   scrubber.begin();
   assert.equal(player.isPlaying(), false);
   scrubber.to(5);
   scrubber.end();
-  await idle();
+  await settled;
   assert.equal(player.played, 1);
 
   const paused = fakePlayer();

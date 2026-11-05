@@ -13,6 +13,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.23] - 2026-11-05
+
+- The project picker opens at the current project and highlights its date. Each reply groups its reported token use with its work summary. In the advanced editor, the chat shows the playhead and selection below the message controls.
+
+- Canvas cards use sharper thumbnails when zoomed in. Press Play to expand the card into the playing preview. The transition respects reduced motion.
+
+- Dragging a canvas card or the timeline divider updates its position directly and saves it on release.
+
+- Canvas cards can show a thumbnail from the edited composition, including videos built from scenes.
+
+- An existing video opens as one canvas card. Its voice takes, music, sound effects, and footage stay in Assets and on the timeline.
+
+- Play on a canvas card opens the full preview and starts playback with one click.
+
+- Canvas cards now have controls to delete a clip or a version and hide a source. The creation dialogs explain what each action creates.
+
+- Choose Wide or Mobile on the canvas to save the selected clip’s format. The canvas shows source connections for the selected clip and names the recordings it uses.
+
+- Fixed a flash when dragging a clip or source card on the studio canvas.
+
+- The studio canvas connects source recordings to independent clips. Select a clip or version to edit its timeline, chat about it, or export it. The agent can assemble excerpts from several recordings in any order.
+
 ## [0.2.22] - 2026-11-04
 
 ### Added
@@ -569,7 +591,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.22...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.23...HEAD
+[0.2.23]: https://github.com/deifos/Agentcut/compare/v0.2.22...v0.2.23
 [0.2.22]: https://github.com/deifos/Agentcut/compare/v0.2.21...v0.2.22
 [0.2.21]: https://github.com/deifos/Agentcut/compare/v0.2.20...v0.2.21
 [0.2.20]: https://github.com/deifos/Agentcut/compare/v0.2.19...v0.2.20

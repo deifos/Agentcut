@@ -1,6 +1,6 @@
 {
   "name": "agentcut-studio",
-  "version": "0.2.22",
+  "version": "0.2.23",
   "private": true,
   "description": "Agentcut: an open-source video studio you edit by chatting with a coding agent (Claude Code or Codex).",
   "license": "MIT",
@@ -45,6 +45,7 @@
     "@remotion/transitions": "4.0.536",
     "@remotion/web-renderer": "4.0.536",
     "@shadcn/react": "0.3.1",
+    "@xyflow/react": "12.12.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "0.575.0",

@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { cutInput } from "./canvas.js";
 import { editingStyleInput } from "./editing-styles.js";
 import { referenceInspection } from "./references.js";
 import { callEditor, persistAgentFrameResult } from "../bridge.js";
@@ -110,6 +111,10 @@ function defineTool<T extends z.ZodRawShape>(
 }
 
 export function registerStudioTools(server: McpServer) {
+  defineTool(server, "agentcut_canvas", "List this project's source recordings, independent clips and versions. Use source IDs for ordered excerpts, and cut slugs to read or edit a specific timeline.", { project },
+    async args => callEditor("studio.local.canvas_read", args, { timeoutMs: MINUTE }));
+  defineTool(server, "agentcut_create_cut", "Create one independent clip in the same canvas from ordered source segments in seconds, or duplicate a selected project as a named version. Returns a project slug for further editing. Leaves editor selection and chat on their current clip.", cutInput.shape,
+    async args => callEditor("studio.local.canvas_create", args, { timeoutMs: 10 * MINUTE }));
   defineTool(server, "agentcut_save_editing_style", "Save reusable editing instructions in library/editing-styles/ for Styles → Saved editing styles. Inspect the current project and available edit history first; capture only supported rules and state unknowns. Supply a standalone prompt for different footage, with fresh relevant B-roll, text and animations. Does not copy media or edit a project. Creates a unique folder, validates and reads back the files, and never overwrites an existing style.",
     editingStyleInput.shape,
     async args => callEditor("studio.local.save_editing_style", args, { timeoutMs: 15_000 }));

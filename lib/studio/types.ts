@@ -362,6 +362,7 @@ export interface BundleSummary {
 }
 
 export interface ProjectSummary {
+  canvasVersion?: string;
   createdAt?: number;
   folderDate?: string;
   slug: string;

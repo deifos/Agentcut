@@ -54,6 +54,7 @@ import type {
 } from "@/lib/studio/types";
 
 export interface StudioPreviewProps {
+  cardOrigin?: DOMRect;
   /** Name from the running message, even if the next-request agent was changed. */
   workingAgentName?: string;
   /** Compact playback seeking while the advanced timeline is hidden. */
@@ -504,6 +505,24 @@ export function StudioPreview(props: StudioPreviewProps) {
     top: (container.height - size.height * scale) / 2,
   };
 
+  const stageRef = useRef<HTMLDivElement>(null);
+  const lastAnimated = useRef<DOMRect | undefined>(undefined);
+  const { cardOrigin } = props;
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    const from = cardOrigin;
+    if (!stage || !from || from === lastAnimated.current || !rect.width || !rect.height) return;
+    const to = stage.getBoundingClientRect();
+    if (!to.width || !to.height) return;
+    lastAnimated.current = from;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const animation = stage.animate([
+      { transformOrigin: "top left", transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})` },
+      { transformOrigin: "top left", transform: "none" },
+    ], { duration: 260, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+    return () => animation.cancel();
+  }, [cardOrigin, ready, rect.width, rect.height]);
+
   const selectedBox = useMemo(() => {
     if (!layers || selection.length !== 1) return null;
     const location = findClip(layers, selection[0]);
@@ -533,6 +552,7 @@ export function StudioPreview(props: StudioPreviewProps) {
         <div ref={containerRef} className="relative size-full">
           {ready && loaded && inputProps && project ? (
             <div
+              ref={stageRef}
               className="absolute overflow-hidden rounded-xl bg-[repeating-conic-gradient(#151518_0%_25%,#101013_0%_50%)] bg-[length:24px_24px] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.25)] ring-1 ring-black/5 dark:ring-white/10"
               style={{
                 left: rect.left,

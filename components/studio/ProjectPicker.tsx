@@ -77,6 +77,9 @@ export function ProjectPicker({
   const [dragging, setDragging] = useState<string | null>(null);
   const [overDate, setOverDate] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const currentRow = useRef<HTMLDivElement>(null);
+  const currentProject = projects.find(project => project.slug === currentSlug);
+  const currentDate = currentProject && projectDate(currentProject);
   const id = useId();
   const today = localDateKey();
   const groups = groupProjects(projects, query, today);
@@ -110,6 +113,7 @@ export function ProjectPicker({
     <Popover
       open={open}
       onOpenChange={(value) => {
+        if (value && currentDate) setExpanded(previous => ({ ...previous, [currentDate]: true }));
         setOpen(value);
         setQuery("");
         setMoving(null);
@@ -144,7 +148,8 @@ export function ProjectPicker({
         }}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          searchRef.current?.focus();
+          searchRef.current?.focus({ preventScroll: true });
+          currentRow.current?.scrollIntoView({ block: "nearest" });
         }}
       >
         <div className="flex shrink-0 flex-col gap-2 p-3">
@@ -242,7 +247,7 @@ export function ProjectPicker({
           ) : null}
           {groups.map((group) => {
             const isExpanded =
-              searching || (expanded[group.date] ?? group.date === today);
+              searching || (expanded[group.date] ?? group.date === (currentDate ?? today));
             const label =
               group.date === today
                 ? `Today · ${dateLabel(group.date)}`
@@ -283,7 +288,7 @@ export function ProjectPicker({
                     void move(slug, group.date);
                 }}
               >
-                <div className="flex items-center gap-1 pr-1">
+                <div className={cn("flex items-center gap-1 rounded-md pr-1", group.date === currentDate && "bg-brand/10 text-foreground")}>
                   <button
                     type="button"
                     className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-md px-2 text-left text-xs font-semibold hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
@@ -329,9 +334,10 @@ export function ProjectPicker({
                   {group.projects.map((project) => (
                     <div
                       key={project.slug}
+                      ref={project.slug === currentSlug ? currentRow : undefined}
                       className={cn(
                         "group flex items-center gap-1 rounded-md pr-1",
-                        project.slug === currentSlug && "bg-accent",
+                        project.slug === currentSlug && "bg-brand/15 font-semibold ring-1 ring-inset ring-brand/45",
                         dragging === project.slug && "opacity-50",
                       )}
                       draggable={connected && canMove && !busy}

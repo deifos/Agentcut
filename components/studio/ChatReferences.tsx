@@ -62,7 +62,7 @@ export interface ChatUploadResult {
  * so the next message points the agent at them. Pasted screenshots (no real name) get a timestamp.
  * Each file uploads on its own: one failure never drops the others.
  */
-export async function uploadChatFiles(slug: string, files: File[]): Promise<ChatUploadResult> {
+export async function uploadChatFiles(slug: string, files: File[], folder: "assets" | "assets/canvas-sources" = "assets"): Promise<ChatUploadResult> {
   const stamp = exportStamp();
   const results = await Promise.allSettled(
     files.map(async (file, index) => {
@@ -76,7 +76,7 @@ export async function uploadChatFiles(slug: string, files: File[]): Promise<Chat
       const base = generic
         ? `pasted-${stamp}${files.length > 1 ? `-${index + 1}` : ""}${ext}`
         : safeFileName(named ? file.name : `${file.name}${ext}`);
-      return { path: await uploadToProject(slug, `assets/${base}`, file), kind };
+      return { path: await uploadToProject(slug, `${folder}/${base}`, file), kind };
     }),
   );
   const out: ChatUploadResult = { added: [], failed: [] };

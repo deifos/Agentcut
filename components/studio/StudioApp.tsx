@@ -1,5 +1,7 @@
 "use client";
+import dynamic from "next/dynamic";
 import { ProjectPicker } from "./ProjectPicker";
+const ClipCanvas = dynamic(() => import("./ClipCanvas"), { ssr: false });
 import { dateLabel, localDateKey } from "@/lib/studio/project-folders";
 import { ReleaseVideoStatus } from "./ReleaseVideoStatus";
 import { useScrubber } from "@/components/studio/useScrubber";
@@ -190,6 +192,10 @@ export function StudioApp() {
     agentChoiceStore.get,
     agentChoiceStore.getServer,
   );
+  const pickerProjects = useMemo(() => studio.projects.map(project => project.canvasVersion
+    ? { ...project, name: project.name + " · " + project.canvasVersion }
+    : project), [studio.projects]);
+  const activeCutName = pickerProjects.find(project => project.slug === doc?.slug)?.name ?? doc?.project?.name;
   const agents = studioAgents(info);
   const agent = pickAgent(agents, agentChoice, info?.defaultAgent);
   const workingAgentId = chat.messages.find(message => message.id === chat.running)?.agent;
@@ -210,7 +216,37 @@ export function StudioApp() {
   const effort = agentPickable ? pickEffort(agent, model, effortChoices) : null;
   const [playing, setPlaying] = useState(false);
   const [drawingOpen, setDrawingOpen] = useState(false);
-  const [simple, setSimple] = useState(true);
+  const [canvasOpen, setCanvasOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "canvas");
+  const [simple, setSimple] = useState(!canvasOpen);
+  const canvasBridge = status === "connected" ? studio.getBridge() : null;
+  const { getDoc } = studio;
+  const autoCanvas = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!canvasBridge) return;
+    const off = canvasBridge.on("studio.canvas.created", event => {
+      const { project } = event as { project: string };
+      if (project !== getDoc()?.slug || autoCanvas.current === project) return;
+      autoCanvas.current = project;
+      playerRef.current?.pause();
+      setSimple(false);
+      setCanvasOpen(true);
+    });
+    return () => { off(); };
+  }, [canvasBridge, getDoc, playerRef]);
+  const canvasAvailable = Boolean(doc && info?.features?.includes("clip-canvas"));
+  const showCanvas = canvasOpen && canvasAvailable && !simple;
+  const [previewOrigin, setPreviewOrigin] = useState<DOMRect>();
+  const [playRequested, setPlayRequested] = useState<string | null>(null);
+  useEffect(() => {
+    if (!playRequested) return;
+    if (!showCanvas && playRequested === doc?.slug && !chat.running) {
+      if (!studio.moduleError && (!playerRef.current || loaded?.slug !== playRequested)) return;
+      if (!studio.moduleError) playerRef.current?.play();
+    }
+    setPlayRequested(null);
+  }, [playRequested, showCanvas, doc?.slug, loaded, playerRef, chat.running, studio.moduleError]);
+
   const [stylesBySlug, setStylesBySlug] = useState<Record<string, MotionStyle | null>>({});
   const selectedStyle = stylesBySlug[doc?.slug ?? ""] ?? null;
   const selectStyle = (style: MotionStyle | null) => setStylesBySlug((all) => ({ ...all, [doc?.slug ?? ""]: style }));
@@ -292,9 +328,15 @@ export function StudioApp() {
   const [timelineHeight, setTimelineHeight] = useState(() =>
     readNumber(TIMELINE_HEIGHT_KEY, 300),
   );
-  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(
-    null,
-  );
+  const timelinePanel = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<{ pointer: number; startY: number; startHeight: number; height: number } | null>(null);
+  function finishResize(pointer: number) {
+    const drag = resizeRef.current;
+    if (!drag || drag.pointer !== pointer) return;
+    resizeRef.current = null;
+    setTimelineHeight(drag.height);
+    try { localStorage.setItem(TIMELINE_HEIGHT_KEY, String(Math.round(drag.height))); } catch {}
+  }
 
   const layers = doc?.layers ?? null;
   const readOnly = !doc?.layers || status !== "connected";
@@ -690,9 +732,9 @@ export function StudioApp() {
             </a>
           </TooltipHint>
           <ProjectPicker
-            projects={studio.projects}
+            projects={pickerProjects}
             currentSlug={doc?.slug}
-            name={doc?.project?.name}
+            name={activeCutName}
             opening={studio.opening}
             connected={status === "connected"}
             canMove={info?.features?.includes("project-folders") ?? false}
@@ -714,7 +756,13 @@ export function StudioApp() {
                   <TooltipHint content={`${name} ${size.width}×${size.height}`} key={name}>
                     <button
                       type="button"
-                      onClick={() => studio.setVariant(name)}
+                      aria-pressed={variant === name}
+                      onClick={() => {
+                        studio.setVariant(name);
+                        if (showCanvas && doc?.project && doc.project.defaultVariant !== name) {
+                          void studio.saveProject({ ...doc.project, defaultVariant: name });
+                        }
+                      }}
                       className={cn(
                         "flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
                         variant === name && "bg-muted text-foreground",
@@ -729,6 +777,11 @@ export function StudioApp() {
           ) : null}
 
           <div className="ml-auto flex items-center gap-1.5">
+            {canvasAvailable && <Button type="button" size="sm" variant={showCanvas ? "secondary" : "outline"} aria-pressed={showCanvas} onClick={() => {
+              playerRef.current?.pause();
+              setSimple(false);
+              setCanvasOpen(!showCanvas);
+            }}>{showCanvas ? "Preview" : "Canvas"}</Button>}
             <Button type="button" variant="outline" size="sm" onClick={() => setSimple((value) => !value)}>
               {simple ? "Advanced editor" : "Simple view"}
             </Button>
@@ -843,6 +896,11 @@ export function StudioApp() {
                 simple && !doc && "hidden",
               )}
             >
+              {doc && (
+                <div className="shrink-0 truncate border-b px-3 py-2 text-xs text-muted-foreground" title={activeCutName}>
+                  Chat about <strong className="text-foreground">{activeCutName}</strong>
+                </div>
+              )}
               <ChatPanel
                 // Each project keeps its own draft.
                 key={chatSlug}
@@ -957,7 +1015,16 @@ export function StudioApp() {
                 onDecline={studio.declinePreviewRequest}
               />
             ) : null}
-            <div className="min-h-0 flex-1">
+            {showCanvas && doc && studio.getBridge() && <div className="min-h-0 flex-1">
+              <ClipCanvas thumbSource={thumbSource} layers={doc.layers} deleteCut={studio.deleteProject} activeSize={doc.project?.variants[variant]} slug={doc.slug} bridge={studio.getBridge()!} revision={studio.projects} assets={studio.assets} layersHash={doc.layersHash}
+                open={studio.openProject} preview={(slug, bounds) => { setPreviewOrigin(bounds); setCanvasOpen(false); setPlayRequested(slug); }} flush={studio.flushCut} getActive={() => studio.getDoc()?.slug}
+                upload={async files => {
+                  const { failed } = await uploadChatFiles(doc.slug, files, "assets/canvas-sources");
+                  if (failed.length) toast.error(uploadFailureMessage(files.length, failed));
+                  await studio.refreshAssets();
+                }} />
+            </div>}
+            <div className={cn("min-h-0 flex-1", showCanvas && "hidden")}>
               {simple && doc && blankVideo && !chat.running ? (
                 <SimpleVideoInput key={doc.slug} disabled={status !== "connected"} onRecord={() => setRecordOpen(true)} onFiles={async (files) => {
                   setUploadCounts((counts) => ({ ...counts, [doc.slug]: (counts[doc.slug] ?? 0) + 1 }));
@@ -980,6 +1047,7 @@ export function StudioApp() {
                 }} />
               ) : doc ? (
                 <StudioPreview
+                  cardOrigin={showCanvas ? undefined : previewOrigin}
                   simple={simple}
                   doc={doc}
                   loaded={loaded}
@@ -1067,42 +1135,30 @@ export function StudioApp() {
           role="separator"
           aria-orientation="horizontal"
           aria-label="Resize timeline"
-          className={cn("group flex h-2 shrink-0 cursor-row-resize items-center justify-center", simple && "hidden")}
-          onPointerDown={(event) => {
-            (event.currentTarget as HTMLElement).setPointerCapture(
-              event.pointerId,
-            );
-            resizeRef.current = {
-              startY: event.clientY,
-              startHeight: timelineHeight,
-            };
+          className={cn("group flex h-2 shrink-0 touch-none select-none cursor-row-resize items-center justify-center", simple && "hidden")}
+          onPointerDown={event => {
+            if (!event.isPrimary || event.button !== 0 || !timelinePanel.current) return;
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            const height = timelinePanel.current.getBoundingClientRect().height;
+            resizeRef.current = { pointer: event.pointerId, startY: event.clientY, startHeight: height, height };
           }}
-          onPointerMove={(event) => {
-            const resize = resizeRef.current;
-            if (!resize) return;
-            const next = Math.max(
-              140,
-              Math.min(
-                window.innerHeight * 0.7,
-                resize.startHeight + resize.startY - event.clientY,
-              ),
-            );
-            setTimelineHeight(next);
+          onPointerMove={event => {
+            const drag = resizeRef.current;
+            if (!drag || drag.pointer !== event.pointerId || !timelinePanel.current) return;
+            drag.height = Math.max(140, Math.min(window.innerHeight * 0.7, drag.startHeight + drag.startY - event.clientY));
+            // Only layout changes while dragging. Commit the editor preference on release.
+            timelinePanel.current.style.height = drag.height + "px";
           }}
-          onPointerUp={() => {
-            resizeRef.current = null;
-            try {
-              window.localStorage.setItem(
-                TIMELINE_HEIGHT_KEY,
-                String(Math.round(timelineHeight)),
-              );
-            } catch {}
-          }}
+          onLostPointerCapture={event => finishResize(event.pointerId)}
+          onPointerUp={event => finishResize(event.pointerId)}
+          onPointerCancel={event => finishResize(event.pointerId)}
         >
           <span className="h-1 w-12 rounded-full bg-border transition-colors group-hover:bg-primary/60" />
         </div>
         <div
           className={cn(PANEL, "mx-2 mb-2 shrink-0", simple && "hidden")}
+          ref={timelinePanel}
           style={{ height: timelineHeight }}
         >
           {doc?.layers && doc.project ? (
@@ -1304,7 +1360,7 @@ export function StudioApp() {
           project={projectToDelete}
           isOpen={projectToDelete?.slug === doc?.slug}
           onClose={() => setProjectToDelete(null)}
-          onDelete={studio.deleteProject}
+          onDelete={async slug => { await studio.deleteProject(slug); }}
         />
         <NewProjectDialog
           open={newProjectOpen}

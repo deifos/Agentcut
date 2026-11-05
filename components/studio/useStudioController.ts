@@ -427,6 +427,7 @@ export function useStudioController() {
         setAssets(result.assets);
         setChat(result.chat);
         if (isNewProject) {
+          setVariantChoice(null);
           forgetDecodedAudio();
           setSelection([]);
           setLoaded(null);
@@ -546,18 +547,18 @@ export function useStudioController() {
 
   /** Delete a project and its files from disk. Leaves it first if it's the open one. */
   const deleteProject = useCallback(
-    async (slug: string) => {
+    async (slug: string, preferredNext?: string) => {
       const bridge = bridgeRef.current;
-      if (!bridge) return;
+      if (!bridge) return false;
       const isOpen = latest.current.doc?.slug === slug;
       if (isOpen && chat.running) {
         toast.error("The agent is working on this project. Stop it first.");
-        return;
+        return false;
       }
       try {
         if (isOpen) {
           // Switch away first so the preview lets go of the project's files.
-          const next = projects.find((project) => project.slug !== slug);
+          const next = projects.find(project => project.slug === preferredNext && project.slug !== slug) ?? projects.find((project) => project.slug !== slug);
           if (next) await openProject(next.slug);
           if (latest.current.doc?.slug === slug) {
             await flushWrite();
@@ -581,10 +582,12 @@ export function useStudioController() {
             ? `Project deleted. Freed ${formatBytes(result.bytes)}.`
             : "Project deleted.",
         );
+        return true;
       } catch (error) {
         toast.error(
           `Couldn't delete the project: ${error instanceof Error ? error.message : String(error)}`,
         );
+        return false;
       }
     },
     [chat.running, flushWrite, openProject, projects, resetHistory],
@@ -1121,6 +1124,10 @@ export function useStudioController() {
     resetChat,
     reconnect,
     flushWrite,
+    flushCut: async () => {
+      await flushWrite();
+      if (writeRef.current.layers) throw new Error("Save the current timeline before creating a cut.");
+    },
   };
 }
 

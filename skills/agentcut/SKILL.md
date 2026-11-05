@@ -5,6 +5,10 @@ description: "Create and edit videos in an Agentcut workspace, including website
 
 # Agentcut
 
+## Independent clips and versions
+
+When asked for several standalone videos from recordings, use `agentcut_canvas` to list the sources and edits in this canvas. Inspect the recordings or their transcripts to find complete moments. Use `agentcut_create_cut` with kind `clip` for each requested video. Pass source IDs and start/end times in seconds in the desired playback order. One clip can use several ranges from one or more recordings. Do not split the recording into equal chapters unless asked. For an alternative edit, use kind `version` on the cut to duplicate. Edit the returned slug explicitly. To reuse an edit from another cut, read its layers and copy the relevant ranges or scene and asset files. Keep the current editor selection during batch creation.
+
 ## Phone editing modes
 
 For phone requests with Social video or Light cleanup selected, read

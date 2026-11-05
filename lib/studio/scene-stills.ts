@@ -18,13 +18,14 @@ export function sceneStill(
   props: StudioCompositionProps,
   frame: number,
   signal: AbortSignal,
+  maxEdge?: number,
 ): Promise<string | null> {
   let cache = caches.get(loaded);
   if (!cache) {
     cache = new Map();
     caches.set(loaded, cache);
   }
-  const key = JSON.stringify([props, frame]);
+  const key = JSON.stringify([props, frame, maxEdge]);
   const stills = cache;
   if (signal.aborted) return Promise.resolve(null);
   const cached = stills.get(key);
@@ -49,12 +50,12 @@ export function sceneStill(
         inputProps: props,
         frame,
         signal,
-        scale: Math.min(1, 90 / size.height),
+        scale: Math.min(1, maxEdge ? maxEdge / Math.max(size.width, size.height) : 90 / size.height),
         licenseKey: "free-license",
         delayRenderTimeoutInMilliseconds: 10_000,
       });
       const src = await blobToDataUrl(
-        await result.blob({ format: "jpeg", quality: 0.75 }),
+        await result.blob({ format: "jpeg", quality: maxEdge ? 0.9 : 0.75 }),
       );
       // Data URLs need no explicit revocation and remain valid in mounted tiles after eviction.
       if (stills.size >= MAX_STILLS) stills.delete(stills.keys().next().value!);

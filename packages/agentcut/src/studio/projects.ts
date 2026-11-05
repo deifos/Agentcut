@@ -120,7 +120,28 @@ export function listSceneNames(dir: string): string[] {
   }
 }
 
+export interface CanvasMembership {
+  group: string;
+  clip: string;
+  version: string;
+  workspace?: boolean;
+  origins: Record<string, string>;
+}
+
+export function readCanvasMembership(dir: string, slug: string): CanvasMembership {
+  const path = safeJoin(dir, ".studio/canvas.json");
+  if (!existsSync(path)) return { group: slug, clip: slug, version: "Original", origins: {}, workspace: true };
+  const value = JSON.parse(readFileSync(path, "utf8"));
+  if (!value || typeof value.group !== "string" || typeof value.clip !== "string" || !SLUG_PATTERN.test(value.clip) || typeof value.version !== "string" ||
+      !value.origins || typeof value.origins !== "object" || Array.isArray(value.origins) ||
+      !Object.values(value.origins).every(origin => typeof origin === "string")) {
+    throw new StudioError("Invalid clip canvas metadata.", "invalid");
+  }
+  return value;
+}
+
 export interface ProjectSummary {
+  canvasVersion?: string;
   slug: string;
   name: string;
   updatedAt: number;
@@ -194,7 +215,12 @@ export function listProjects(paths: WorkspacePaths): ProjectSummary[] {
       } catch {}
     }
     const organization = readProjectOrganization(dir);
-    out.push({ slug, name, updatedAt, ...organization, durationInFrames, fps });
+    let canvasVersion: string | undefined;
+    try {
+      const member = readCanvasMembership(dir, slug);
+      if (member.clip !== slug) canvasVersion = member.version;
+    } catch { /* Keep a damaged project available for repair. */ }
+    out.push({ slug, name, canvasVersion, updatedAt, ...organization, durationInFrames, fps });
   }
   return out.sort((a, b) => b.updatedAt - a.updatedAt);
 }

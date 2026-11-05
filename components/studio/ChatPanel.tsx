@@ -291,20 +291,22 @@ function AssistantMessage({
         {message.status === "cancelled" ? (
           <MessageFooter className="px-0">Stopped.</MessageFooter>
         ) : null}
-        {message.status === "done" && message.durationMs ? (
-          <MessageFooter className="px-0 text-[10px] font-normal">
-            {author && agents.length > 1 ? `${author} · ` : ""}
-            Worked for {Math.round(message.durationMs / 1000)}s
-            {files.size
-              ? ` · ${files.size} file${files.size > 1 ? "s" : ""} changed`
-              : ""}
+        {((message.status === "done" && message.durationMs != null) || message.usage) && (
+          <MessageFooter className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-md bg-muted px-2 py-1 text-[11px] font-normal">
+            {message.status === "done" && message.durationMs != null && (
+              <span>
+                {author && agents.length > 1 ? `${author} · ` : ""}
+                Worked for {Math.round(message.durationMs / 1000)}s
+                {files.size ? ` · ${files.size} file${files.size > 1 ? "s" : ""} changed` : ""}
+              </span>
+            )}
+            {message.usage && (
+              <span className="whitespace-nowrap font-medium text-foreground tabular-nums" title={`${message.usage.inputTokens.toLocaleString()} input · ${message.usage.outputTokens.toLocaleString()} output · ${message.usage.cachedInputTokens.toLocaleString()} cached input (included)`}>
+                {message.usage.totalTokens.toLocaleString()} tokens
+              </span>
+            )}
           </MessageFooter>
-        ) : null}
-        {message.usage ? (
-          <MessageFooter className="px-0 text-[10px] font-normal" title={`${message.usage.inputTokens.toLocaleString()} input · ${message.usage.outputTokens.toLocaleString()} output · ${message.usage.cachedInputTokens.toLocaleString()} cached input (included)`}>
-            {message.usage.totalTokens.toLocaleString()} tokens
-          </MessageFooter>
-        ) : null}
+        )}
       </MessageContent>
     </Message>
   );
@@ -443,7 +445,7 @@ function ContextHint({
   return (
     <TooltipHint content="Sent with every message, so you can say “here” or “this clip”">
       <span tabIndex={0}
-        className="min-w-0 truncate text-[10px] text-muted-foreground"
+        className="text-xs text-muted-foreground"
       >
         {agentName} sees: playhead {formatFrameTime(frame, fps)}
         {selectionCount
@@ -995,10 +997,6 @@ export function ChatPanel({
     <ChatSlugContext.Provider value={slug}>
       <div className={cn("studio-chat flex h-full min-h-0 flex-col", simple && "studio-chat-simple")}>
         {!simple ? agentControls : null}
-        <div className="shrink-0 border-b border-border/60 px-3 py-1 text-[10px] text-muted-foreground" title="Reported input and output tokens for this project. Includes cached input. Updates when a request ends. Earlier requests without usage data are excluded.">
-          {chat.projectTokens === undefined ? "Project tokens: not reported yet" : `Project tokens: ${chat.projectTokens.toLocaleString()}`}
-        </div>
-
         <div id="studio-conversation" className="chat-history min-h-0 flex-1">
         <MessageScrollerProvider autoScroll>
           <MessageScroller className="min-h-0 flex-1">
@@ -1264,7 +1262,7 @@ export function ChatPanel({
               }
               className="max-h-48 min-h-[4.5rem] text-[13px]"
             />
-            <InputGroupAddon align="block-end" className={cn("chat-action-controls gap-1", simple && "gap-3")}>
+            <InputGroupAddon align="block-end" className={cn("chat-action-controls gap-1", simple ? "gap-3" : "flex-wrap")}>
               {simple ? <SpeakButton speech={speech} className="simple-voice" /> : null}
               <TooltipHint content="Attach files"><InputGroupButton type="button" size="icon-sm" aria-label="Attach files" disabled={disabled || uploading > 0} onClick={() => attachmentInput.current?.click()}><Paperclip /></InputGroupButton></TooltipHint>
               <TooltipHint content={`Attach the current frame so ${agentName} can see what you mean`}>
@@ -1283,11 +1281,6 @@ export function ChatPanel({
                 <TooltipHint content="Record yourself"><InputGroupButton type="button" size="icon-sm" aria-label="Record yourself" onClick={onRecord} disabled={disabled}><Video /></InputGroupButton></TooltipHint>
                 <TooltipHint content="Draw on video"><InputGroupButton type="button" size="icon-sm" aria-label="Draw on video" aria-pressed={drawingOpen} onClick={onDraw} disabled={disabled || !drawingAvailable}><Pencil /></InputGroupButton></TooltipHint>
               </> : <SpeakButton speech={speech} label />}
-              {!simple ? <ContextHint
-                frameStore={frameStore}
-                fps={fps}
-                selectionCount={selectionCount}
-              /> : null}
               {running ? (
                 <TooltipHint content="Stop">
                   <InputGroupButton
@@ -1325,6 +1318,16 @@ export function ChatPanel({
               ) : null}
             </InputGroupAddon>
           </InputGroup>
+          {chat.projectTokens !== undefined && (
+            <div className="px-2 pt-1 text-xs text-muted-foreground">
+              Project tokens: {chat.projectTokens.toLocaleString()}
+            </div>
+          )}
+          {!simple && (
+            <div className="px-2 pt-1">
+              <ContextHint frameStore={frameStore} fps={fps} selectionCount={selectionCount} />
+            </div>
+          )}
           {simple ? <p className="chat-readiness px-1 pt-1 pb-2 text-xs leading-relaxed text-muted-foreground" role="status" aria-live="polite">{readiness}</p> : null}
           {simple ? agentControls : null}
         </div>

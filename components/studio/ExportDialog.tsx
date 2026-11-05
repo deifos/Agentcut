@@ -29,6 +29,7 @@ import type { AssetEntry, LoadedModule, StudioDoc } from "@/lib/studio/types";
 import type { StudioProject } from "@/lib/studio/types";
 import { exportFormats } from "@/lib/studio/video-formats";
 import { exportSize, type ExportResolution } from "@/packages/agentcut/src/studio/export-resolution";
+import { LocalVideoViewer } from "./LocalVideoViewer";
 
 interface Props {
   open: boolean;
@@ -45,6 +46,8 @@ interface Props {
   onSaveProject(project: StudioProject): Promise<void>;
   qualitySupported: boolean;
   resolutionSupported: boolean;
+  fourKSupported: boolean;
+  workspace?: string;
 }
 
 type Mode = "browser" | "local";
@@ -72,6 +75,8 @@ export function ExportDialog({
   onSaveProject,
   qualitySupported,
   resolutionSupported,
+  fourKSupported,
+  workspace,
 }: Props) {
   const variants = Object.keys(doc.project?.variants ?? {});
   const [chosen, setChosen] = useState<string[]>(() => variants);
@@ -87,9 +92,17 @@ export function ExportDialog({
   const formats = doc.project ? exportFormats(doc.project) : [];
   const renders = rendersFrom(assets);
   const files = useRenderFileActions(doc.slug, getBridge);
+  const pathSeparator = workspace?.includes("\\") ? "\\" : "/";
+  const folderPath = workspace ? [workspace.replace(/[\\/]+$/, ""), "projects", doc.slug, "renders"].join(pathSeparator) : null;
+  const copyFolderPath = async () => {
+    if (!folderPath) return;
+    try { await navigator.clipboard.writeText(folderPath); toast.success("Folder path copied. Paste it into Explorer or Finder."); }
+    catch { toast.error(`Copy this folder path: ${folderPath}`, { duration: 15000 }); }
+  };
 
   const selected = chosen.filter((variant) => variants.includes(variant));
-  const localSupported = qualitySupported && (resolution === "project" || resolutionSupported);
+  const localSupported = qualitySupported && (resolution === "project" ||
+    (resolution === "2160p" ? fourKSupported : resolutionSupported));
 
   const toggleFormat = async (format: typeof formats[number]) => {
     if (busy || !doc.project) return;
@@ -295,10 +308,14 @@ export function ExportDialog({
             <Label htmlFor="export-resolution" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Resolution</Label>
             <select id="export-resolution" value={resolution} disabled={busy} onChange={(event) => setResolution(event.target.value as ExportResolution)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
               <option value="project">Project size</option>
+              <option value="2160p">4K (2160p) — sharper text and shapes</option>
               <option value="1080p">1080p — social media</option>
               <option value="720p">720p — smaller file</option>
             </select>
-            <p className="text-xs text-muted-foreground">Changes only the exported copy. Keeps the aspect ratio and frame rate; smaller projects are not enlarged. Dimensions above show the output size.</p>
+            <p className="text-xs text-muted-foreground">Changes only the exported copy. Keeps the layout and frame rate. Dimensions above show the output size.</p>
+            <p className="text-xs text-muted-foreground">{resolution === "2160p"
+              ? "4K redraws text and shapes at higher resolution. Smaller photos and videos are enlarged without new detail. Files are larger and exports take longer. Use Maximum quality for fine detail."
+              : "1080p and 720p do not enlarge smaller projects."}</p>
           </div>
 
           <fieldset disabled={busy} className="space-y-2">
@@ -405,6 +422,12 @@ export function ExportDialog({
           </div>
 
           {!localSupported ? <p className="text-xs text-muted-foreground">Update the helper to use these export settings for computer renders. Browser export is available now.</p> : null}
+
+          <LocalVideoViewer />
+          {folderPath ? <div className="space-y-1">
+            <button type="button" onClick={() => void copyFolderPath()} className="text-xs font-semibold text-muted-foreground underline">Copy renders folder path</button>
+            <p className="break-all text-xs text-muted-foreground">{folderPath}</p>
+          </div> : null}
 
           {renders.length > 0 ? (
             <div className="space-y-1.5">

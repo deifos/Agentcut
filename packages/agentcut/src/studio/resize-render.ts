@@ -33,7 +33,7 @@ export function resizeSource(paths: WorkspacePaths, slug: string, path: string) 
 export async function resizeRender(paths: WorkspacePaths, slug: string, path: string, resolutionValue: unknown, qualityValue: unknown) {
   if (busy) throw new Error("A smaller copy is already being created. Wait for it to finish.");
   const resolution = exportResolution(resolutionValue);
-  if (resolution === "project") throw new Error("Choose 1080p or 720p for the smaller copy.");
+  if (resolution !== "1080p" && resolution !== "720p") throw new Error("Choose 1080p or 720p for the smaller copy.");
   const quality = exportQuality(qualityValue);
   const source = resizeSource(paths, slug, path);
   const originalBytes = statSync(source).size;

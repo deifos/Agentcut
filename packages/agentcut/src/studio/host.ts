@@ -149,7 +149,7 @@ export class StudioHost implements BridgeExtension {
         if (project && getEditorSession()) {
           try { await callEditor("studio_open_project", { project }, { timeoutMs: 15_000 }); return; } catch {}
         }
-        openWebUrl(url);
+        await openWebUrl(url);
       },
     });
     this.phones = new PhoneTransfers({
@@ -438,10 +438,10 @@ export class StudioHost implements BridgeExtension {
       case "studio.render.cancel":
         return { cancelled: cancelLocalRender() };
       case "studio.file.reveal":
-        revealFile(projectFile(this.paths, assertSlug(p.slug), String(p.path ?? "")));
+        await revealFile(projectFile(this.paths, assertSlug(p.slug), String(p.path ?? "")));
         return { ok: true };
       case "studio.file.open":
-        openFile(projectFile(this.paths, assertSlug(p.slug), String(p.path ?? "")));
+        await openFile(projectFile(this.paths, assertSlug(p.slug), String(p.path ?? "")));
         return { ok: true };
       // Style Spy: the helper downloads the reference and samples its frames.
       case "studio.reference.import":
@@ -887,7 +887,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "resize-render"],
+      features: ["project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
     };
   }
 

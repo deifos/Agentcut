@@ -61,4 +61,5 @@ test("resizing a real render preserves its bytes, makes a smaller video, and nev
   assert.notEqual(again.path, copy.path);
   assert.equal(readdirSync(join(paths.internal, "resize")).length, 0);
   await assert.rejects(resizeRender(paths, "demo", "renders/original.mp4", "project", "high"), /1080p or 720p/);
+  await assert.rejects(resizeRender(paths, "demo", "renders/original.mp4", "2160p", "high"), /1080p or 720p/);
 });

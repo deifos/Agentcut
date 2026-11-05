@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import { LocalVideoViewer } from "./LocalVideoViewer";
 import type { StudioBridgeStatus } from "@/lib/studio/bridge";
 import { REPO_URL, STUDIO_ADD_DIR_EXAMPLE, STUDIO_COMMAND } from "@/lib/studio/commands";
 
@@ -131,6 +132,8 @@ export function ConnectScreen({
             and one small helper running.
           </p>
         </div>
+
+        <LocalVideoViewer />
 
         {status === "taken" ? (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">

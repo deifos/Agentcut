@@ -30,6 +30,20 @@ test("resolution never upscales small projects and rounds custom output dimensio
   for (const bad of [0, NaN, Infinity, -1, 1.5]) assert.throws(() => exportSize({ width: bad, height: 1080 }, "1080p"));
 });
 
+test("explicit 4K redraws 1080p layouts at double size and bounds custom formats", () => {
+  const landscape = { width: 1920, height: 1080 };
+  assert.equal(exportResolution("2160p"), "2160p");
+  assert.deepEqual(exportSize(landscape, "2160p"), { width: 3840, height: 2160, scale: 2 });
+  assert.deepEqual(exportSize({ width: 1080, height: 1920 }, "2160p"), { width: 2160, height: 3840, scale: 2 });
+  assert.deepEqual(exportSize({ width: 7680, height: 4320 }, "2160p"), { width: 3840, height: 2160, scale: 0.5 });
+  assert.deepEqual(exportSize({ width: 1080, height: 1080 }, "2160p"), { width: 2160, height: 2160, scale: 2 });
+  assert.deepEqual(exportSize({ width: 2000, height: 1000 }, "2160p"), { width: 3840, height: 1920, scale: 1.92 });
+  assert.deepEqual(exportSize({ width: 1001, height: 700 }, "2160p"), { width: 3086, height: 2160, scale: 2160 / 700 });
+  assert.ok(exportSize({ width: 64, height: 36 }, "2160p").scale <= 16);
+  assert.deepEqual(exportSize(landscape), { ...landscape, scale: 1 });
+  assert.deepEqual(landscape, { width: 1920, height: 1080 });
+});
+
 test("export offers missing formats without replacing a 4K mobile variant", () => {
   const project = { variants: { mobile: { width: 2160, height: 3840 }, wide: { width: 1920, height: 1080 } } };
   const formats = exportFormats(project);
@@ -60,6 +74,7 @@ test("automatic renders default to high quality, maximum retains more detail, in
   assert.ok(Number(high[0].split("=")[1]) > Number(maximum[0].split("=")[1]));
   for (const args of [high, maximum]) {
     assert.ok(args.includes("--x264-preset=slow"));
+    assert.ok(args.includes("--image-format=png"), "capture text and flat colors without a lossy JPEG intermediate");
     assert.ok(args.every((arg) => !/scale|fps|width|height|bitrate/.test(arg)));
   }
   for (const bad of [null, "low", "--crf=51", 20]) assert.throws(() => exportQuality(bad), /Unknown export quality/);

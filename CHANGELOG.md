@@ -15,11 +15,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Watch local videos without the helper: choose a video or folder on the connection screen or in Export. Files are played directly in the browser and are not uploaded. Export also shows a copyable renders folder path after connecting.
+
+- Export offers 4K (2160p) for sharper text and shapes without changing the project layout. The output dimensions are shown before export. Smaller source images and footage are enlarged without new detail. Computer 4K export requires an updated helper.
+
 - The project picker groups projects by date and keeps name/date search visible above the scrolling list. All projects are available. Projects can be created inside a date group or moved with drag and drop or a date picker, without changing their files or agent sessions.
 
 - Chat shows reported token use for each request and a saved project total, including cached input. Totals update when a request ends and remain after starting a new conversation.
 
+### Changed
+
+- Maximum quality computer exports use less H.264 compression to retain fine detail, with larger output files.
+
 ### Fixed
+
+- Open folder and Show in folder launch visible Explorer windows on Windows. The helper now reports launcher errors instead of silently discarding them.
+
+- Computer exports capture lossless PNG frames before H.264 encoding. This removes the extra JPEG compression that caused marks around text and flat colours, including at Maximum quality. Frame capture can take longer.
 
 - Clearing a running conversation keeps its token total correct and prevents late results from restoring cleared messages.
 

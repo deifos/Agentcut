@@ -1269,6 +1269,8 @@ export function StudioApp() {
             getBridge={studio.getBridge}
             qualitySupported={Boolean(info?.features?.includes("export-quality"))}
             resolutionSupported={Boolean(info?.features?.includes("export-resolution"))}
+            fourKSupported={Boolean(info?.features?.includes("export-4k"))}
+            workspace={info?.workspace}
             onSaveProject={async (project) => {
               const bridge = studio.getBridge();
               if (!bridge) throw new Error("The studio helper is not connected.");

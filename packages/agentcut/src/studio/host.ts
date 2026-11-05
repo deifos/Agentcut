@@ -10,6 +10,7 @@ import { debugLog } from "../log.js";
 import { buildProjectBundle, buildRenderEntrySource, type BundleState } from "./bundler.js";
 import { detectAgents, getAgent, type AgentInfo } from "./agents/index.js";
 import { ChatEngine } from "./chat.js";
+import { VideoCreation } from "./video-creation.js";
 import { handleStudioHttp } from "./http.js";
 import { ProxyStore } from "./proxies.js";
 import { forgetProject, sweepWorkspace } from "./housekeeping.js";
@@ -99,6 +100,7 @@ export class StudioHost implements BridgeExtension {
   private agents: Promise<AgentInfo[]> | null = null;
   private pageSession: PageSession | null = null;
   readonly chat: ChatEngine;
+  readonly videoCreation: VideoCreation;
   readonly references: ReferenceImports;
   readonly transcription: TranscriptionService;
   readonly releases: ReleaseVideos;
@@ -108,6 +110,7 @@ export class StudioHost implements BridgeExtension {
   constructor(options: StudioHostOptions) {
     this.options = options;
     this.paths = options.paths;
+    this.videoCreation = new VideoCreation(this.paths);
     this.transcription = new TranscriptionService(this.paths, (method, params) => callEditor(method, params, { timeoutMs: 20 * 60_000 }), event => this.emit("studio.transcription", event));
     this.chat = new ChatEngine({
       paths: this.paths,
@@ -409,6 +412,8 @@ export class StudioHost implements BridgeExtension {
       }
       case "studio.projects.delete":
         return this.deleteProject(assertSlug(p.slug));
+      case "studio.project.snapshot":
+        return this.openProject(assertSlug(p.slug), true);
       case "studio.project.open":
         return this.openProject(assertSlug(p.slug));
       case "studio.session":
@@ -432,6 +437,13 @@ export class StudioHost implements BridgeExtension {
         };
       case "studio.chat.send":
         return this.chat.send(assertSlug(p.slug), String(p.text ?? ""), asRecord(p.context), p.agent, p.model, p.effort);
+      case "studio.chat.send_video":
+        return this.videoCreation.send(assertSlug(p.slug), String(p.text ?? ""), asRecord(p.context), p.newVideo,
+          (slug, text, context) => this.chat.send(slug, text, context, p.agent, p.model, p.effort)).then(result => {
+            if (result.slug !== p.slug) this.emit("studio.canvas.created", { project: p.slug, slug: result.slug });
+            this.emit("studio.projects", { projects: listProjects(this.paths) });
+            return result;
+          });
       case "studio.chat.cancel":
         return this.chat.cancel(assertSlug(p.slug));
       case "studio.chat.queue.edit":
@@ -445,7 +457,7 @@ export class StudioHost implements BridgeExtension {
       case "studio.chat.history":
         return this.chat.history(assertSlug(p.slug));
       case "studio.render.cancel":
-        return { cancelled: cancelLocalRender() };
+        return { cancelled: typeof p.slug === "string" && localRenderSlug() !== p.slug ? false : cancelLocalRender() };
       case "studio.file.reveal":
         await revealFile(projectFile(this.paths, assertSlug(p.slug), String(p.path ?? "")));
         return { ok: true };
@@ -551,7 +563,7 @@ export class StudioHost implements BridgeExtension {
           const options = voiceOptions();
           if (typeof p.provider === "string") {
             const voices = await listVoices(p.provider);
-            return { ...options, voices, [`${p.provider}Voices`]: voices.map((v) => ({ id: v.id, name: v.name, description: v.description })) };
+            return { ...options, voices, [`${p.provider}Voices`]: voices.map((v) => ({ ...v })) };
           }
           return options;
         })();
@@ -791,9 +803,11 @@ export class StudioHost implements BridgeExtension {
     };
   }
 
-  private async openProject(slug: string) {
+  private async openProject(slug: string, snapshot = false) {
     this.watchProject(slug);
-    const bundle = await this.rebuild(slug);
+    const bundle = snapshot
+      ? await (this.building.get(slug) ?? this.bundles.get(slug) ?? this.rebuild(slug))
+      : await this.rebuild(slug);
     const state = readProjectState(this.paths, slug);
     return {
       slug,
@@ -900,15 +914,23 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["clip-canvas", "project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
+      features: ["chat-video-creation", "clip-canvas", "project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
     };
   }
 
   private async renderLocal(slug: string, variant: string, params: Record<string, unknown>) {
+    const chat = this.chat.history(slug);
+    if (("expectedProjectHash" in params || "expectedLayersHash" in params) && (chat.running || chat.messages.some(message => message.status === "queued"))) throw new StudioError("Wait for this video's edit to finish before exporting it.", "busy");
     if (resizeRunning()) throw new StudioError("Wait for the smaller copy to finish before starting a render.", "busy");
     const quality = exportQuality(params.quality);
     const resolution = exportResolution(params.resolution);
+    if (typeof params.expectedBundleRevision === "number") {
+      await this.building.get(slug);
+      if (this.bundles.get(slug)?.revision !== params.expectedBundleRevision) throw new StudioError("The video code changed while preparing export. Review it before exporting.", "conflict");
+    }
     const state = readProjectState(this.paths, slug);
+    if ((typeof params.expectedProjectHash === "string" && params.expectedProjectHash !== state.projectHash)
+      || (typeof params.expectedLayersHash === "string" && params.expectedLayersHash !== state.layersHash)) throw new StudioError("The video changed while preparing export. Review it before exporting.", "conflict");
     if (!state.project) throw new StudioError("project.json is invalid; fix it before rendering.");
     const chosen = variant || state.project.defaultVariant;
     if (!state.project.variants[chosen]) throw new StudioError(`Unknown variant "${chosen}".`);

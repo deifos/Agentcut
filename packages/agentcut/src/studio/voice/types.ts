@@ -3,8 +3,13 @@ export interface VoiceInfo {
   name: string;
   description?: string;
   previewUrl?: string;
+  language?: string;
+  accent?: string;
+  gender?: string;
+  suggestedUses?: string[];
 }
 export interface ProviderSpec {
+  local?: boolean;
   id: string;
   name: string;
   keyUrl: string;
@@ -17,6 +22,9 @@ export interface ProviderSpec {
 }
 export interface GenerateVoiceInput {
   provider?: string;
+  purpose?: "tutorial" | "walkthrough" | "demo" | "launch" | "sales";
+  gender?: "female" | "male";
+  accent?: "American" | "British";
   model?: string;
   voice?: string;
   text: string;

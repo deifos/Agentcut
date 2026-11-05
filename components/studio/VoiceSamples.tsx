@@ -9,9 +9,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { KOKORO_VOICES } from "@/packages/agentcut/src/studio/voice/kokoro-catalog";
 import manifest from "@/lib/studio/voice-samples.json";
 
-type ProviderId = "elevenlabs" | "gemini" | "openai" | "xai";
+type ProviderId = "kokoro" | "elevenlabs" | "gemini" | "openai" | "xai";
 
 interface SampleVoice {
   id: string;
@@ -21,6 +22,7 @@ interface SampleVoice {
 }
 
 const PROVIDER_NAMES: Record<ProviderId, string> = {
+  kokoro: "Kokoro (local)",
   elevenlabs: "ElevenLabs",
   gemini: "Gemini",
   openai: "OpenAI",
@@ -32,6 +34,7 @@ export const VOICE_PRICING: Record<
   ProviderId,
   { summary: string; detail: string; url: string }
 > = {
+  kokoro: { summary: "Free, local", detail: "No API key. English only. Model downloads on first generation; these samples are included.", url: "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX" },
   elevenlabs: {
     summary: "≈ $0.08 / min",
     detail:
@@ -82,9 +85,10 @@ export function PriceNote({
   );
 }
 
-const samples = (
-  manifest as { providers: Partial<Record<ProviderId, SampleVoice[]>> }
-).providers;
+const samples: Partial<Record<ProviderId, SampleVoice[]>> = {
+  ...(manifest as { providers: Partial<Record<ProviderId, SampleVoice[]>> }).providers,
+  kokoro: KOKORO_VOICES.map(voice => ({ ...voice, url: voice.previewUrl, description: [voice.description, ...voice.suggestedUses].join(" · ") })),
+};
 
 export function sampleFor(provider: string, voice: string): SampleVoice | null {
   return samples[provider as ProviderId]?.find((v) => v.id === voice) ?? null;

@@ -26,6 +26,9 @@ export class PageWorkGate {
   }
 }
 
+/** Shared by agent tools and manual exports so expensive page work cannot overlap. */
+export const studioPageWork = new PageWorkGate();
+
 export const HEAVY_PAGE_TOOLS = new Set([
   "studio_capture_frames",
   "studio_contact_sheet",

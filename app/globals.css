@@ -520,6 +520,24 @@ html {
 
 /* ---- Theme ---- */
 
+/* React Flow controls follow Studio tokens immediately when the app theme changes. */
+.studio-clip-flow.react-flow {
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--accent);
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-color-hover: var(--accent-foreground);
+  --xy-controls-button-border-color: var(--border);
+  --xy-attribution-background-color: var(--card);
+}
+.studio-clip-flow .react-flow__attribution a {
+  color: var(--muted-foreground);
+}
+.studio-clip-flow .react-flow__attribution a:hover,
+.studio-clip-flow .react-flow__attribution a:focus-visible {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -1115,4 +1133,10 @@ html {
 }
 .studio-app *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Short upper panes keep style actions compact and inside their own scroll area. */
+@container style-rail (max-height: 300px) {
+  .studio-style-rail button { min-height: 32px; padding-block: 6px; }
+  .studio-style-rail button > span { display: none; }
 }

@@ -1,3 +1,4 @@
+import { selectKokoroVoice } from "./voice/kokoro.js";
 // Voice-over generation for Agentcut, with the user's own API keys.
 //
 // Keys live in a file in the user's home folder (outside the workspace, so Claude's file
@@ -45,22 +46,11 @@ export function keyFor(id: VoiceProviderId): string | null {
 }
 
 /** Env vars that hold provider keys: removed from Claude's environment. */
-export const VOICE_KEY_ENV_VARS = VOICE_PROVIDERS.map((p) => p.envVar);
+export const VOICE_KEY_ENV_VARS = VOICE_PROVIDERS.map((p) => p.envVar).filter(Boolean);
 
 export function voiceSettings() {
-  const providers = VOICE_PROVIDERS.map((p) => ({
-    ...p,
-    ...store.status(p.id),
-  }));
-  const configured = providers.filter((p) => p.configured).map((p) => p.id);
-  const preferred = store.preferred();
-  return {
-    providers,
-    defaultProvider:
-      preferred && configured.includes(preferred)
-        ? preferred
-        : (configured[0] ?? null),
-  };
+  const providers = VOICE_PROVIDERS.map(p => ({ ...p, ...(p.local ? { configured: true, source: null } : store.status(p.id)) }));
+  return { providers, defaultProvider: "kokoro" };
 }
 
 // ---------------------------------------------------------------------------
@@ -155,12 +145,12 @@ export async function generateVoice(
   }
   const provider = spec(providerId);
   const key = keyFor(provider.id);
-  if (!key)
+  if (!key && !provider.local)
     throw new Error(
       `No ${provider.name} key yet. Ask the user to add one under Voice-over in the studio header.`,
     );
   const model = input.model?.trim() || provider.defaultModel;
-  const voice = input.voice?.trim() || provider.defaultVoice;
+  const voice = provider.id === "kokoro" ? selectKokoroVoice(input) : input.voice?.trim() || provider.defaultVoice;
   const takes = Math.max(1, Math.min(4, Math.round(input.takes ?? 1)));
   const base =
     slugName(
@@ -174,7 +164,7 @@ export async function generateVoice(
     Array.from({ length: takes }, async (_, index) => {
       try {
         const audio = await getVoiceAdapter(provider.id).synthesize(
-          key,
+          key ?? "",
           { ...input, text },
           model,
           voice,
@@ -218,6 +208,7 @@ export function voiceOptions() {
       id: p.id,
       name: p.name,
       configured: p.configured,
+      local: Boolean(p.local),
       defaultModel: p.defaultModel,
       models: p.models.map((m) => m.id),
       defaultVoice: p.defaultVoice || undefined,
@@ -228,9 +219,8 @@ export function voiceOptions() {
         ) ??
         "Call agentcut_voice_options with this provider to list account voices.",
     })),
-    note: settings.defaultProvider
-      ? "Use the user's default provider unless they name another. Never ask for or mention API keys; the helper adds them."
-      : "No provider is set up yet: ask the user to open Voice-over in the studio header and add a key.",
+    localVoices: getVoiceAdapter("kokoro").voices,
+    note: "Use local Kokoro for generic voice-over requests, even when paid keys exist. Use a paid provider only when the user explicitly requests or selects it. Honor explicit voice, language, accent and gender preferences; do not silently substitute. Kokoro is English only. Its suggested uses are ScreenSlick editorial defaults, not measured tone. For unknown tone, audition a sample. Local failures never call a paid provider.",
   };
 }
 

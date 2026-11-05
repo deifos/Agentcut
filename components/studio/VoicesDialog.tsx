@@ -29,9 +29,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -59,6 +57,7 @@ interface ProviderState {
   defaultModel: string;
   defaultVoice: string;
   styleNote: string;
+  local?: boolean;
 }
 
 interface VoiceSettings {
@@ -99,7 +98,6 @@ export function VoicesDialog({
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState<ProviderId>("elevenlabs");
   const [key, setKey] = useState("");
-  const [makeDefault, setMakeDefault] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const request = useCallback(
@@ -123,9 +121,7 @@ export function VoicesDialog({
         if (!alive) return;
         setSettings(value);
         setError(null);
-        // Only the first key becomes the default automatically; later ones ask.
-        setMakeDefault(!value.defaultProvider);
-        const firstMissing = value.providers.find((p) => !p.configured);
+        const firstMissing = value.providers.find((p) => !p.local && !p.configured);
         if (firstMissing) setAdding(firstMissing.id);
       })
       .catch((e: unknown) => {
@@ -151,12 +147,11 @@ export function VoicesDialog({
     try {
       const next = await request<VoiceSettings>(
         "studio.voice.saveKey",
-        { provider: provider.id, key: key.trim(), makeDefault },
+        { provider: provider.id, key: key.trim(), makeDefault: false },
         45_000,
       );
       setSettings(next);
       setKey("");
-      setMakeDefault(false);
       toast.success(
         `${provider.name} is connected. Ask ${agentName} for a voice-over any time.`,
       );
@@ -179,17 +174,6 @@ export function VoicesDialog({
     }
   };
 
-  const setDefault = async (id: ProviderId) => {
-    try {
-      setSettings(
-        await request<VoiceSettings>("studio.voice.setDefault", {
-          provider: id,
-        }),
-      );
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -199,11 +183,7 @@ export function VoicesDialog({
             <Mic className="size-4" /> Voice-over &amp; music
           </DialogTitle>
           <DialogDescription>
-            Connect your own voice provider. Then just ask {agentName}: “make a
-            voiceover with Puck” or “read the script in an upbeat voice”. A
-            Gemini key also lets {agentName} write original songs with Google
-            Lyria (“make an upbeat song for this video”). Without one,{" "}
-            {agentName} composes music in code.
+            Kokoro is free and runs on this computer. It is the default for voice-over requests. Paid providers are used only when you select or request them. Listen to a sample, then select a voice below.
           </DialogDescription>
         </DialogHeader>
 
@@ -224,7 +204,7 @@ export function VoicesDialog({
             <div className="space-y-5">
               <section className="space-y-2">
                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Add a provider
+                  Add a paid provider (optional)
                 </h3>
                 <div className="flex gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs">
                   <ShieldCheck className="mt-px size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -250,7 +230,7 @@ export function VoicesDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {settings.providers.map((p) => (
+                      {settings.providers.filter(p => !p.local).map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}
                           {p.configured ? (
@@ -302,15 +282,7 @@ export function VoicesDialog({
                       <ExternalLink className="size-3" />
                     </a>
                     <span>{provider.keyHint}</span>
-                    <Label className="ml-auto gap-1.5 text-[11px] font-normal text-muted-foreground">
-                      <Checkbox
-                        checked={makeDefault}
-                        onCheckedChange={(value) =>
-                          setMakeDefault(value === true)
-                        }
-                      />{" "}
-                      Use as default
-                    </Label>
+
                   </div>
                 ) : null}
                 </section>
@@ -341,22 +313,14 @@ export function VoicesDialog({
                           <span className="text-[11px] text-muted-foreground">
                             {p.source === "environment"
                               ? "from an environment variable"
-                              : "key saved"}
+                              : p.local ? "no key needed" : "key saved"}
                           </span>
                           {isDefault ? (
                             <Badge variant="secondary" className="ml-auto">
                               Default
                             </Badge>
                           ) : (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="xs"
-                              onClick={() => void setDefault(p.id)}
-                              className="ml-auto text-muted-foreground"
-                            >
-                              Make default
-                            </Button>
+                            <Badge variant="outline" className="ml-auto">Only when selected</Badge>
                           )}
                           {p.source === "saved" ? (
                             <TooltipHint content="Remove key">
@@ -398,8 +362,7 @@ export function VoicesDialog({
               ) : null}
 
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Generating a voice-over uses your provider account (billed by
-                them). Listening to the samples is free.
+                Kokoro has no generation fee. First use downloads about 93 MB plus small support files. Paid provider generation uses your provider account. Listening to samples is free.
               </p>
             </div>
           ) : null}
@@ -473,10 +436,10 @@ function TryVoice({
           model,
           voice,
           text,
-          style: style || undefined,
+          style: provider.id === "kokoro" ? undefined : style || undefined,
           name: `sample-${voice || provider.id}`,
         },
-        180_000,
+        600_000,
       );
       const take = out.takes.find(
         (t): t is { path: string; seconds: number | null } => "path" in t,

@@ -18,6 +18,21 @@ You watch the live preview, scrub the timeline, tweak any layer by hand, and exp
 - **Grade colour**: correct individual shots, match footage, apply looks and LUTs, and check colour scopes.
 - **Reuse your style**: save editing rules from a project and apply them to new footage.
 
+## Video types in chat
+
+Choose **Product Launch** to introduce a product, or **How-to** to teach a task. You can also type
+the request. Add a brief, URL or files in chat, or drop footage and images into the project Library.
+The actions keep your attachments, selected style and music and use the normal chat send path.
+
+On an empty project, a bare request shows a short question in the studio without an agent call or
+model-token use. Add the product description or task and press Send once. With existing project
+material, the agent inspects it first. A project name or unrelated shared stock is not a brief.
+The agent chooses duration and camera moves from your request and material; no slider is needed.
+
+See [video workflow notes](docs/video-workflows.md) for the approved launch example, review checks
+and the process for improving these guides. How-to uses the normal studio workflow; it is separate
+from the limited release-announcement capture prototype below.
+
 ## Preview and timeline
 
 Drag the timeline playhead or the playback slider to find a frame. The playhead follows the pointer
@@ -271,3 +286,7 @@ If you host the page on another origin, start the helper with `--origin https://
 
 MIT. The landing page background uses [Gradient ASCII](https://reactbits.dev/backgrounds/gradient-ascii)
 from React Bits by David Haz (MIT + Commons Clause), see `components/site/GradientASCII.tsx`.
+
+### Free local voice-over
+
+Voice-over uses free local Kokoro by default, even when paid keys are saved. The Voices dialog includes 28 English voice samples. First generation downloads about 93 MB plus support files; later generations reuse the local cache. Paid providers run only when you select or request one. See [local voice setup and limits](docs/local-voice.md).

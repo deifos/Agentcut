@@ -11,6 +11,7 @@ type ScrollAreaProps = React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
   /** Which scrollbars to show (default vertical). */
   scrollbars?: "vertical" | "horizontal" | "both";
   viewportClassName?: string;
+  viewportProps?: Omit<React.ComponentProps<typeof ScrollAreaPrimitive.Viewport>, "children" | "ref" | "className" | "onScroll">;
 };
 
 function ScrollArea({
@@ -20,6 +21,7 @@ function ScrollArea({
   viewportRef,
   scrollbars = "vertical",
   viewportClassName,
+  viewportProps,
   ...props
 }: ScrollAreaProps) {
   return (
@@ -29,6 +31,7 @@ function ScrollArea({
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
+        {...viewportProps}
         ref={viewportRef}
         data-slot="scroll-area-viewport"
         className={cn("h-full w-full rounded-[inherit]", viewportClassName)}

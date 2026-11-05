@@ -743,11 +743,17 @@ export function useStudioController() {
         effort?: string;
         /** The pencil's strokes, described (helpers with the "drawing" feature). */
         drawing?: string;
+        newVideo?: { type: "product-launch" | "how-to"; requestId: string };
+        sourceSlug?: string;
       } = {},
     ) => {
       const bridge = bridgeRef.current;
       const current = latest.current.doc;
-      if (!bridge || !current) return;
+      if (!bridge || !current) {
+        if (extra.newVideo) throw new Error("Connect the helper and open the intended video before submitting.");
+        return;
+      }
+      if (extra.newVideo && extra.sourceSlug && current.slug !== extra.sourceSlug) throw new Error("The video changed before submission. Return to the intended video and try again.");
       const context = {
         variant: latest.current.variant,
         playheadFrame: frameStore.get(),
@@ -759,20 +765,22 @@ export function useStudioController() {
       };
       await flushWrite();
       try {
-        await bridge.request("studio.chat.send", {
+        const result = await bridge.request<{ slug?: string }>(extra.newVideo ? "studio.chat.send_video" : "studio.chat.send", {
           slug: current.slug,
           text,
           agent: extra.agent,
           ...(extra.model ? { model: extra.model } : {}),
           ...(extra.effort ? { effort: extra.effort } : {}),
           context,
-        });
+          ...(extra.newVideo ? { newVideo: extra.newVideo } : {}),
+        }, extra.newVideo ? 600_000 : undefined);
+        if (extra.newVideo && result?.slug && result.slug !== current.slug && latest.current.doc?.slug === current.slug) await openProject(result.slug);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : String(error));
         throw error;
       }
     },
-    [flushWrite, frameStore],
+    [flushWrite, frameStore, openProject],
   );
 
   const queueAction = useCallback(

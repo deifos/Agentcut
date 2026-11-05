@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Empty,
   EmptyHeader,
@@ -231,8 +232,9 @@ export function ProjectPicker({
             </div>
           </form>
         ) : null}
-        <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1"
+        <ScrollArea
+          className="flex min-h-0 flex-col [&_[data-slot=scroll-area-scrollbar]]:hidden"
+          viewportClassName="min-h-0 overscroll-contain p-1 [&>div]:!block"
           aria-label="Projects by date"
         >
           {!groups.length ? (
@@ -324,9 +326,13 @@ export function ProjectPicker({
                     <FilePlus2 />
                   </Button>
                 </div>
-                <div id={`${id}-${group.date}`} hidden={!isExpanded}>
+                <div
+                  id={`${id}-${group.date}`}
+                  hidden={!isExpanded}
+                  className="my-1 ml-4 border-l border-border pl-3"
+                >
                   {!group.projects.length ? (
-                    <p className="px-8 pb-3 text-xs text-muted-foreground">
+                    <p className="px-3 py-2 text-xs text-muted-foreground">
                       No projects yet. Create one here or drop a project onto
                       this date.
                     </p>
@@ -353,7 +359,7 @@ export function ProjectPicker({
                     >
                       <button
                         type="button"
-                        className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-md py-2 pl-7 pr-1 text-left text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                        className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-md py-2 pl-3 pr-1 text-left text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
                         aria-current={
                           project.slug === currentSlug ? "true" : undefined
                         }
@@ -417,7 +423,7 @@ export function ProjectPicker({
               </section>
             );
           })}
-        </div>
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );

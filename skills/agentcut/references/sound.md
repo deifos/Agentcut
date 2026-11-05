@@ -71,16 +71,20 @@ masters the rendered audio to −14 LUFS with a true-peak limiter (≤ −1 dBTP
 what it did (`mastering`: rendered loudness, gain, limiter reduction). Large limiter reduction (> 3 dB)
 means a few sounds are far louder than the rest: turn those clips down instead of relying on the limiter.
 
+## Local voice default
+
+Generic voice-over requests use **Kokoro**, even if paid keys are configured. Use paid generation only when the user explicitly requests or selects a paid provider. Preserve explicit provider, voice, language, gender and accent choices. Use `agentcut_voice_options` with provider `kokoro`: its 28 English voices share verified IDs with the human preview samples. `localVoices` includes authored female/male labels, language/accent and preview URLs. `suggestedUses` comes from ScreenSlick's director playbook: Heart for tutorials, Emma for walkthroughs, Bella for demos, Puck for launches and Michael for sales. These are editorial defaults, not measured tone. Do not invent calm/energetic labels. Audition or measure a sample when tone matters; honor constraints before these defaults.
+
+The first local generation downloads about 93 MB plus support files. Later calls reuse the model cache. This runtime supports English only, speed 0.5–2, and no style instructions. For setup/offline/language errors, state the error and offer a retry, an English script, or an explicit provider choice. Never silently call paid. WAV output uses the same media-info, transcription, Voice track and word-timed caption workflow below.
+
 ## Voice-overs
 
-The user connects their own voice provider under **Voices** in the studio header (ElevenLabs, Google
-Gemini, OpenAI or Grok/xAI). You never see, ask for or mention API keys: the helper adds them.
+Kokoro is available without credentials. Optional paid providers are ElevenLabs, Gemini, OpenAI and Grok/xAI. The helper adds their keys only for explicitly selected paid generation.
 
 1. `agentcut_voice_options`: which providers are set up, the default, models and voices. For
-   ElevenLabs pass `provider: "elevenlabs"` to get the account's voice ids. If nothing is set up, ask the user
-   to open **Voices** and add a key, and stop there.
+   ElevenLabs pass `provider: "elevenlabs"` to get the account's voice ids. Local Kokoro requires no key.
 2. Write the script in `notes.md` first (one line per beat). Keep the spoken text clean: no stage directions.
-3. `agentcut_generate_voice` with the user's provider/model/voice (or the default). Generate 2 takes
+3. `agentcut_generate_voice` with Kokoro unless the user explicitly selected a paid provider. Honor their voice/model choice. Generate 2 takes
    for anything that matters. Delivery notes:
    - Gemini, OpenAI: `style` ("confident tech launch announcer, upbeat, quick pace, smile on the call to
      action"; pronunciations like "say V2 as 'vee two'"). Gemini voices: Puck (upbeat), Kore (firm),

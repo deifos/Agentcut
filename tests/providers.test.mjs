@@ -47,12 +47,13 @@ test("Local Whisper preserves the existing word result and rejects unsupported c
   await assert.rejects(localWhisper.run({ path: "x", speakerLabels: true }, context), /speaker labels/);
 });
 
-test("voice-over adapters retain all four providers and their request formats", async () => {
-  assert.deepEqual(Object.keys(VOICE_ADAPTERS), ["elevenlabs", "gemini", "openai", "xai"]);
+test("voice-over adapters retain all four paid providers and their request formats", async () => {
+  const paid = Object.values(VOICE_ADAPTERS).filter(adapter => !adapter.spec.local);
+  assert.deepEqual(paid.map(adapter => adapter.spec.id), ["elevenlabs", "gemini", "openai", "xai"]);
   const original = globalThis.fetch; const requests = [];
   globalThis.fetch = async (url, init) => { requests.push({ url, ...init }); if (url.includes("generativelanguage")) return Response.json({ candidates: [{ content: { parts: [{ inlineData: { data: Buffer.from("RIFFaudio").toString("base64") } }] } }] }); return new Response("RIFFaudio"); };
   try {
-    for (const adapter of Object.values(VOICE_ADAPTERS)) { const audio = await adapter.synthesize("test-key", { text: "Hello", style: "calm", speed: 1.1 }, adapter.spec.defaultModel, adapter.spec.defaultVoice || "test-voice"); assert.ok(audio.data.length); }
+    for (const adapter of paid) { const audio = await adapter.synthesize("test-key", { text: "Hello", style: "calm", speed: 1.1 }, adapter.spec.defaultModel, adapter.spec.defaultVoice || "test-voice"); assert.ok(audio.data.length); }
     assert.equal(JSON.parse(requests[0].body).text, "Hello");
     assert.equal(JSON.parse(requests[1].body).generationConfig.responseModalities[0], "AUDIO");
     assert.equal(JSON.parse(requests[2].body).input, "Hello"); assert.equal(JSON.parse(requests[3].body).voice_id, "eve");

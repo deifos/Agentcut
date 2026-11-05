@@ -96,10 +96,17 @@ export function registerAgentGuides(server: McpServer) {
     "agentcut_guide",
     {
       description:
-        "Read Agentcut's actual packaged skill and supporting guides through MCP. No file-system access or editor needed. Omit path for the guide index; use SKILL.md first, then references/sound.md, format.md, cinematic.md, components.md, presets.md and other relevant guides.",
-      inputSchema: { path: z.string().optional() },
+        "Read Agentcut's packaged skill and supporting guides through MCP. No file-system access or editor needed. Omit path/paths for the guide index; use path for one guide or paths for up to six known independent guides (96,000 characters total). Read SKILL.md first, then only relevant supporting guides.",
+      inputSchema: { path: z.string().optional(), paths: z.array(z.string()).min(1).max(6).optional() },
     },
-    async ({ path }) => ({
+    async ({ path, paths }) => {
+      if (path && paths) throw new Error("Use path for one guide or paths for a batch, not both.");
+      if (paths) {
+        const batch = paths.map(path => ({ path, content: readGuide(path) }));
+        if (batch.reduce((sum, file) => sum + file.content.length, 0) > 96_000) throw new Error("Guide batch exceeds 96,000 characters. Request fewer relevant guides.");
+        return { content: [{ type: "text" as const, text: JSON.stringify({ guides: batch }) }] };
+      }
+      return ({
       content: [
         {
           type: "text",
@@ -108,7 +115,8 @@ export function registerAgentGuides(server: McpServer) {
             : JSON.stringify({ guides: guides(), first: "SKILL.md" }),
         },
       ],
-    }),
+      });
+    },
   );
   for (const path of guides()) {
     const uri = `agentcut://guide/${path}`;

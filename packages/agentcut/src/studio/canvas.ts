@@ -32,6 +32,7 @@ export const cutInput = z.object({
   project: z.string(),
   name: z.string().trim().min(1).max(120),
   kind: z.enum(["clip", "version"]),
+  reuseAssets: z.boolean().default(false),
   segments: z
     .array(
       z
@@ -198,7 +199,7 @@ async function shareMedia(
 }
 
 export async function createCut(paths: WorkspacePaths, input: unknown) {
-  const { project, name, kind, segments } = cutInput.parse(input);
+  const { project, name, kind, segments, reuseAssets } = cutInput.parse(input);
   const slug = assertSlug(project);
   const state = readProjectState(paths, slug);
   if (!state.project || !state.layers)
@@ -268,6 +269,12 @@ export async function createCut(paths: WorkspacePaths, input: unknown) {
       for (const asset of listAssets(paths, slug))
         origins[asset.path] ??= slug + "/" + asset.path;
     }
+    if (!version && reuseAssets) {
+      await copyTree(safeJoin(state.dir, "assets"), join(stage, "assets"));
+      for (const asset of listAssets(paths, slug)) {
+        if (asset.path.startsWith("assets/")) origins[asset.path] = base.origins[asset.path] ?? slug + "/" + asset.path;
+      }
+    }
     const metadata = {
       ...state.project,
       name: version ? state.project.name : name,
@@ -275,7 +282,7 @@ export async function createCut(paths: WorkspacePaths, input: unknown) {
         ? state.project.durationInFrames
         : frames || state.project.fps * 15,
     };
-    if (!version) {
+    if (!version && !reuseAssets) {
       const localFiles = metadata.fonts.flatMap((font) =>
         typeof font === "string" ? [] : [font.src],
       );

@@ -13,6 +13,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.24] - 2026-11-05
+
+### Added
+
+- Product Launch in studio chat starts a launch video with your message and attachments. Written launch requests use the same guide for real proof, brand assets, camera work and sound.
+
+- Export selects named canvas videos separately from output formats. Only the current ready video is selected at first. Each file uses its video's code, assets and output folder, with checks for edits, missing targets and changed formats.
+- Free local Kokoro voice-over is the default, with 28 American and British English voices and included preview samples. First generation downloads and caches the model. Paid providers require explicit selection; local errors never call a paid service.
+
+- Studio chat shows “Waiting for your reply” and the needed input near the composer when a completed response asks for a reply or lists blocked-work choices. A brand-red border and solid question badge make it visible in both themes.
+- How-to in studio chat starts a task-focused tutorial with your brief and uploads. An empty request asks what to teach locally before calling the agent; the answer uses the normal chat send path.
+- Video workflow notes record the approved Agentcut v2 launch example and a measured run baseline for future improvements.
+- Independent text/guide reads can be grouped in one bounded request. A read-only review planner targets changed shots, broadens shared or timing changes, and retains final full-picture and sound checks.
+
+### Fixed
+
+- Cancelling an export during its final file check stops the render. Long words in local speech no longer produce empty audio requests.
+- The export dialog uses a wider two-column desktop layout, fixed summary and actions, and keyboard-accessible scroll areas. It stacks on small screens.
+- Style, Style Spy and Cinematic controls have their own bounded rail. They clear the canvas header and stay above the timeline when the upper pane is short.
+
+- Canvas zoom and Fit View icons and the React Flow attribution follow the Studio theme when it changes, with readable contrast in both modes.
+- An empty How-to click on an existing video asks for the task locally before it creates a video or calls the agent. Old launch history and incidental assets no longer bypass that question.
+- An empty Product Launch request asks for a product URL or description in chat before it calls the agent. The next Send keeps the launch request and runs once.
+- New launch and tutorial requests on an existing edit create a separate video in the same canvas. Explicit edits keep their target; ambiguous requests ask where to work. Original media and edits stay intact, and retries reuse one target.
+
+### Changed
+
+- The Projects menu indents each project under its date and hides the scrollbar while you scroll.
+
 ## [0.2.23] - 2026-11-05
 
 - The project picker opens at the current project and highlights its date. Each reply groups its reported token use with its work summary. In the advanced editor, the chat shows the playhead and selection below the message controls.
@@ -591,7 +620,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.23...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.24...HEAD
+[0.2.24]: https://github.com/deifos/Agentcut/compare/v0.2.23...v0.2.24
 [0.2.23]: https://github.com/deifos/Agentcut/compare/v0.2.22...v0.2.23
 [0.2.22]: https://github.com/deifos/Agentcut/compare/v0.2.21...v0.2.22
 [0.2.21]: https://github.com/deifos/Agentcut/compare/v0.2.20...v0.2.21

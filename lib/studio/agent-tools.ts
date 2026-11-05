@@ -20,9 +20,8 @@ import { seekAndWait } from "@/lib/studio/scrub";
 import { findClip } from "@/lib/studio/edit";
 import type { StudioCursorTrack } from "@/lib/studio/cursor-track";
 import type { LoadedModule, StudioDoc, StudioLayers } from "@/lib/studio/types";
-import { HEAVY_PAGE_TOOLS, PageWorkGate } from "@/lib/studio/page-work";
+import { HEAVY_PAGE_TOOLS, studioPageWork as pageWork } from "@/lib/studio/page-work";
 
-const pageWork = new PageWorkGate();
 
 export interface StudioExportJobUpdate {
   slug: string;

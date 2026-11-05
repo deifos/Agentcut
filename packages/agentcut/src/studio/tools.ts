@@ -5,6 +5,9 @@ import { editingStyleInput } from "./editing-styles.js";
 import { referenceInspection } from "./references.js";
 import { callEditor, persistAgentFrameResult } from "../bridge.js";
 import { releaseInput, releaseAction, releasePlan } from "./release-video.js";
+import { readBatch, type ReadResult } from "./read-batch.js";
+import { reviewPlan } from "./review-plan.js";
+import { projectSchema, layersSchema } from "./schema.js";
 
 // Agentcut tools. File work (create/state) is answered by the
 // agentcut helper; pixels and audio by the studio page in the browser.
@@ -128,6 +131,16 @@ export function registerStudioTools(server: McpServer) {
   defineTool(server, "agentcut_read_file", "Read project, library preset or toolkit text through MCP (up to 2 MiB), with a hash for safe edits. Read project.json and layers.json before editing; read toolkit components/STYLES.md and runtime/helpers.tsx as needed. Binary assets use copy_file and media tools.",
     { scope, source, project, path: z.string().min(1) },
     async args => callEditor("studio.local.read_file", args, { timeoutMs: 15_000 }));
+  defineTool(server, "agentcut_read_files", "Group up to 12 independent text reads into one model round trip. Uses the existing read_file permission checks. Each file may specify one-based inclusive startLine/endLine for targeted source sections. Up to 96,000 content characters per batch, in request order; oversized entries return an explicit error, never silent truncation. Hashes cover the full file even for excerpts. Do not batch dependent reads, writes or page rendering; inspect every result. Prefer small relevant ranges over whole source files.",
+    { project, files: z.array(z.object({ scope, source, path: z.string().min(1), startLine: z.number().int().min(1).optional(), endLine: z.number().int().min(1).optional() }).refine(file => file.endLine === undefined || file.endLine >= (file.startLine ?? 1), "endLine must be at or after startLine")).min(1).max(12) },
+    async ({ project: slug, files }) => readBatch(files, async ({ startLine: _start, endLine: _end, ...file }) =>
+      await callEditor("studio.local.read_file", { ...file, project: slug }, { timeoutMs: 15_000 }) as ReadResult));
+  defineTool(server, "agentcut_review_plan", "Plan intermediate review without rendering or editing. Reads project.json and layers.json together. scope=shot targets changed clip IDs plus neighboring boundaries in all variants, with mobile timing overrides; shared broadens to the whole project for reused scenes/assets/styles; timing broadens after trims, moves, duration or soundtrack edits. Returns concrete calls to the existing capture/preview tools and mandatory final full-picture/audio review. Unknown shot IDs fail, not silently skip. Run page-heavy calls sequentially; a plan is not a passed review.",
+    { project: z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/), scope: z.enum(["shot", "shared", "timing"]), clipIds: z.array(z.string().min(1)).max(32).default([]) },
+    async ({ project: slug, scope: reviewScope, clipIds }) => {
+      const [manifest, timeline] = await Promise.all(["project.json", "layers.json"].map(path => callEditor("studio.local.read_file", { project: slug, scope: "project", path }, { timeoutMs: 15_000 }) as Promise<ReadResult>));
+      return reviewPlan(projectSchema.parse(JSON.parse(manifest.content)), layersSchema.parse(JSON.parse(timeline.content)), slug, reviewScope, clipIds);
+    });
   defineTool(server, "agentcut_write_file", "Create or edit project text files through MCP: project.json, layers.json, notes.md, scenes/ and assets/. JSON manifests are validated. baseHash must match read_file; null only creates a new file. Does not overwrite concurrent user edits. After scene/timeline edits call status and review frames in both formats, then playback and audio as the skill requires.",
     { project: z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/), path: z.string().min(1), content: z.string().max(2 * 1024 * 1024), baseHash: z.string().nullable() },
     async args => callEditor("studio.local.write_file", args, { timeoutMs: 15_000 }));
@@ -480,23 +493,26 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_voice_options",
-    "Voice-over providers the user has set up (ElevenLabs, Gemini, OpenAI, Grok/xAI), their default, models and voices. Pass provider: \"elevenlabs\" to list that account's voices (ids). Call before generating a voice-over. API keys are handled by the helper: never ask for them.",
-    { provider: z.enum(["elevenlabs", "gemini", "openai", "xai"]).optional() },
+    "Free local Kokoro plus configured paid providers, models and voices. Generic requests use Kokoro. Local voice metadata includes language, accent, authored gender labels, sample paths and editorial suggested uses. Pass provider: \"elevenlabs\" to list that account's voices (ids). Call before generating a voice-over. API keys are handled by the helper: never ask for them.",
+    { provider: z.enum(["kokoro", "elevenlabs", "gemini", "openai", "xai"]).optional() },
     async (args) => callEditor("studio.local.voice_options", args, { timeoutMs: MINUTE }),
   );
 
   defineTool(
     server,
     "agentcut_generate_voice",
-    "Generate a voice-over with the user's own provider key and save it to assets/voice/ in the project (never overwrites). Uses the user's default provider unless they named another. Returns each take's path and length. Then check the words with agentcut_transcribe before using a take.",
+    "Generate a voice-over and save it to assets/voice/ (never overwrites). Generic requests use free local Kokoro, even if paid keys exist. Use a paid provider only when explicitly selected by the user. Kokoro supports English; first use downloads its model. Never silently fall back to paid. Returns each take's path and length. Then check the words with agentcut_transcribe before using a take.",
     {
       project,
       text: z.string().min(1).describe("Exactly the words to speak. No stage directions (use style)."),
-      provider: z.enum(["elevenlabs", "gemini", "openai", "xai"]).optional(),
+      provider: z.enum(["kokoro", "elevenlabs", "gemini", "openai", "xai"]).optional(),
       model: z.string().optional().describe('e.g. "gemini-3.8-flash-tts", "eleven_v3", "gpt-4o-mini-tts".'),
       voice: z.string().optional().describe('Voice name/id, e.g. "Puck" (Gemini), "marin" (OpenAI), "eve" (Grok), an ElevenLabs voice id.'),
       style: z.string().optional().describe("Delivery notes (tone, pace, pronunciation). Gemini and OpenAI only."),
       language: z.string().optional().describe('Language code, e.g. "en", "es".'),
+      purpose: z.enum(["tutorial", "walkthrough", "demo", "launch", "sales"]).optional().describe("Kokoro editorial voice default; explicit voice and constraints take priority."),
+      gender: z.enum(["female", "male"]).optional().describe("Honor the user's requested catalog voice label."),
+      accent: z.enum(["American", "British"]).optional().describe("Kokoro English accent constraint."),
       speed: z.number().optional(),
       name: z.string().optional().describe('File name, e.g. "launch-vo" → assets/voice/launch-vo.wav.'),
       takes: z.number().int().min(1).max(4).optional().describe("Takes to generate in parallel (default 1)."),

@@ -3,6 +3,8 @@
 import { confirmDestructive } from "@/components/studio/ConfirmHost";
 import { TooltipHint } from "@/components/ui/tooltip";
 import { STUDIO_COMMAND } from "@/lib/studio/commands";
+import { pendingReply } from "@/lib/studio/pending-input";
+import { ambiguousVideoType, bareVideoType, creationVideoType, hasEstablishedVideoContext, videoRequest, VIDEO_TYPES, type VideoIntake, type VideoType, type NewVideoRequest } from "@/lib/studio/video-requests";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUp,
@@ -27,6 +29,9 @@ import {
   Music2,
   Video,
   RotateCcw,
+  Rocket,
+  BookOpen,
+  MessageCircleQuestion,
   Search,
   Square,
   Terminal,
@@ -772,6 +777,8 @@ export interface ChatPanelProps {
   onRecord?(): void;
   /** The project already has footage or composition content to edit. */
   hasVideo?: boolean;
+  /** Images or footage in this project's assets, even when not on the timeline or attached. */
+  hasLaunchMedia?: boolean;
   chat: ChatHistory;
   /** The agent that answers the next message. */
   agent: AgentInfo | null;
@@ -797,7 +804,7 @@ export interface ChatPanelProps {
   selectionCount: number;
   onSend(
     text: string,
-    options: { attachFrame: boolean; references: ChatReference[] },
+    options: { attachFrame: boolean; references: ChatReference[]; newVideo?: NewVideoRequest },
   ): Promise<void>;
   onCancel(): void;
   onReset(): void;
@@ -810,6 +817,21 @@ export interface ChatPanelProps {
 
 /** Unsent text per project, kept while switching projects. */
 const drafts = new Map<string, string>();
+const videoIntakes = new Map<string, VideoIntake>();
+const creationRequests = new Map<string, NewVideoRequest>();
+
+function WaitingForReply({ question, onCancel, disabled }: { question: string; onCancel?(): void; disabled?: boolean }) {
+  return (
+    <section className="flex items-start gap-3 rounded-xl border-2 border-brand bg-card p-3 text-card-foreground" role="status" aria-live="polite" aria-label="Waiting for your reply">
+      <span data-waiting-badge className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground" aria-hidden="true"><MessageCircleQuestion className="size-5" /></span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="text-sm font-semibold">Waiting for your reply</p>
+        <p className="whitespace-pre-line text-sm leading-relaxed [overflow-wrap:anywhere]">{question}</p>
+      </div>
+      {onCancel ? <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onCancel}>Cancel</Button> : null}
+    </section>
+  );
+}
 
 export function ChatPanel({
   chat,
@@ -850,8 +872,13 @@ export function ChatPanel({
   drawingOpen,
   onRecord,
   hasVideo = false,
+  hasLaunchMedia = false,
 }: ChatPanelProps) {
   const attachmentInput = useRef<HTMLInputElement>(null);
+  const messageInput = useRef<HTMLTextAreaElement>(null);
+  const sendInFlight = useRef(false);
+  const creationRequest = useRef<NewVideoRequest | null>(creationRequests.get(slug ?? "") ?? null);
+  const [targetChoice, setTargetChoice] = useState<{ text: string; type: VideoType } | null>(null);
   const [dropping, setDropping] = useState(false);
   const [localUploading, setUploading] = useState(0);
   const uploading = localUploading + externalUploading;
@@ -880,6 +907,15 @@ export function ChatPanel({
   };
   const [attachFrame, setAttachFrame] = useState(false);
   const [sending, setSending] = useState(false);
+  const [answeredQuestion, setAnsweredQuestion] = useState<string | null>(null);
+  const pendingQuestion = pendingReply(chat);
+  const waitingQuestion = pendingQuestion?.messageId !== answeredQuestion ? pendingQuestion : null;
+  const [videoIntake, setVideoIntakeState] = useState(() => videoIntakes.get(slug ?? "") ?? null);
+  const setVideoIntake = (intake: VideoIntake | null) => {
+    if (intake === null) videoIntakes.delete(slug ?? "");
+    else videoIntakes.set(slug ?? "", intake);
+    setVideoIntakeState(intake);
+  };
   const running = Boolean(chat.running);
 
   // Speak instead of typing; Ctrl+Space comes here when no other prompt box has the focus.
@@ -896,18 +932,52 @@ export function ChatPanel({
       ? `Apply the ${selectedStyle.name} style to this video${selectedMusic ? " and add the selected background music" : ""}.`
       : selectedMusic ? "Add the selected background music to this video." : ""
     : "";
-  const requestReady = Boolean(text.trim() || inferredRequest);
+  const intakeMaterial = references.length > 0 || attachFrame
+    || (videoIntake?.type === "product-launch" && (hasLaunchMedia || hasVideo));
+  const requestReady = Boolean(text.trim() || (!videoIntake && inferredRequest) || (videoIntake && intakeMaterial));
 
-  const send = async (value = text) => {
-    const trimmed = value.trim() || inferredRequest;
+  const send = async (value = text, action?: VideoType, destination?: "edit" | "new") => {
+    const trimmed = value.trim() || (!action && videoIntake === null ? inferredRequest : "");
     // While the agent works, a new message waits in the queue and runs next.
     // Wait for dropped or pasted files to finish uploading, so they go with the message.
-    if (!trimmed || sending || disabled || uploading || dictating || Boolean(agent && !agent.found)) return;
+    if ((!trimmed && !action && !requestReady) || sendInFlight.current || sending || disabled || uploading || dictating || Boolean(agent && !agent.found)) return;
+    const ambiguous = !action && !destination && hasVideo ? ambiguousVideoType(trimmed) : null;
+    if (ambiguous) {
+      setTargetChoice({ text: value, type: ambiguous });
+      return;
+    }
+    const type = destination === "edit" ? null : action ?? videoIntake?.type ?? (waitingQuestion ? null : creationVideoType(trimmed));
+    const intake = videoIntake?.type === type ? videoIntake : null;
+    // Existing pictures or a finished launch do not identify a new tutorial task.
+    // Current attachments are deliberate inputs; incidental project material is inspected after intake.
+    const hasContext = (type !== "how-to" && (hasVideo || hasLaunchMedia)) || references.length > 0 || attachFrame
+      || (type && hasEstablishedVideoContext(type, chat.messages))
+      || Boolean(trimmed && !bareVideoType(trimmed));
+    if (type && !hasContext) {
+      setVideoIntake(intake ?? { type, request: trimmed || VIDEO_TYPES[type].request });
+      // Keep the initial words in the intake, ready to combine with the answer.
+      setText("");
+      messageInput.current?.focus();
+      return;
+    }
+    const request = intake !== null
+      ? `${intake.request}\n\n${trimmed || "Use the supplied project material."}`
+      : action ? videoRequest(action, trimmed) : trimmed;
+    sendInFlight.current = true;
     setSending(true);
     // Only the chips sent with this message go; files attached while it sends wait for the next one.
     const sent = references;
     try {
-      await onSend(trimmed, { attachFrame, references: sent });
+      if (type && creationRequest.current?.type !== type) {
+        creationRequest.current = { type, requestId: crypto.randomUUID() };
+        creationRequests.set(slug ?? "", creationRequest.current);
+      }
+      await onSend(request, { attachFrame, references: sent, ...(type ? { newVideo: creationRequest.current! } : {}) });
+      if (pendingQuestion) setAnsweredQuestion(pendingQuestion.messageId);
+      creationRequest.current = null;
+      creationRequests.delete(slug ?? "");
+      setTargetChoice(null);
+      setVideoIntake(null);
       setText("");
       setAttachFrame(false);
       onReferencesChange((current) =>
@@ -916,6 +986,7 @@ export function ChatPanel({
     } catch {
       // toast shown by the controller
     } finally {
+      sendInFlight.current = false;
       setSending(false);
     }
   };
@@ -929,6 +1000,7 @@ export function ChatPanel({
     : uploading ? "Adding your files. Wait for the upload to finish."
     : dictating ? "Stop voice input to review your request before you send."
     : sending ? "Sending your request…"
+    : waitingQuestion ? "Add your reply and press Send."
     : !requestReady ? selectedStyle || selectedMusic
       ? "Add footage or describe your video before you send."
       : videoContext ? "Choose a style or describe what to change."
@@ -1136,6 +1208,22 @@ export function ChatPanel({
             if (event.target.files) void attachFiles(Array.from(event.target.files));
             event.target.value = "";
           }} />
+          {videoIntake !== null ? (
+            <WaitingForReply question={VIDEO_TYPES[videoIntake.type].question} disabled={sending} onCancel={() => setVideoIntake(null)} />
+          ) : null}
+          {!videoIntake && !targetChoice && waitingQuestion ? (
+            <WaitingForReply question={waitingQuestion.question} />
+          ) : null}
+          {targetChoice ? (
+            <div className="flex flex-col gap-2 px-2 pb-2" role="group" aria-label="Choose a video destination">
+              <p role="status" className="text-sm">Should I edit this video or create a separate new video?</p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" size="sm" disabled={sending} onClick={() => void send(targetChoice.text, undefined, "edit")}>Edit this video</Button>
+                <Button type="button" variant="outline" size="sm" disabled={sending} onClick={() => void send(targetChoice.text, targetChoice.type, "new")}>Create new video</Button>
+                <Button type="button" variant="ghost" size="sm" disabled={sending} onClick={() => setTargetChoice(null)}>Cancel</Button>
+              </div>
+            </div>
+          ) : null}
           <InputGroup
             className={cn(
               "h-auto rounded-xl",
@@ -1218,6 +1306,7 @@ export function ChatPanel({
             ) : null}
             </div>
             <InputGroupTextarea
+              ref={messageInput}
               aria-label="Video request"
               data-speech={speech.id}
               value={text}
@@ -1254,6 +1343,10 @@ export function ChatPanel({
                   ? "Connect the studio helper to chat"
                   : dictating
                     ? "Listening… speak now"
+                  : videoIntake !== null
+                    ? VIDEO_TYPES[videoIntake.type].placeholder
+                  : waitingQuestion
+                    ? "Reply to the question above…"
                   : running
                     ? `${agentName} is working. Send the next request: it runs right after.`
                     : references.length
@@ -1330,6 +1423,26 @@ export function ChatPanel({
           )}
           {simple ? <p className="chat-readiness px-1 pt-1 pb-2 text-xs leading-relaxed text-muted-foreground" role="status" aria-live="polite">{readiness}</p> : null}
           {simple ? agentControls : null}
+          <div className="flex flex-wrap justify-center gap-2 pt-2" aria-label="Video types">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled || sending || Boolean(agentMissing) || uploading > 0 || dictating}
+              onClick={() => void send(text, "product-launch")}
+            >
+              <Rocket data-icon="inline-start" /> Product Launch
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled || sending || Boolean(agentMissing) || uploading > 0 || dictating}
+              onClick={() => void send(text, "how-to")}
+            >
+              <BookOpen data-icon="inline-start" /> How-to
+            </Button>
+          </div>
         </div>
         {simple ? (
           <div className="simple-quick-actions flex flex-wrap justify-center gap-2" aria-label="Prepare a video request">

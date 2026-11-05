@@ -1,9 +1,5 @@
 "use client";
-
-import { TooltipHint } from "@/components/ui/tooltip";
-import { useRef, useState } from "react";
-import { FolderOpen, Laptop, Loader2, MonitorPlay, X } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,447 +7,682 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { exportInBrowser, type BrowserExportResult } from "@/lib/studio/export";
-import type { StudioBridge } from "@/lib/studio/bridge";
-import type { ExportJob } from "@/components/studio/useStudioController";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { exportInBrowser, planLoudness } from "@/lib/studio/export";
+import { fetchStudioBundle, evaluateStudioBundle } from "@/lib/studio/bundle";
 import {
-  RendersList,
-  rendersFrom,
-  useRenderFileActions,
-  type RenderExtra,
-} from "@/components/studio/RendersList";
-import type { AssetEntry, LoadedModule, StudioDoc } from "@/lib/studio/types";
-import type { StudioProject } from "@/lib/studio/types";
+  exportCanvasVideos,
+  exportVideoFingerprint,
+  readExportVideo,
+  type CanvasExportCut,
+  type ExportVideo,
+  type ExportFileProgress,
+  type ExportFileResult,
+} from "@/lib/studio/canvas-export";
+import { studioPageWork } from "@/lib/studio/page-work";
+import type { StudioBridge } from "@/lib/studio/bridge";
+import type { ExportJob } from "./useStudioController";
+import { RendersList, rendersFrom, useRenderFileActions } from "./RendersList";
+import type {
+  AssetEntry,
+  LoadedModule,
+  StudioDoc,
+  StudioProject,
+} from "@/lib/studio/types";
 import { exportFormats } from "@/lib/studio/video-formats";
-import { exportSize, type ExportResolution } from "@/packages/agentcut/src/studio/export-resolution";
+import {
+  exportSize,
+  type ExportResolution,
+} from "@/packages/agentcut/src/studio/export-resolution";
 import { LocalVideoViewer } from "./LocalVideoViewer";
-
 interface Props {
   open: boolean;
   onOpenChange(open: boolean): void;
   doc: StudioDoc;
   loaded: LoadedModule | null;
-  /** The project's files (renders/ included); kept live by the helper's file watcher. */
   assets: AssetEntry[];
   currentVariant: string;
   coverFrame: number;
   job: ExportJob | null;
   setJob(job: ExportJob | null): void;
   getBridge(): StudioBridge | null;
+  flush(): Promise<void>;
   onSaveProject(project: StudioProject): Promise<void>;
   qualitySupported: boolean;
   resolutionSupported: boolean;
   fourKSupported: boolean;
   workspace?: string;
 }
-
+type Row = { slug: string; name: string; video?: ExportVideo; error?: string };
 type Mode = "browser" | "local";
-
-const STAGE_LABEL: Record<string, string> = {
-  preparing: "Preparing",
-  installing: "Installing Remotion (first local render only)",
-  rendering: "Rendering frames",
-  encoding: "Encoding",
-  uploading: "Saving to renders/",
-  done: "Done",
-};
-
+function SavedFiles({
+  video,
+  getBridge,
+}: {
+  video: ExportVideo;
+  getBridge(): StudioBridge | null;
+}) {
+  const files = useRenderFileActions(video.slug, getBridge);
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <Button variant="ghost" size="sm" onClick={files.openFolder}>
+        {video.name}: open output folder
+      </Button>
+      <RendersList
+        slug={video.slug}
+        renders={rendersFrom(video.assets)}
+        getBridge={getBridge}
+        limit={2}
+      />
+    </div>
+  );
+}
 export function ExportDialog({
   open,
   onOpenChange,
   doc,
-  loaded,
-  assets,
-  currentVariant,
   coverFrame,
   job,
   setJob,
   getBridge,
+  flush,
   onSaveProject,
   qualitySupported,
   resolutionSupported,
   fourKSupported,
-  workspace,
 }: Props) {
-  const variants = Object.keys(doc.project?.variants ?? {});
-  const [chosen, setChosen] = useState<string[]>(() => variants);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [selected, setSelected] = useState<string[]>([doc.slug]);
+  const [formats, setFormats] = useState<Record<string, string[]>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [normalize, setNormalize] = useState(true);
   const [quality, setQuality] = useState<"high" | "maximum">("high");
   const [resolution, setResolution] = useState<ExportResolution>("project");
-  const [addingFormat, setAddingFormat] = useState(false);
   const [mode, setMode] = useState<Mode | null>(null);
-  const [extras, setExtras] = useState<Record<string, RenderExtra>>({});
-  const abortRef = useRef<AbortController | null>(null);
-  const cancelledRef = useRef(false);
-  const busy = mode !== null || addingFormat;
-  const formats = doc.project ? exportFormats(doc.project) : [];
-  const renders = rendersFrom(assets);
-  const files = useRenderFileActions(doc.slug, getBridge);
-  const pathSeparator = workspace?.includes("\\") ? "\\" : "/";
-  const folderPath = workspace ? [workspace.replace(/[\\/]+$/, ""), "projects", doc.slug, "renders"].join(pathSeparator) : null;
-  const copyFolderPath = async () => {
-    if (!folderPath) return;
-    try { await navigator.clipboard.writeText(folderPath); toast.success("Folder path copied. Paste it into Explorer or Finder."); }
-    catch { toast.error(`Copy this folder path: ${folderPath}`, { duration: 15000 }); }
-  };
-
-  const selected = chosen.filter((variant) => variants.includes(variant));
-  const localSupported = qualitySupported && (resolution === "project" ||
-    (resolution === "2160p" ? fourKSupported : resolutionSupported));
-
-  const toggleFormat = async (format: typeof formats[number]) => {
-    if (busy || !doc.project) return;
+  const [adding, setAdding] = useState(false);
+  const [progress, setProgress] = useState<ExportFileProgress | null>(null);
+  const [results, setResults] = useState<ExportFileResult[]>([]);
+  const [message, setMessage] = useState("");
+  const running = useRef(false),
+    abort = useRef<AbortController | null>(null),
+    localTarget = useRef<string | null>(null),
+    anchor = useRef(doc.slug);
+  const retry = useRef({ signature: "", saved: new Map<string, string>() });
+  const busy = mode !== null || adding;
+  useEffect(() => {
+    if (!open || running.current) return;
+    let disposed = false;
+    anchor.current = doc.slug;
+    retry.current = { signature: "", saved: new Map() };
+    setSelected([doc.slug]);
+    setRows([]);
+    setFormats({});
+    setError(null);
+    setMessage("");
+    setResults([]);
+    setLoading(true);
+    const bridge = getBridge();
+    void (async () => {
+      if (!bridge) throw new Error("The studio helper is not connected.");
+      const canvas = await bridge.request<{ cuts: CanvasExportCut[] }>(
+        "studio.canvas.read",
+        { project: doc.slug },
+      );
+      const next = await Promise.all(
+        canvas.cuts.map(async (cut): Promise<Row> => {
+          const title = cut.title || cut.slug;
+          const name = cut.version && cut.version !== "Original" ? `${title} · ${cut.version}` : title;
+          try {
+            return {
+              slug: cut.slug,
+              name,
+              video: await readExportVideo(bridge, cut.slug, name),
+            };
+          } catch (reason) {
+            return {
+              slug: cut.slug,
+              name,
+              error: String(reason instanceof Error ? reason.message : reason),
+            };
+          }
+        }),
+      );
+      if (!disposed) {
+        setRows(next);
+        const activeVideo = next.find((row) => row.slug === doc.slug)?.video;
+        setSelected(activeVideo && !activeVideo.error && !activeVideo.draft ? [doc.slug] : []);
+        setFormats(
+          Object.fromEntries(
+            next.map((row) => [
+              row.slug,
+              Object.keys(row.video?.doc.project?.variants ?? {}),
+            ]),
+          ),
+        );
+      }
+    })()
+      .catch((reason) => {
+        if (!disposed)
+          setError(String(reason instanceof Error ? reason.message : reason));
+      })
+      .finally(() => {
+        if (!disposed) setLoading(false);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [open, doc.slug, getBridge]);
+  const selectedRows = selected.map((slug) =>
+    rows.find((row) => row.slug === slug),
+  );
+  const choices = selectedRows.flatMap((row) =>
+    row
+      ? [{ slug: row.slug, name: row.name, variants: formats[row.slug] ?? [] }]
+      : [],
+  );
+  const fileCount = choices.reduce(
+    (sum, choice) => sum + choice.variants.length,
+    0,
+  );
+  const invalid = selectedRows.find((row) => row?.error || row?.video?.error);
+  const selectionError = !selected.length
+    ? "Select at least one video."
+    : selectedRows.some((row) => !row)
+      ? "A selected video is missing from this canvas."
+      : invalid?.error ||
+        invalid?.video?.error ||
+        (choices.some((choice) => !choice.variants.length)
+          ? "Select an output format for each video."
+          : null);
+  const localSupported =
+    qualitySupported &&
+    (resolution === "project" ||
+      (resolution === "2160p" ? fourKSupported : resolutionSupported));
+  const canRun = !busy && !loading && !selectionError && fileCount > 0;
+  async function toggleFormat(
+    video: ExportVideo,
+    format: ReturnType<typeof exportFormats>[number],
+  ) {
+    if (busy) return;
     if (!format.existing) {
-      setAddingFormat(true);
+      if (video.slug !== doc.slug || selected.length !== 1 || !doc.project)
+        return;
+      setAdding(true);
       try {
-        await onSaveProject({ ...doc.project, variants: { ...doc.project.variants, [format.id]: { width: format.width, height: format.height } } });
-        setChosen((previous) => [...previous, format.id]);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not add this format.");
-      } finally { setAddingFormat(false); }
+        await flush();
+        await onSaveProject({
+          ...doc.project,
+          variants: {
+            ...doc.project.variants,
+            [format.id]: { width: format.width, height: format.height },
+          },
+        });
+        const fresh = await readExportVideo(
+          getBridge()!,
+          video.slug,
+          video.name,
+        );
+        setRows((previous) =>
+          previous.map((row) =>
+            row.slug === video.slug ? { ...row, video: fresh } : row,
+          ),
+        );
+      } catch (reason) {
+        setError(String(reason));
+        return;
+      } finally {
+        setAdding(false);
+      }
+    }
+    setFormats((previous) => ({
+      ...previous,
+      [video.slug]: (previous[video.slug] ?? []).includes(format.id)
+        ? previous[video.slug].filter((id) => id !== format.id)
+        : [...(previous[video.slug] ?? []), format.id],
+    }));
+  }
+  async function run(where: Mode) {
+    if (running.current || !canRun || (where === "local" && !localSupported))
+      return;
+    const bridge = getBridge();
+    if (!bridge) {
+      setError("The studio helper is not connected.");
       return;
     }
-    setChosen((previous) => previous.includes(format.id) ? previous.filter((id) => id !== format.id) : [...previous, format.id]);
-  };
-
-  const runBrowser = async () => {
-    if (!loaded || selected.length === 0) return;
-    setMode("browser");
+    running.current = true;
     const controller = new AbortController();
-    abortRef.current = controller;
+    abort.current = controller;
+    setMode(where);
+    setError(null);
+    setMessage("");
+    setProgress(null);
+    const signature = JSON.stringify([
+      choices,
+      where,
+      normalize,
+      quality,
+      resolution,
+    ]);
+    if (retry.current.signature !== signature) {
+      retry.current = { signature, saved: new Map() };
+      setResults([]);
+    }
+    let savedNow = 0;
     try {
-      for (const variant of selected) {
-        setJob({
-          slug: doc.slug,
-          variant,
-          stage: "preparing",
-          progress: 0,
-          where: "browser",
-        });
-        let result: BrowserExportResult;
-        try {
-          result = await exportInBrowser({
-            doc,
-            loaded,
-            variant,
-            normalizeLoudness: normalize,
-            quality: quality === "maximum" ? "very-high" : "high",
-            resolution,
-            coverFrame,
-            signal: controller.signal,
-            onProgress: (stage, progress, message) =>
-              setJob({
-                slug: doc.slug,
+      await flush();
+      // A retry must not reuse an old file for a video that has since changed.
+      for (const choice of choices) {
+        const savedKeys = choice.variants
+          .map((variant) => `${choice.slug}/${variant}`)
+          .filter((key) => retry.current.saved.has(key));
+        if (!savedKeys.length) continue;
+        const fresh = await readExportVideo(bridge, choice.slug, choice.name);
+        for (const key of savedKeys)
+          if (retry.current.saved.get(key) !== exportVideoFingerprint(fresh))
+            retry.current.saved.delete(key);
+      }
+      const pending = choices
+        .map((choice) => ({
+          ...choice,
+          variants: choice.variants.filter(
+            (variant) => !retry.current.saved.has(`${choice.slug}/${variant}`),
+          ),
+        }))
+        .filter((choice) => choice.variants.length);
+      await studioPageWork.run("studio_export", () =>
+        exportCanvasVideos(pending, where, controller.signal, {
+          members: async () =>
+            (
+              await bridge.request<{ cuts: CanvasExportCut[] }>(
+                "studio.canvas.read",
+                { project: anchor.current },
+              )
+            ).cuts.map((cut) => cut.slug),
+          read: (slug, name) => readExportVideo(bridge, slug, name),
+          load: async (video) => {
+            const bundle = await fetchStudioBundle(
+              video.slug,
+              controller.signal,
+            );
+            return {
+              slug: video.slug,
+              revision: bundle.revision,
+              module: evaluateStudioBundle(
+                bundle.code,
+                video.slug,
+                bundle.revision,
+              ),
+            };
+          },
+          render: async (video, variant, loaded, report) => {
+            if (where === "browser")
+              return exportInBrowser({
+                doc: video.doc,
+                loaded: loaded!,
                 variant,
-                stage,
-                progress,
-                message,
-                where: "browser",
-              }),
-          });
-        } catch (error) {
-          if (controller.signal.aborted) {
-            toast("Export cancelled");
-            return;
-          }
-          const message =
-            error instanceof Error ? error.message : String(error);
-          toast.error(`Export failed (${variant}): ${message}`);
-          return;
-        }
-        // The file is already saved to renders/; play it from there instead of
-        // pinning the whole MP4 in tab memory with a blob URL.
-        setExtras((map) => ({
-          ...map,
-          [result.path]: {
-            lufs:
-              result.measured?.integratedLufs ??
-              result.loudness?.resultLufs ??
-              null,
+                normalizeLoudness: normalize,
+                quality: quality === "maximum" ? "very-high" : "high",
+                resolution,
+                coverFrame: video.slug === doc.slug ? coverFrame : 0,
+                signal: controller.signal,
+                onProgress: report,
+              });
+            const gain = normalize
+              ? (await planLoudness(video.doc, variant)).gain
+              : 1;
+            controller.signal.throwIfAborted();
+            localTarget.current = video.slug;
+            try {
+              return await bridge.request<{ path?: string }>(
+                "studio.render.local",
+                {
+                  slug: video.slug,
+                  variant,
+                  masterGain: gain,
+                  quality,
+                  resolution,
+                  expectedProjectHash: video.doc.projectHash,
+                  expectedLayersHash: video.doc.layersHash,
+                  expectedBundleRevision: video.bundle.revision,
+                },
+                60 * 60 * 1000,
+              );
+            } finally {
+              localTarget.current = null;
+            }
           },
-        }));
-      }
-      toast.success(
-        selected.length > 1
-          ? `${selected.length} videos saved to renders/`
-          : "Video saved to renders/",
+          onProgress: (update) => {
+            setProgress(update);
+            setJob({
+              slug: update.slug,
+              variant: update.variant,
+              stage: update.stage as ExportJob["stage"],
+              progress: update.progress,
+              message: update.message,
+              where,
+            });
+          },
+          onResult: (result, video) => {
+            savedNow++;
+            retry.current.saved.set(
+              `${result.slug}/${result.variant}`,
+              exportVideoFingerprint(video),
+            );
+            setResults((previous) => [...previous, result]);
+          },
+        }),
+      );
+      setMessage(
+        `${savedNow} file${savedNow === 1 ? "" : "s"} saved. Each video uses its own output folder.`,
+      );
+      retry.current = { signature: "", saved: new Map() };
+      const refreshResults = await Promise.allSettled(
+        choices.map((choice) =>
+          readExportVideo(bridge, choice.slug, choice.name),
+        ),
+      );
+      const refreshed = refreshResults.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : [],
+      );
+      setRows((previous) =>
+        previous.map((row) => {
+          const video = refreshed.find((video) => video.slug === row.slug);
+          return video ? { ...row, video } : row;
+        }),
+      );
+    } catch (reason) {
+      setError(
+        `${controller.signal.aborted ? "Export cancelled." : reason instanceof Error ? reason.message : String(reason)} ${retry.current.saved.size} file(s) saved. Retry skips these files for the same selection and settings.`,
       );
     } finally {
+      running.current = false;
       setMode(null);
+      setProgress(null);
       setJob(null);
-      abortRef.current = null;
+      abort.current = null;
     }
-  };
-
-  const runLocal = async () => {
-    const bridge = getBridge();
-    if (!bridge || selected.length === 0 || !localSupported) return;
-    setMode("local");
-    cancelledRef.current = false;
-    try {
-      for (const variant of selected) {
-        setJob({
-          slug: doc.slug,
-          variant,
-          stage: "preparing",
-          progress: 0,
-          where: "local",
-        });
-        let gain: number | undefined;
-        if (normalize) {
-          const { planLoudness } = await import("@/lib/studio/export");
-          gain = (await planLoudness(doc, variant)).gain;
-        }
-        if (cancelledRef.current) return;
-        await bridge.request(
-          "studio.render.local",
-          { slug: doc.slug, variant, masterGain: gain, quality, resolution },
-          60 * 60 * 1000,
-        );
-      }
-      toast.success(
-        selected.length > 1
-          ? `${selected.length} videos rendered to renders/`
-          : "Video rendered to renders/",
-      );
-    } catch (error) {
-      if (cancelledRef.current) toast("Render cancelled");
-      else
-        // The helper's message already starts with "Local render failed".
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : `Local render failed: ${String(error)}`,
-          {
-            duration: 15000,
-          },
-        );
-    } finally {
-      setMode(null);
-      setJob(null);
-    }
-  };
-
-  const cancel = () => {
-    if (mode === "browser") abortRef.current?.abort();
-    if (mode === "local") {
-      cancelledRef.current = true;
+  }
+  function cancel() {
+    abort.current?.abort();
+    if (localTarget.current)
       void getBridge()
-        ?.request("studio.render.cancel", {})
+        ?.request("studio.render.cancel", { slug: localTarget.current })
         .catch(() => undefined);
-    }
-  };
-
-  const progress = busy && job && job.slug === doc.slug ? job : null;
-  const known = progress && progress.progress > 0;
-  const percent = progress ? Math.round(progress.progress * 100) : 0;
-
+  }
+  const activeProgress =
+    mode === "local" && job && job.slug === progress?.slug
+      ? { ...progress, stage: job.stage, progress: job.progress }
+      : progress;
   return (
-    <Dialog
-      open={open}
-      // Closing never stops an export: progress stays on the Export button and the tab title.
-      onOpenChange={onOpenChange}
-    >
-      {/* min-w-0 on the grid children: a long file name must truncate, not stretch the dialog. */}
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg [&>*]:min-w-0">
-        <DialogHeader>
-          <DialogTitle>Export video</DialogTitle>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[92dvh] flex-col gap-4 overflow-hidden sm:max-w-[1100px] [&>*]:min-w-0">
+        <DialogHeader className="shrink-0">
+          <DialogTitle>Export canvas videos</DialogTitle>
           <DialogDescription>
-            MP4 (H.264 + AAC) with a cover image, saved to this project&apos;s
-            renders/ folder. Nothing is overwritten.
+            Select videos, then select their output formats. MP4 files and cover
+            images go to each video&apos;s own renders folder. Existing files
+            stay in place.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="min-w-0 space-y-4">
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Sizes
-            </p>
-            {formats.map((size) => {
-              const variant = size.id;
-              const outputSize = exportSize(size, resolution);
-              const checked = selected.includes(variant);
-              return (
-                <Label
-                  key={variant}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-2.5 rounded-md border border-border/70 px-3 py-2 text-sm font-normal hover:bg-muted/50",
-                    busy && "pointer-events-none opacity-60",
-                  )}
-                >
-                  <Checkbox
-                    checked={checked}
-                    disabled={busy}
-                    onCheckedChange={() => void toggleFormat(size)}
-                  />
-                  <span className="font-semibold">{size.label}</span>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {outputSize.width}×{outputSize.height}
-                  </span>
-                  {variant === currentVariant ? (
-                    <Badge variant="secondary" className="ml-auto text-[10px]">
-                      on screen
-                    </Badge>
-                  ) : null}
-                </Label>
-              );
-            })}
-            <p className="text-xs text-muted-foreground">Selecting a new format adds it to your project. Preview it before exporting to check crops and text.</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="export-resolution" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Resolution</Label>
-            <select id="export-resolution" value={resolution} disabled={busy} onChange={(event) => setResolution(event.target.value as ExportResolution)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-              <option value="project">Project size</option>
-              <option value="2160p">4K (2160p) — sharper text and shapes</option>
-              <option value="1080p">1080p — social media</option>
-              <option value="720p">720p — smaller file</option>
-            </select>
-            <p className="text-xs text-muted-foreground">Changes only the exported copy. Keeps the layout and frame rate. Dimensions above show the output size.</p>
-            <p className="text-xs text-muted-foreground">{resolution === "2160p"
-              ? "4K redraws text and shapes at higher resolution. Smaller photos and videos are enlarged without new detail. Files are larger and exports take longer. Use Maximum quality for fine detail."
-              : "1080p and 720p do not enlarge smaller projects."}</p>
-          </div>
-
-          <fieldset disabled={busy} className="space-y-2">
-            <legend className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Quality</legend>
-            {([
-              ["high", "High quality, smaller file", "Recommended for sharing."],
-              ["maximum", "Maximum quality", "Larger files to retain more fine detail."],
-            ] as const).map(([value, title, description]) => (
-              <label key={value} className="flex cursor-pointer items-start gap-2.5 rounded-md border border-border/70 px-3 py-2 text-sm">
-                <input type="radio" name="export-quality" value={value} checked={quality === value} onChange={() => setQuality(value)} className="mt-1 accent-primary" />
-                <span><span className="block font-semibold">{title}</span><span className="text-xs text-muted-foreground">{description}</span></span>
-              </label>
-            ))}
-            <p className="text-xs text-muted-foreground">Both keep the selected resolution and frame rate. Computer renders use slower compression for smaller files. Browser results can differ.</p>
-          </fieldset>
-
-          <Label
-            className={cn(
-              "flex cursor-pointer items-center gap-2.5 text-sm font-normal",
-              busy && "pointer-events-none opacity-60",
-            )}
+        <div className="grid min-h-0 gap-5 md:h-[min(60dvh,520px)] md:grid-cols-[0.9fr_1.1fr]">
+          <ScrollArea
+            className="min-h-0 max-h-[28dvh] md:max-h-[60dvh]"
+            viewportProps={{ tabIndex: 0, "aria-label": "Canvas videos" }}
           >
-            <Checkbox
-              checked={normalize}
-              disabled={busy}
-              onCheckedChange={(value) => setNormalize(value === true)}
-            />
-            Normalize loudness to −14 LUFS (peaks ≤ −1 dBTP)
-          </Label>
-
-          {addingFormat ? <p role="status" className="text-xs text-muted-foreground">Adding format…</p> : null}
-
-          {mode !== null ? (
-            <div className="space-y-1.5 rounded-md border border-border/70 bg-muted/30 p-3">
-              <p className="flex min-w-0 items-center gap-2 text-xs">
-                <Loader2 className="size-3.5 shrink-0 animate-spin" />
-                <span className="font-semibold">
-                  {progress?.variant ?? selected[0]}
-                </span>
-                <TooltipHint content={progress?.message}>
-                  <span tabIndex={0}
-                    className="min-w-0 flex-1 truncate text-muted-foreground"
-                  >
-                    {STAGE_LABEL[progress?.stage ?? "preparing"] ??
-                      progress?.stage}
-                    {progress?.message && progress.stage !== "installing"
-                      ? ` · ${progress.message}`
-                      : ""}
-                  </span>
-                </TooltipHint>
-                {known ? <span className="font-mono">{percent}%</span> : null}
-              </p>
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full bg-primary transition-[width]",
-                    !known && "w-1/4 animate-pulse",
-                  )}
-                  style={known ? { width: `${percent}%` } : undefined}
-                />
+            <div className="flex flex-col gap-3 pr-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">1. Videos</h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || loading}
+                  onClick={() =>
+                    setSelected(
+                      rows
+                        .filter(
+                          (row) =>
+                            row.video && !row.video.error && !row.video.draft,
+                        )
+                        .map((row) => row.slug),
+                    )
+                  }
+                >
+                  Select all ready
+                </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                {mode === "local"
-                  ? "Rendering with Remotion on this computer. You can close this window; progress shows on the Export button, and the video lands in the Renders tab."
-                  : "You can close this window; progress shows on the Export button and the tab. Keep this tab open until it finishes."}
-              </p>
+              {loading ? (
+                <p role="status">Checking videos…</p>
+              ) : (
+                rows.map((row) => (
+                  <Label
+                    key={row.slug}
+                    className="flex items-start gap-3 rounded-md border p-3 font-normal"
+                  >
+                    <Checkbox
+                      aria-label={`Export ${row.name}`}
+                      disabled={
+                        busy ||
+                        Boolean(
+                          (row.error || row.video?.error) &&
+                          !selected.includes(row.slug),
+                        )
+                      }
+                      checked={selected.includes(row.slug)}
+                      onCheckedChange={(checked) =>
+                        setSelected((previous) =>
+                          checked
+                            ? [...previous, row.slug]
+                            : previous.filter((slug) => slug !== row.slug),
+                        )
+                      }
+                    />
+                    <span className="flex min-w-0 flex-col gap-1">
+                      <span className="break-words font-medium">
+                        {row.name}
+                        {row.slug === doc.slug ? " (selected in editor)" : ""}
+                      </span>
+                      <span className="break-words text-xs text-muted-foreground">
+                        {row.error ||
+                          row.video?.error ||
+                          (row.video?.draft
+                            ? "Draft: no picture clips. Select this video only if you want this output."
+                            : "Ready to export")}
+                      </span>
+                    </span>
+                  </Label>
+                ))
+              )}
+              {!loading && !rows.length ? (
+                <p>No videos are available.</p>
+              ) : null}
+              {rows
+                .filter(
+                  (row) => row.video && rendersFrom(row.video.assets).length,
+                )
+                .map((row) => (
+                  <SavedFiles
+                    key={row.slug}
+                    video={row.video!}
+                    getBridge={getBridge}
+                  />
+                ))}
             </div>
+          </ScrollArea>
+          <ScrollArea
+            className="min-h-0 max-h-[36dvh] md:max-h-[60dvh]"
+            viewportProps={{ tabIndex: 0, "aria-label": "Output settings" }}
+          >
+            <div className="flex flex-col gap-4 pr-3">
+              <h3 className="text-sm font-semibold">2. Output formats</h3>
+              {selectedRows.map((row) =>
+                row?.video?.doc.project ? (
+                  <fieldset
+                    key={row.slug}
+                    disabled={busy}
+                    className="flex min-w-0 flex-col gap-2"
+                  >
+                    <legend className="mb-2 break-words text-sm font-medium">
+                      {row.name}
+                    </legend>
+                    <div className="flex flex-wrap gap-2">
+                      {exportFormats(row.video.doc.project)
+                        .filter(
+                          (format) =>
+                            format.existing ||
+                            (selected.length === 1 && row.slug === doc.slug),
+                        )
+                        .map((format) => {
+                          const size = exportSize(format, resolution);
+                          return (
+                            <Label
+                              key={format.id}
+                              className="flex items-center gap-2 rounded-md border px-3 py-2 font-normal"
+                            >
+                              <Checkbox
+                                aria-label={`${row.name}: ${format.label}`}
+                                checked={(formats[row.slug] ?? []).includes(
+                                  format.id,
+                                )}
+                                disabled={busy}
+                                onCheckedChange={() =>
+                                  void toggleFormat(row.video!, format)
+                                }
+                              />
+                              <span className="flex flex-col gap-0.5 text-xs">
+                                {format.label}
+                                {!format.existing ? " (add)" : ""}
+                                <span className="text-muted-foreground">
+                                  {size.width} × {size.height}
+                                </span>
+                              </span>
+                            </Label>
+                          );
+                        })}
+                    </div>
+                  </fieldset>
+                ) : null,
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <Label className="flex flex-col items-start gap-2">
+                  Resolution
+                  <select
+                    aria-label="Resolution"
+                    className="w-full rounded-md border bg-background p-2 text-sm"
+                    disabled={busy}
+                    value={resolution}
+                    onChange={(event) =>
+                      setResolution(event.target.value as ExportResolution)
+                    }
+                  >
+                    <option value="project">Project size</option>
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p</option>
+                    <option value="2160p">4K</option>
+                  </select>
+                </Label>
+                <Label className="flex flex-col items-start gap-2">
+                  Quality
+                  <select
+                    aria-label="Quality"
+                    className="w-full rounded-md border bg-background p-2 text-sm"
+                    disabled={busy}
+                    value={quality}
+                    onChange={(event) =>
+                      setQuality(event.target.value as "high" | "maximum")
+                    }
+                  >
+                    <option value="high">High</option>
+                    <option value="maximum">Maximum</option>
+                  </select>
+                </Label>
+              </div>
+              <Label className="flex items-start gap-2 text-xs font-normal">
+                <Checkbox
+                  disabled={busy}
+                  checked={normalize}
+                  onCheckedChange={(checked) => setNormalize(checked === true)}
+                />
+                Normalize loudness to -14 LUFS (peaks at most -1 dBTP)
+              </Label>
+              {!localSupported ? (
+                <p className="text-xs text-muted-foreground">
+                  Update the helper to use these settings for computer renders.
+                </p>
+              ) : null}
+              <details>
+                <summary className="cursor-pointer text-xs font-medium">
+                  Watch a video from this computer
+                </summary>
+                <div className="pt-3">
+                  <LocalVideoViewer />
+                </div>
+              </details>
+            </div>
+          </ScrollArea>
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 border-t pt-3">
+          <p className="text-sm font-medium">
+            {selected.length} video{selected.length === 1 ? "" : "s"} ·{" "}
+            {fileCount} MP4 file{fileCount === 1 ? "" : "s"}
+          </p>
+          <p
+            className="truncate text-xs text-muted-foreground"
+            title={choices.map((choice) => choice.name).join(", ")}
+          >
+            {choices.map((choice) => choice.name).join(", ")}
+          </p>
+          {error ? (
+            <p role="alert" className="text-xs text-destructive">
+              {error}
+            </p>
+          ) : !loading && selectionError ? (
+            <p className="text-xs text-muted-foreground">{selectionError}</p>
           ) : null}
-
+          {message ? (
+            <p role="status" className="text-xs">
+              {message}
+            </p>
+          ) : null}
+          {activeProgress ? (
+            <p role="status" className="text-xs">
+              {activeProgress.index}/{activeProgress.total} ·{" "}
+              {activeProgress.name} · {activeProgress.variant} ·{" "}
+              {activeProgress.stage} {Math.round(activeProgress.progress * 100)}
+              %
+            </p>
+          ) : null}
+          {results.length ? (
+            <p className="text-xs text-muted-foreground">
+              Saved:{" "}
+              {results
+                .map((result) => `${result.name} (${result.variant})`)
+                .join(", ")}
+            </p>
+          ) : null}
           <div className="flex flex-col gap-2 sm:flex-row">
-            {mode === "browser" ? (
-              <Button
-                variant="outline"
-                className="h-10 flex-1"
-                onClick={cancel}
-              >
-                <X className="size-4" /> Cancel export
+            {mode ? (
+              <Button variant="outline" onClick={cancel}>
+                Cancel export
               </Button>
             ) : (
-              <Button
-                className="h-10 flex-1"
-                disabled={busy || !loaded || selected.length === 0}
-                onClick={() => void runBrowser()}
-              >
-                <MonitorPlay className="size-4" /> Export in browser
-              </Button>
-            )}
-            {mode === "local" ? (
-              <Button variant="outline" className="h-10" onClick={cancel}>
-                <X className="size-4" /> Cancel render
-              </Button>
-            ) : (
-              <TooltipHint content="Uses Remotion on your computer (the first time installs it into the workspace). Use this if a scene uses CSS the browser export can't draw.">
+              <>
+                <Button disabled={!canRun} onClick={() => void run("browser")}>
+                  Export {fileCount} file{fileCount === 1 ? "" : "s"} in browser
+                </Button>
                 <Button
                   variant="outline"
-                  className="h-10"
-                  disabled={busy || selected.length === 0 || !localSupported}
-                  onClick={() => void runLocal()}
+                  disabled={!canRun || !localSupported}
+                  onClick={() => void run("local")}
                 >
-                  <Laptop className="size-4" /> Render on this computer
+                  Render on this computer
                 </Button>
-              </TooltipHint>
+              </>
             )}
           </div>
-
-          {!localSupported ? <p className="text-xs text-muted-foreground">Update the helper to use these export settings for computer renders. Browser export is available now.</p> : null}
-
-          <LocalVideoViewer />
-          {folderPath ? <div className="space-y-1">
-            <button type="button" onClick={() => void copyFolderPath()} className="text-xs font-semibold text-muted-foreground underline">Copy renders folder path</button>
-            <p className="break-all text-xs text-muted-foreground">{folderPath}</p>
-          </div> : null}
-
-          {renders.length > 0 ? (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Latest renders
-                </p>
-                <button
-                  type="button"
-                  onClick={files.openFolder}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  <FolderOpen className="size-3.5" /> Open renders folder
-                </button>
-              </div>
-              <RendersList
-                slug={doc.slug}
-                renders={renders}
-                extras={extras}
-                getBridge={getBridge}
-                limit={3}
-              />
-            </div>
-          ) : null}
         </div>
       </DialogContent>
     </Dialog>

@@ -660,6 +660,7 @@ function CardGraph({
   const flow = useRef<ReactFlowInstance<Card, Edge> | null>(null);
   return (
     <ReactFlow
+      className="studio-clip-flow"
       defaultNodes={initialNodes}
       onInit={instance => { flow.current = instance; }}
       edges={edges}

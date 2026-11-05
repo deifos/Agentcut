@@ -7,6 +7,10 @@ and existing project choices take priority.
 
 ## Reuse working setup
 
+Read `references/efficient-review.md` for grouped independent file/guide reads and changed-shot
+revision checks. Use scoped plans only for intermediate work; retain full final picture/sound
+review and broaden when shared components, media or timing affect other shots.
+
 - Start from the known app URL, source folder and existing project notes. Reuse a working
   preview, app build, captured evidence and generated assets when they are still current.
 - Ask for a missing source location instead of searching the entire home folder and GitHub.

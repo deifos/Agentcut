@@ -8,6 +8,7 @@ import { useScrubber } from "@/components/studio/useScrubber";
 import { usePreviewProxies } from "@/lib/studio/use-preview-proxies";
 import { ConfirmHost, confirmDestructive, isConfirmOpen } from "@/components/studio/ConfirmHost";
 
+import { StyleActionRail } from "@/components/studio/styles/StyleActionRail";
 import { TooltipHint } from "@/components/ui/tooltip";
 import {
   useCallback,
@@ -75,6 +76,8 @@ import {
   MIN_HELPER_VERSION,
 } from "@/lib/version";
 import { STUDIO_COMMAND } from "@/lib/studio/commands";
+import { hasProjectLaunchMedia } from "@/lib/studio/product-launch";
+import type { NewVideoRequest } from "@/lib/studio/video-requests";
 import { StylesTab } from "@/components/studio/styles/StylesTab";
 import { getMotionStyle, type MotionStyle } from "@/motion/components";
 import {
@@ -502,8 +505,13 @@ export function StudioApp() {
   const sendChat = useCallback(
     async (
       text: string,
-      options: { attachFrame: boolean; references?: ChatReference[] },
+      options: { attachFrame: boolean; references?: ChatReference[]; newVideo?: NewVideoRequest },
     ) => {
+      if (options.newVideo && !info?.features?.includes("chat-video-creation")) {
+        const message = "The running helper cannot create a separate video from chat yet. Update the helper before starting this video. Your current edit is safe.";
+        toast.error(message);
+        throw new Error(message);
+      }
       const attachments: string[] = [];
       if (options.attachFrame && doc && loaded) {
         try {
@@ -534,9 +542,11 @@ export function StudioApp() {
         agent: agentPickable ? agent?.id : undefined,
         model: model ?? undefined,
         effort: effort ?? undefined,
+        newVideo: options.newVideo,
+        sourceSlug: options.newVideo ? doc?.slug : undefined,
       });
     },
-    [agent?.id, agentPickable, model, effort, doc, frameStore, loaded, studio, variant],
+    [agent?.id, agentPickable, model, effort, doc, frameStore, loaded, studio, variant, info],
   );
 
   /** A camera take goes at the end of the Footage track (made when missing). */
@@ -907,6 +917,7 @@ export function StudioApp() {
                 simple={simple}
                 externalUploading={uploadCounts[chatSlug] ?? 0}
                 hasVideo={Boolean(doc?.layers?.tracks.some((track) => track.clips.length > 0))}
+                hasLaunchMedia={hasProjectLaunchMedia(studio.assets)}
                 onDraw={() => { playerRef.current?.pause(); setDrawingOpen((open) => !open); }}
                 drawingOpen={drawingOpen}
                 drawingAvailable={Boolean(loaded && !blankVideo)}
@@ -952,9 +963,8 @@ export function StudioApp() {
               />
             </aside>
           {!simple && doc?.project ? (
-            // Zero-width slot on the seam: the tab hangs off the chat panel over the preview's edge.
-            <div className="relative -mx-1 w-0 shrink-0">
-              <div className="absolute top-12 -left-[5px] z-20 flex flex-col gap-2">
+            // Keep the style actions within the upper pane as the timeline grows.
+            <StyleActionRail>
                 <StylesTab
                   onSave={() => setSaveStyleOpen(true)}
                   saveDisabled={readOnly || Boolean(chat.running)}
@@ -963,8 +973,7 @@ export function StudioApp() {
                 />
                 <StyleSpyTab onClick={() => setStyleSpyOpen(true)} />
                 <CinematicTab onClick={() => setCinematicOpen(true)} />
-              </div>
-            </div>
+            </StyleActionRail>
           ) : null}
           <main className={cn(PANEL, "studio-stage flex min-w-0 flex-1 flex-col", simple && blankVideo && !chat.running && "studio-stage-empty")}>
             {simple && doc?.project ? <VideoFormatPicker key={doc.slug} project={doc.project} variant={variant} disabled={status !== "connected" || Boolean(chat.running)} onSave={async (project) => {
@@ -1312,7 +1321,6 @@ export function StudioApp() {
         ) : null}
         {doc?.project ? (
           <ExportDialog
-            key={`export-${doc.slug}`}
             open={exportOpen}
             onOpenChange={setExportOpen}
             doc={doc}
@@ -1323,6 +1331,7 @@ export function StudioApp() {
             job={studio.exportJob}
             setJob={studio.setExportJob}
             getBridge={studio.getBridge}
+            flush={studio.flushWrite}
             qualitySupported={Boolean(info?.features?.includes("export-quality"))}
             resolutionSupported={Boolean(info?.features?.includes("export-resolution"))}
             fourKSupported={Boolean(info?.features?.includes("export-4k"))}

@@ -350,6 +350,11 @@ export class ChatEngine {
       );
     }
     if (typeof page.variant === "string") lines.push(`Variant on screen: ${page.variant}`);
+    const sourceVideo = asRecord(context.sourceVideo);
+    if (typeof sourceVideo.slug === "string") {
+      lines.push(`This is a separate new video in the same canvas. Its source video (${sourceVideo.slug}) must stay unchanged. Its assets were copied; shared library files remain available. Write only to the active project above.`);
+      if (typeof sourceVideo.brief === "string" && sourceVideo.brief.trim()) lines.push(`Earlier user context for reference (not permission to edit the old video):\n${sourceVideo.brief.slice(0, 12_000)}`);
+    }
     if (typeof page.playheadFrame === "number") {
       const fps = typeof page.fps === "number" ? page.fps : 30;
       lines.push(`Playhead: frame ${page.playheadFrame} (${(page.playheadFrame / fps).toFixed(2)} s)`);

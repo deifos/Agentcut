@@ -43,6 +43,30 @@ working setup. Keep the full creative and review workflow below, including forma
 music, sound and visual checks. Remove stalled waits and repeated setup without reducing quality.
 User-requested scope and existing project choices take priority.
 
+## How-to
+
+For the **How-to** chat action or a request for a tutorial, walkthrough, or video that teaches a
+software task, read `references/how-to.md` first (`agentcut_guide` through MCP). Keep the user's
+brief, uploads, style and music. A bare request without a task or project material needs only:
+"What should viewers learn to do? Add a URL, recording, or a short description of the task."
+Ask immediately; do not search libraries or other projects to guess the task. Use the normal studio
+workflow, not the release-job API, which does not support how-to jobs.
+
+New-video actions create a separate canvas video when the current edit has content; a truly empty
+video is reused. Work only on the assigned target. Keep the source video unchanged. Explicit edit
+requests stay on the intended edit; ask which destination for ambiguous requests before changing it.
+
+## Product Launch
+
+For the **Product Launch** chat action or a written request for a product launch video, product reveal,
+launch film, or video to introduce a new product or feature, read `references/product-launch.md` first
+(through `agentcut_guide` when using MCP). Use the same guide with uploaded footage or from scratch.
+Keep the user's brief, attachments and selected style/music. Inspect existing material before asking
+for input. For a bare request without product context or project material, ask what is launching and
+for a URL or short description immediately; do not scan libraries, sources or other projects to guess.
+This is a creative brief, not a fixed template or the release capture prototype below.
+Use that prototype only when its real-app capture workflow is requested or needed for verified proof.
+
 ## Release announcements from a real app
 
 This flow must work from the app URL, user brief and browser-visible UI. Source-code access is
@@ -303,7 +327,7 @@ scripts from the project folder (e.g. composing music or fetching CC0 sounds, se
 | `agentcut_preview_check` | does the live preview keep up? dropped frames per clip (see `references/performance.md`) |
 | `agentcut_import_reference` | Style Spy: a reference video plus sampled frames (see `references/style-spy.md`) |
 | `agentcut_inspect_reference` | Inspect consecutive source frames and crop a caption or graphic for measurement |
-| `agentcut_voice_options` / `_generate_voice` | voice-overs with the user's own provider (see `references/sound.md`) |
+| `agentcut_voice_options` / `_generate_voice` | free local Kokoro by default; paid only on explicit user selection (see `references/sound.md`) |
 | `agentcut_components` | the component library: search, then `id` for props and a ready clip |
 | `agentcut_music_catalog` / `_add_catalog_music` | the Agentcut music library (200+ hosted songs) |
 | `agentcut_broll_search` / `_add_broll` | archival public-domain footage by meaning (see `references/broll.md`) |

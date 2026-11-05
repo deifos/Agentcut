@@ -13,6 +13,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.22] - 2026-11-04
+
+### Added
+
+- Style Spy can inspect up to 16 consecutive source frames and crop a caption or graphic. Reference
+  analysis records the frame rate and the frame number of each detected cut, including rapid cuts.
+- The Style Spy workflow directs the agent to save a reusable motion recipe and compare the edit
+  with it. The report separates timing and layout differences from intentional content changes.
+
+### Fixed
+
+- Studio excludes hidden reference files before it counts assets against the panel limit.
+
 ## [0.2.21] - 2026-11-04
 
 ### Added
@@ -556,7 +569,9 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.20...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.22...HEAD
+[0.2.22]: https://github.com/deifos/Agentcut/compare/v0.2.21...v0.2.22
+[0.2.21]: https://github.com/deifos/Agentcut/compare/v0.2.20...v0.2.21
 [0.2.20]: https://github.com/deifos/Agentcut/compare/v0.2.19...v0.2.20
 [0.2.19]: https://github.com/deifos/Agentcut/compare/v0.2.18...v0.2.19
 [0.2.18]: https://github.com/deifos/Agentcut/compare/v0.2.17...v0.2.18

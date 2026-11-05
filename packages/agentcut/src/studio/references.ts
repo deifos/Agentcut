@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
+import { z } from "zod";
 import { debugLog } from "../log.js";
 import { killTree } from "./proc.js";
 import { assertSlug, projectDir, safeJoin, StudioError } from "./projects.js";
@@ -34,7 +35,6 @@ const MAX_BYTES = 200 * 1024 * 1024;
 const MAX_SECONDS = 600;
 // Frames: one per shot (several for long shots), capped.
 const SCENE_THRESHOLD = 0.3;
-const MIN_SHOT_SECONDS = 0.4;
 const LONG_SHOT_SECONDS = 6;
 const MAX_FRAMES = 48;
 const MAX_CUT_STRIPS = 30;
@@ -442,19 +442,72 @@ async function probeDuration(ffmpeg: string, file: string) {
   return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
 }
 
-/** Cut times (seconds) where the picture changes: hard cuts and layout switches (split screens, cards). */
-async function detectCuts(ffmpeg: string, video: string) {
+// Score every decoded frame. Streaming the metadata keeps the first cuts of long
+// videos even when the process log exceeds the retained diagnostic buffer.
+async function measureCuts(ffmpeg: string, video: string) {
+  const candidates: { frame: number; pts: number }[] = [];
+  let frame = -1;
+  let pts = 0;
+  let origin = 0;
   const result = await run(
     ffmpeg,
-    ["-hide_banner", ...MEDIA_INPUT_ONLY, "-i", video, "-an", "-vf", `scale=160:-2,select='gt(scene,${SCENE_THRESHOLD})',showinfo`, "-f", "null", "-"],
-    { timeoutMs: 5 * 60_000 },
+    ["-hide_banner", "-nostats", ...MEDIA_INPUT_ONLY, "-i", video, "-map", "0:v:0", "-an", "-vf",
+      "scale=160:-2,select='gte(scene,0)',metadata=print:key=lavfi.scene_score:file='pipe\\:1',select='eq(n,0)',showinfo",
+      "-f", "null", "-"],
+    { timeoutMs: 5 * 60_000, onLine(line) {
+      const header = /^frame:(\d+)\s+pts:\s*(-?\d+)/.exec(line);
+      if (header) {
+        frame = Number(header[1]);
+        pts = Number(header[2]);
+        if (frame === 0) origin = pts;
+      } else if (frame > 0 && line.startsWith("lavfi.scene_score=") && Number(line.split("=")[1]) > SCENE_THRESHOLD) {
+        candidates.push({ frame, pts: pts - origin });
+      }
+    } },
   );
-  const cuts: number[] = [];
-  for (const match of result.stderr.matchAll(/pts_time:([\d.]+)/g)) {
-    const time = Number(match[1]);
-    if (time - (cuts.at(-1) ?? 0) >= MIN_SHOT_SECONDS) cuts.push(Math.round(time * 100) / 100);
+  const config = /config in time_base: (\d+)\/(\d+), frame_rate: (\d+)\/(\d+)/.exec(result.stderr);
+  if (result.code !== 0 || !config || frame < 0) throw new ReferenceError("failed", "Could not measure the reference frames.");
+  return {
+    frameCount: frame + 1,
+    frameRate: Number(config[4]) > 0 && Number(config[3]) > 0 ? `${config[3]}/${config[4]}` : null,
+    cutFrames: candidates.map(({ frame, pts }) => ({ frame, time: pts * Number(config[1]) / Number(config[2]) })),
+  };
+}
+
+export const referenceInspection = z.object({
+  path: z.string().regex(/^assets\/references\/[a-zA-Z0-9_-]{1,80}\/[^/:\\]+\.(mp4|webm|mov|m4v)$/i),
+  startFrame: z.number().int().min(0).max(10_000_000),
+  count: z.number().int().min(1).max(16).default(8),
+  // Fractions of the displayed frame, measured from its top left.
+  region: z.object({ x: z.number().min(0), y: z.number().min(0), width: z.number().positive(), height: z.number().positive() })
+    .refine(r => r.x + r.width <= 1 && r.y + r.height <= 1, "Region exceeds the frame.").optional(),
+});
+
+export async function inspectReference(paths: WorkspacePaths, slug: string, input: unknown) {
+  const { path, startFrame, count, region } = referenceInspection.parse(input);
+  const root = projectDir(paths, slug);
+  const video = safeJoin(root, path);
+  const rel = `.studio/scratch/style-spy/${randomUUID()}.jpg`;
+  const output = safeJoin(root, rel);
+  mkdirSync(dirname(output), { recursive: true });
+  const columns = Math.min(count, 4);
+  const filters = [
+    "setpts=PTS-STARTPTS", `trim=start_frame=${startFrame}:end_frame=${startFrame + count}`, "showinfo=checksum=0",
+    ...(region ? [`crop=w=max(2\\,iw*${region.width}):h=max(2\\,ih*${region.height}):x=iw*${region.x}:y=ih*${region.y}`] : []),
+    // Fit the displayed aspect ratio into square-pixel cells, including anamorphic sources.
+    "scale=w='max(1,min(480,round(320*dar)))':h='max(1,min(320,round(480/dar)))',setsar=1",
+    "pad=480:320:(ow-iw)/2:(oh-ih)/2",
+    `tile=${columns}x${Math.ceil(count / columns)}:nb_frames=${count}:padding=2`,
+  ];
+  const result = await run(await ensureFfmpeg(), ["-hide_banner", "-nostats", ...MEDIA_INPUT_ONLY, "-i", video,
+    "-map", "0:v:0", "-an", "-vf", filters.join(","), "-frames:v", "1", "-q:v", "3", output], { timeoutMs: 120_000 });
+  const frames = [...result.stderr.matchAll(/\bn:\s*(\d+)\s+pts:\s*-?\d+\s+pts_time:(\S+)/g)]
+    .map(match => ({ frame: startFrame + Number(match[1]), time: Number(match[2]) }));
+  if (result.code !== 0 || !frames.length || !existsSync(output)) {
+    rmSync(output, { force: true });
+    throw new StudioError("Could not read that frame range. Check the video and its frame count.");
   }
-  return cuts;
+  return { sheet: rel, columns, frames, dataUrl: `data:image/jpeg;base64,${readFileSync(output).toString("base64")}` };
 }
 
 export interface ReferenceShot {
@@ -547,6 +600,7 @@ async function renderStrip(ffmpeg: string, video: string, strip: Omit<ReferenceS
 }
 
 export interface ReferenceAnalysis {
+  timing: Awaited<ReturnType<typeof measureCuts>> | null;
   duration: number;
   cuts: number[];
   averageShotSeconds: number;
@@ -561,7 +615,8 @@ export interface ReferenceAnalysis {
 /** Cuts, shots, frames and an overview sheet in `<folder>/frames`, for the agent to read. */
 async function analyzeVideo(ffmpeg: string, video: string, folder: string, rel: string): Promise<ReferenceAnalysis> {
   const duration = await probeDuration(ffmpeg, video);
-  const cuts = await detectCuts(ffmpeg, video).catch(() => [] as number[]);
+  const timing = await measureCuts(ffmpeg, video).catch(() => null);
+  const cuts = timing?.cutFrames.map(cut => cut.time) ?? [];
   const { shots, times } = planFrames(duration, cuts);
   const dir = join(folder, "frames");
   rmSync(dir, { recursive: true, force: true });
@@ -594,12 +649,13 @@ async function analyzeVideo(ffmpeg: string, video: string, folder: string, rel: 
     if (ok) strips.push({ ...strip, path: `${rel}/motion/${name}` });
   }
   return {
+    timing,
     duration: Math.round(duration * 100) / 100,
     cuts,
     averageShotSeconds: Math.round((duration / shots.length) * 10) / 10,
     shots: shots.map((shot) => ({
-      start: Math.round(shot.start * 100) / 100,
-      end: Math.round(shot.end * 100) / 100,
+      start: shot.start,
+      end: shot.end,
       frames: frames.filter((f) => f.time >= shot.start && f.time < shot.end).map((f) => f.path),
     })),
     frames,

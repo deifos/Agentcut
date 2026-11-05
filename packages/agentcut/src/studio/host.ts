@@ -30,7 +30,7 @@ import {
   writeProjectFile,
   type CreateProjectInput,
 } from "./projects.js";
-import { installedBrowsers, ReferenceImports } from "./references.js";
+import { inspectReference, installedBrowsers, ReferenceImports } from "./references.js";
 import { cancelLocalRender, localRenderSlug, runLocalRender } from "./render.js";
 import { importShare, shareProject } from "./share.js";
 import { openFile, openWebUrl, projectFile, revealFile } from "./reveal.js";
@@ -560,6 +560,8 @@ export class StudioHost implements BridgeExtension {
           this.emit("studio.assets", { slug });
           return result;
         })();
+      case "studio.local.inspect_reference":
+        return inspectReference(this.paths, assertSlug(p.slug ?? this.pageSession?.activeProject), p);
       case "studio.local.import_reference":
         return (async () => {
           const slug = assertSlug(p.slug ?? this.pageSession?.activeProject);

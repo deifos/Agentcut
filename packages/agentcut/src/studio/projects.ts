@@ -421,7 +421,7 @@ export interface AssetEntry {
   renderDurationMs?: number;
 }
 
-function walk(root: string, dir: string, out: AssetEntry[], limit: number) {
+function walk(root: string, dir: string, out: AssetEntry[], limit: number, skip?: RegExp) {
   let entries: import("node:fs").Dirent[] = [];
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -432,13 +432,15 @@ function walk(root: string, dir: string, out: AssetEntry[], limit: number) {
     if (out.length >= limit) return;
     if (entry.name.startsWith(".") || (entry.isFile() && /\.mp4\.render\.json$/i.test(entry.name))) continue;
     const full = join(dir, entry.name);
+    const path = relative(root, full).split(sep).join("/");
+    if (skip?.test(path)) continue;
     if (entry.isDirectory()) {
-      walk(root, full, out, limit);
+      walk(root, full, out, limit, skip);
     } else if (entry.isFile()) {
       try {
         const stat = statSync(full);
         out.push({
-          path: relative(root, full).split(sep).join("/"),
+          path,
           size: stat.size,
           kind: mediaKind(entry.name),
           updatedAt: stat.mtimeMs,
@@ -453,10 +455,11 @@ function walk(root: string, dir: string, out: AssetEntry[], limit: number) {
 export function listAssets(paths: WorkspacePaths, slug: string): AssetEntry[] {
   const dir = projectDir(paths, slug);
   const out: AssetEntry[] = [];
-  walk(dir, join(dir, "assets"), out, 2000);
+  // Exclude analysis files before counting assets against the panel limit.
+  const analysis = /^assets\/references\/[^/]+\/(frames|motion|reference\.json|recipe\.(?:md|json)|comparison\.md)$/;
+  walk(dir, join(dir, "assets"), out, 2000, analysis);
   walk(dir, join(dir, "renders"), out, 2500);
-  // Style Spy's frames, metadata and recipe are for the agent, not the asset panel.
-  return out.filter((entry) => !/^assets\/references\/[^/]+\/(frames\/|motion\/|reference\.json$|recipe\.md$)/.test(entry.path));
+  return out;
 }
 
 export function listLibrary(paths: WorkspacePaths): AssetEntry[] {

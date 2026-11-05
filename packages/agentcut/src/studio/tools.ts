@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { editingStyleInput } from "./editing-styles.js";
+import { referenceInspection } from "./references.js";
 import { callEditor, persistAgentFrameResult } from "../bridge.js";
 import { releaseInput, releaseAction, releasePlan } from "./release-video.js";
 
@@ -251,6 +252,17 @@ export function registerStudioTools(server: McpServer) {
       return callEditor("studio.local.import_reference", { slug, url, path }, { timeoutMs: 10 * MINUTE });
     },
   );
+
+  defineTool(server, "agentcut_inspect_reference",
+    "Style Spy: inspect up to 16 consecutive source frames starting at zero-based startFrame. Optional region uses fractions of the displayed width and height from the top left. Returns the image in reading order and each frame's timestamp.",
+    { ...referenceInspection.shape, project },
+    async ({ project: slug, ...input }) => {
+      const result = await callEditor("studio.local.inspect_reference", { slug, ...input }, { timeoutMs: 3 * MINUTE, includeImages: true });
+      const { dataUrl, ...metadata } = result as { dataUrl: string; sheet: string };
+      const images: VisualResult["images"] = [];
+      collectImages({ dataUrl }, images);
+      return new VisualResult(metadata, images);
+    });
 
   defineTool(
     server,

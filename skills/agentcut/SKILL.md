@@ -298,6 +298,7 @@ scripts from the project folder (e.g. composing music or fetching CC0 sounds, se
 | `agentcut_cutout_person` | transparent cutout of a person, for graphics behind them (see `references/person-cutout.md`) |
 | `agentcut_preview_check` | does the live preview keep up? dropped frames per clip (see `references/performance.md`) |
 | `agentcut_import_reference` | Style Spy: a reference video plus sampled frames (see `references/style-spy.md`) |
+| `agentcut_inspect_reference` | Inspect consecutive source frames and crop a caption or graphic for measurement |
 | `agentcut_voice_options` / `_generate_voice` | voice-overs with the user's own provider (see `references/sound.md`) |
 | `agentcut_components` | the component library: search, then `id` for props and a ready clip |
 | `agentcut_music_catalog` / `_add_catalog_music` | the Agentcut music library (200+ hosted songs) |

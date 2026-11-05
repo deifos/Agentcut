@@ -65,7 +65,9 @@ test("external stdio client discovers the full toolkit, reads the shipped skill 
     calls.push(request);
     res.end(
       JSON.stringify({
-        result: {
+        result: request.method === "studio.local.inspect_reference" ? {
+          dataUrl: `data:image/png;base64,${png}`, frames: [{ frame: 3, time: 0.1 }],
+        } : {
           frames: [{ frame: 0, dataUrl: `data:image/png;base64,${png}` }],
         },
       }),
@@ -77,6 +79,12 @@ test("external stdio client discovers the full toolkit, reads the shipped skill 
     assert.match(client.getInstructions(), /same skills/);
     const tools = (await client.listTools()).tools.map((tool) => tool.name);
     const capabilities = await call(client, "agentcut_capabilities");
+    const inspection = await client.callTool({ name: "agentcut_inspect_reference", arguments: {
+      path: "assets/references/sample/video.mp4", startFrame: 3,
+    } });
+    assert.equal(inspection.content[1]?.data, png);
+    assert.equal(JSON.parse(inspection.content[0].text).frames[0].frame, 3);
+    assert.equal(calls.at(-1).includeImages, true);
     assert.deepEqual(
       capabilities.tools.map((tool) => tool.name).sort(),
       [...tools].sort(),

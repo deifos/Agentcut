@@ -729,7 +729,7 @@ async function startBridgeServer() {
         // MCP clients need image content for visual review without a shared disk.
         // Existing HTTP callers retain the persisted-file response by default.
         const includeImages = body.includeImages === true &&
-          (method === "studio_capture_frames" || method === "studio_contact_sheet");
+          (method === "studio_capture_frames" || method === "studio_contact_sheet" || method === "studio.local.inspect_reference");
         const result = includeImages ? raw : persistAgentFrameResult(raw);
         sendJsonResponse(response, 200, { result });
         return;

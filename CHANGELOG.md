@@ -13,6 +13,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.21] - 2026-11-04
+
 ### Added
 
 - Watch local videos without the helper: choose a video or folder on the connection screen or in Export. Files are played directly in the browser and are not uploaded. Export also shows a copyable renders folder path after connecting.

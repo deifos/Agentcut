@@ -14,6 +14,7 @@ export interface CanvasExportCut {
   title: string;
   version: string;
   sourceOnly?: boolean;
+  poster?: { project: string; path: string; seconds?: number };
 }
 export interface ExportVideo {
   slug: string;

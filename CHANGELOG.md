@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- The export dialog shows a preview and duration for each video. Select output formats with the format cards. Open Advanced to adjust loudness, watch local videos, or open saved files.
+
 ## [0.2.25] - 2026-11-06
 
 ### Added

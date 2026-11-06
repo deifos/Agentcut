@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { exportInBrowser, planLoudness } from "@/lib/studio/export";
 import { fetchStudioBundle, evaluateStudioBundle } from "@/lib/studio/bundle";
@@ -37,6 +36,44 @@ import {
   exportSize,
   type ExportResolution,
 } from "@/packages/agentcut/src/studio/export-resolution";
+import {
+  Clapperboard,
+  Check,
+  ChevronDown,
+  Monitor,
+  Smartphone,
+  Square,
+  RectangleVertical,
+  SlidersHorizontal,
+  Upload,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { ExportVideoThumbnail, exportDuration } from "./ExportVideoThumbnail";
 import { LocalVideoViewer } from "./LocalVideoViewer";
 interface Props {
   open: boolean;
@@ -56,7 +93,13 @@ interface Props {
   fourKSupported: boolean;
   workspace?: string;
 }
-type Row = { slug: string; name: string; video?: ExportVideo; error?: string };
+type Row = {
+  slug: string;
+  name: string;
+  video?: ExportVideo;
+  error?: string;
+  poster?: CanvasExportCut["poster"];
+};
 type Mode = "browser" | "local";
 function SavedFiles({
   video,
@@ -84,6 +127,8 @@ export function ExportDialog({
   open,
   onOpenChange,
   doc,
+  loaded,
+  currentVariant,
   coverFrame,
   job,
   setJob,
@@ -104,6 +149,7 @@ export function ExportDialog({
   const [resolution, setResolution] = useState<ExportResolution>("project");
   const [mode, setMode] = useState<Mode | null>(null);
   const [adding, setAdding] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const [progress, setProgress] = useState<ExportFileProgress | null>(null);
   const [results, setResults] = useState<ExportFileResult[]>([]);
   const [message, setMessage] = useState("");
@@ -135,11 +181,15 @@ export function ExportDialog({
       const next = await Promise.all(
         canvas.cuts.map(async (cut): Promise<Row> => {
           const title = cut.title || cut.slug;
-          const name = cut.version && cut.version !== "Original" ? `${title} · ${cut.version}` : title;
+          const name =
+            cut.version && cut.version !== "Original"
+              ? `${title} · ${cut.version}`
+              : title;
           try {
             return {
               slug: cut.slug,
               name,
+              poster: cut.poster,
               video: await readExportVideo(bridge, cut.slug, name),
             };
           } catch (reason) {
@@ -154,7 +204,11 @@ export function ExportDialog({
       if (!disposed) {
         setRows(next);
         const activeVideo = next.find((row) => row.slug === doc.slug)?.video;
-        setSelected(activeVideo && !activeVideo.error && !activeVideo.draft ? [doc.slug] : []);
+        setSelected(
+          activeVideo && !activeVideo.error && !activeVideo.draft
+            ? [doc.slug]
+            : [],
+        );
         setFormats(
           Object.fromEntries(
             next.map((row) => [
@@ -388,6 +442,16 @@ export function ExportDialog({
       const refreshed = refreshResults.flatMap((result) =>
         result.status === "fulfilled" ? [result.value] : [],
       );
+      setFormats((previous) => {
+        const next = { ...previous };
+        for (const video of refreshed) {
+          const variants = video.doc.project?.variants ?? {};
+          next[video.slug] = (previous[video.slug] ?? []).filter((id) =>
+            Object.hasOwn(variants, id),
+          );
+        }
+        return next;
+      });
       setRows((previous) =>
         previous.map((row) => {
           const video = refreshed.find((video) => video.slug === row.slug);
@@ -417,25 +481,40 @@ export function ExportDialog({
     mode === "local" && job && job.slug === progress?.slug
       ? { ...progress, stage: job.stage, progress: job.progress }
       : progress;
+  const singleVideo =
+    selectedRows.length === 1 ? selectedRows[0]?.video : undefined;
+  const summarySize =
+    singleVideo?.doc.project && choices[0]?.variants.length === 1
+      ? exportSize(
+          singleVideo.doc.project.variants[choices[0].variants[0]],
+          resolution,
+        )
+      : null;
+  const selectedDuration = exportDuration(singleVideo);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92dvh] flex-col gap-4 overflow-hidden sm:max-w-[1100px] [&>*]:min-w-0">
-        <DialogHeader className="shrink-0">
-          <DialogTitle>Export canvas videos</DialogTitle>
+      <DialogContent className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[1100px] [&>*]:min-w-0">
+        <DialogHeader className="shrink-0 px-5 pt-5 pb-4 text-left sm:px-6">
+          <DialogTitle className="flex items-center gap-2">
+            <Clapperboard className="size-5" />
+            Export videos
+          </DialogTitle>
           <DialogDescription>
-            Select videos, then select their output formats. MP4 files and cover
-            images go to each video&apos;s own renders folder. Existing files
-            stay in place.
+            Select videos and output formats. MP4 files and cover images go to
+            each video&apos;s own renders folder.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid min-h-0 gap-5 md:h-[min(60dvh,520px)] md:grid-cols-[0.9fr_1.1fr]">
+        <Separator />
+        <div className="studio-export-body grid min-h-0 md:grid-cols-[0.95fr_1.05fr]">
           <ScrollArea
-            className="min-h-0 max-h-[28dvh] md:max-h-[60dvh]"
+            className="max-h-[25dvh] min-h-0 md:max-h-[min(52dvh,430px)]"
             viewportProps={{ tabIndex: 0, "aria-label": "Canvas videos" }}
           >
-            <div className="flex flex-col gap-3 pr-3">
+            <div className="flex min-w-0 flex-col gap-3 px-5 py-4 sm:px-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">1. Videos</h3>
+                <h3 className="text-sm font-semibold">
+                  Videos ({rows.length})
+                </h3>
                 <Button
                   size="sm"
                   variant="outline"
@@ -455,80 +534,128 @@ export function ExportDialog({
                 </Button>
               </div>
               {loading ? (
-                <p role="status">Checking videos…</p>
+                <div
+                  className="flex flex-col gap-3"
+                  role="status"
+                  aria-label="Checking videos"
+                >
+                  {[0, 1].map((item) => (
+                    <Skeleton key={item} className="h-24 w-full rounded-lg" />
+                  ))}
+                </div>
               ) : (
-                rows.map((row) => (
-                  <Label
-                    key={row.slug}
-                    className="flex items-start gap-3 rounded-md border p-3 font-normal"
-                  >
-                    <Checkbox
-                      aria-label={`Export ${row.name}`}
-                      disabled={
-                        busy ||
-                        Boolean(
-                          (row.error || row.video?.error) &&
-                          !selected.includes(row.slug),
-                        )
-                      }
-                      checked={selected.includes(row.slug)}
-                      onCheckedChange={(checked) =>
-                        setSelected((previous) =>
-                          checked
-                            ? [...previous, row.slug]
-                            : previous.filter((slug) => slug !== row.slug),
-                        )
-                      }
-                    />
-                    <span className="flex min-w-0 flex-col gap-1">
-                      <span className="break-words font-medium">
-                        {row.name}
-                        {row.slug === doc.slug ? " (selected in editor)" : ""}
-                      </span>
-                      <span className="break-words text-xs text-muted-foreground">
-                        {row.error ||
-                          row.video?.error ||
-                          (row.video?.draft
-                            ? "Draft: no picture clips. Select this video only if you want this output."
-                            : "Ready to export")}
-                      </span>
-                    </span>
-                  </Label>
-                ))
+                rows.map((row) => {
+                  const checked = selected.includes(row.slug);
+                  const issue = row.error || row.video?.error;
+                  return (
+                    <Field
+                      key={row.slug}
+                      orientation="horizontal"
+                      data-disabled={busy || Boolean(issue && !checked)}
+                    >
+                      <FieldLabel
+                        className={cn(
+                          "studio-export-video flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border p-3",
+                          checked && "studio-export-video-selected",
+                        )}
+                      >
+                        <Checkbox
+                          aria-label={`Export ${row.name}`}
+                          disabled={busy || Boolean(issue && !checked)}
+                          checked={checked}
+                          onCheckedChange={(value) =>
+                            setSelected((previous) =>
+                              value
+                                ? [...previous, row.slug]
+                                : previous.filter((slug) => slug !== row.slug),
+                            )
+                          }
+                        />
+                        <ExportVideoThumbnail
+                          video={row.video}
+                          poster={row.poster}
+                          loaded={row.slug === doc.slug ? loaded : null}
+                          variant={
+                            row.slug === doc.slug
+                              ? currentVariant
+                              : (row.video?.doc.project?.defaultVariant ?? "")
+                          }
+                          frame={row.slug === doc.slug ? coverFrame : 0}
+                          paused={busy || !open}
+                        />
+                        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                          <span className="break-words text-sm font-semibold">
+                            {row.name}
+                          </span>
+                          {row.slug === doc.slug ? (
+                            <span className="text-xs font-normal text-muted-foreground">
+                              Selected in editor
+                            </span>
+                          ) : null}
+                          {issue ? (
+                            <span className="break-words text-xs font-normal text-muted-foreground">
+                              {issue}
+                            </span>
+                          ) : row.video?.draft ? (
+                            <Badge variant="outline">
+                              Draft · no picture clips
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              <Check />
+                              Ready to export
+                            </Badge>
+                          )}
+                        </span>
+                      </FieldLabel>
+                    </Field>
+                  );
+                })
               )}
               {!loading && !rows.length ? (
-                <p>No videos are available.</p>
+                <p className="text-sm text-muted-foreground">
+                  No videos are available.
+                </p>
               ) : null}
-              {rows
-                .filter(
-                  (row) => row.video && rendersFrom(row.video.assets).length,
-                )
-                .map((row) => (
-                  <SavedFiles
-                    key={row.slug}
-                    video={row.video!}
-                    getBridge={getBridge}
-                  />
-                ))}
             </div>
           </ScrollArea>
           <ScrollArea
-            className="min-h-0 max-h-[36dvh] md:max-h-[60dvh]"
+            className="max-h-[37dvh] min-h-0 border-t md:max-h-[min(52dvh,430px)] md:border-t-0 md:border-l"
             viewportProps={{ tabIndex: 0, "aria-label": "Output settings" }}
           >
-            <div className="flex flex-col gap-4 pr-3">
-              <h3 className="text-sm font-semibold">2. Output formats</h3>
+            <div className="flex min-w-0 flex-col gap-3 px-5 py-4 sm:px-6">
+              <h3 className="text-sm font-semibold">Output formats</h3>
               {selectedRows.map((row) =>
                 row?.video?.doc.project ? (
-                  <fieldset
-                    key={row.slug}
-                    disabled={busy}
-                    className="flex min-w-0 flex-col gap-2"
-                  >
-                    <legend className="mb-2 break-words text-sm font-medium">
+                  <FieldSet key={row.slug} disabled={busy} className="gap-2">
+                    <FieldLegend className="mb-0 break-words text-sm">
                       {row.name}
-                    </legend>
-                    <div className="flex flex-wrap gap-2">
+                    </FieldLegend>
+                    <ToggleGroup
+                      type="multiple"
+                      variant="outline"
+                      spacing={2}
+                      className={cn(
+                        "studio-export-formats grid w-full items-stretch gap-2",
+                        selected.length > 1
+                          ? "grid-cols-2"
+                          : "grid-cols-2 sm:grid-cols-4",
+                      )}
+                      value={formats[row.slug] ?? []}
+                      onValueChange={(values) => {
+                        const changed = [
+                          ...new Set([...(formats[row.slug] ?? []), ...values]),
+                        ].find(
+                          (id) =>
+                            (formats[row.slug] ?? []).includes(id) !==
+                            values.includes(id),
+                        );
+                        const format = exportFormats(
+                          row.video!.doc.project!,
+                        ).find((format) => format.id === changed);
+                        if (format) void toggleFormat(row.video!, format);
+                      }}
+                    >
                       {exportFormats(row.video.doc.project)
                         .filter(
                           (format) =>
@@ -537,108 +664,193 @@ export function ExportDialog({
                         )
                         .map((format) => {
                           const size = exportSize(format, resolution);
+                          const ratio = (format.width / format.height).toFixed(
+                            2,
+                          );
+                          const Icon =
+                            format.width === format.height
+                              ? Square
+                              : format.width > format.height
+                                ? Monitor
+                                : ratio === "0.56"
+                                  ? Smartphone
+                                  : RectangleVertical;
+                          const [aspect, ...name] = format.label.split(" ");
                           return (
-                            <Label
+                            <ToggleGroupItem
                               key={format.id}
-                              className="flex items-center gap-2 rounded-md border px-3 py-2 font-normal"
+                              value={format.id}
+                              disabled={busy}
+                              aria-label={`${row.name}: ${format.label}`}
+                              className={cn(
+                                "studio-export-format h-auto min-w-0 gap-1 rounded-lg! border! px-2",
+                                selected.length > 1
+                                  ? "flex-row flex-wrap justify-start gap-x-2 py-2"
+                                  : "flex-col py-2.5",
+                              )}
                             >
-                              <Checkbox
-                                aria-label={`${row.name}: ${format.label}`}
-                                checked={(formats[row.slug] ?? []).includes(
-                                  format.id,
+                              <Icon
+                                className={cn(
+                                  "size-5",
+                                  selected.length === 1 && "mb-1",
                                 )}
-                                disabled={busy}
-                                onCheckedChange={() =>
-                                  void toggleFormat(row.video!, format)
-                                }
                               />
-                              <span className="flex flex-col gap-0.5 text-xs">
-                                {format.label}
-                                {!format.existing ? " (add)" : ""}
-                                <span className="text-muted-foreground">
-                                  {size.width} × {size.height}
-                                </span>
+                              <span className="font-semibold">{aspect}</span>
+                              <span className="text-xs font-normal">
+                                {name.join(" ")}
                               </span>
-                            </Label>
+                              <span
+                                className={cn(
+                                  "text-[10px] font-normal text-muted-foreground",
+                                  selected.length > 1 && "w-full text-left",
+                                )}
+                              >
+                                {size.width} × {size.height}
+                              </span>
+                              {!format.existing ? (
+                                <span className="text-[10px] font-normal text-muted-foreground">
+                                  Add format
+                                </span>
+                              ) : null}
+                            </ToggleGroupItem>
                           );
                         })}
-                    </div>
-                  </fieldset>
+                    </ToggleGroup>
+                  </FieldSet>
                 ) : null,
               )}
-              <div className="grid grid-cols-2 gap-3">
-                <Label className="flex flex-col items-start gap-2">
-                  Resolution
-                  <select
-                    aria-label="Resolution"
-                    className="w-full rounded-md border bg-background p-2 text-sm"
+              {!selected.length ? (
+                <p className="text-sm text-muted-foreground">
+                  Select a video to choose its formats.
+                </p>
+              ) : null}
+              <Separator />
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <SlidersHorizontal className="size-4" />
+                Resolution &amp; quality
+              </h3>
+              <FieldGroup className="grid grid-cols-2 gap-3">
+                <Field className="gap-2">
+                  <FieldLabel htmlFor="export-resolution">
+                    Resolution
+                  </FieldLabel>
+                  <Select
                     disabled={busy}
                     value={resolution}
-                    onChange={(event) =>
-                      setResolution(event.target.value as ExportResolution)
+                    onValueChange={(value) =>
+                      setResolution(value as ExportResolution)
                     }
                   >
-                    <option value="project">Project size</option>
-                    <option value="720p">720p</option>
-                    <option value="1080p">1080p</option>
-                    <option value="2160p">4K</option>
-                  </select>
-                </Label>
-                <Label className="flex flex-col items-start gap-2">
-                  Quality
-                  <select
-                    aria-label="Quality"
-                    className="w-full rounded-md border bg-background p-2 text-sm"
+                    <SelectTrigger
+                      id="export-resolution"
+                      aria-label="Resolution"
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectGroup>
+                        <SelectItem value="project">Project size</SelectItem>
+                        <SelectItem value="720p">720p</SelectItem>
+                        <SelectItem value="1080p">1080p (Full HD)</SelectItem>
+                        <SelectItem value="2160p">4K</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field className="gap-2">
+                  <FieldLabel htmlFor="export-quality">Quality</FieldLabel>
+                  <Select
                     disabled={busy}
                     value={quality}
-                    onChange={(event) =>
-                      setQuality(event.target.value as "high" | "maximum")
+                    onValueChange={(value) =>
+                      setQuality(value as "high" | "maximum")
                     }
                   >
-                    <option value="high">High</option>
-                    <option value="maximum">Maximum</option>
-                  </select>
-                </Label>
-              </div>
-              <Label className="flex items-start gap-2 text-xs font-normal">
-                <Checkbox
-                  disabled={busy}
-                  checked={normalize}
-                  onCheckedChange={(checked) => setNormalize(checked === true)}
-                />
-                Normalize loudness to -14 LUFS (peaks at most -1 dBTP)
-              </Label>
+                    <SelectTrigger
+                      id="export-quality"
+                      aria-label="Quality"
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectGroup>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="maximum">Maximum</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </FieldGroup>
+              {summarySize ? (
+                <p className="-mt-2 text-xs text-muted-foreground">
+                  {summarySize.width} × {summarySize.height} ·{" "}
+                  {resolution === "project"
+                    ? "Uses the video’s format size"
+                    : "Scaled for this output"}
+                </p>
+              ) : null}
               {!localSupported ? (
                 <p className="text-xs text-muted-foreground">
                   Update the helper to use these settings for computer renders.
                 </p>
               ) : null}
-              <details>
-                <summary className="cursor-pointer text-xs font-medium">
-                  Watch a video from this computer
-                </summary>
-                <div className="pt-3">
+              <Separator />
+              <Collapsible open={advanced} onOpenChange={setAdvanced}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between px-0"
+                  >
+                    Advanced
+                    <ChevronDown
+                      className={cn(
+                        "transition-transform",
+                        advanced && "rotate-180",
+                      )}
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="flex flex-col gap-4 pt-3">
+                  <Field orientation="horizontal">
+                    <Checkbox
+                      id="export-normalize"
+                      disabled={busy}
+                      checked={normalize}
+                      onCheckedChange={(value) => setNormalize(value === true)}
+                    />
+                    <FieldLabel
+                      htmlFor="export-normalize"
+                      className="text-xs font-normal"
+                    >
+                      Normalize loudness to -14 LUFS (peaks at most -1 dBTP)
+                    </FieldLabel>
+                  </Field>
                   <LocalVideoViewer />
-                </div>
-              </details>
+                  {rows
+                    .filter(
+                      (row) =>
+                        row.video && rendersFrom(row.video.assets).length,
+                    )
+                    .map((row) => (
+                      <SavedFiles
+                        key={row.slug}
+                        video={row.video!}
+                        getBridge={getBridge}
+                      />
+                    ))}
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </ScrollArea>
         </div>
-        <div className="flex shrink-0 flex-col gap-2 border-t pt-3">
-          <p className="text-sm font-medium">
-            {selected.length} video{selected.length === 1 ? "" : "s"} ·{" "}
-            {fileCount} MP4 file{fileCount === 1 ? "" : "s"}
-          </p>
-          <p
-            className="truncate text-xs text-muted-foreground"
-            title={choices.map((choice) => choice.name).join(", ")}
-          >
-            {choices.map((choice) => choice.name).join(", ")}
-          </p>
+        <Separator />
+        <div className="flex shrink-0 flex-col gap-3 px-5 py-4 sm:px-6">
           {error ? (
-            <p role="alert" className="text-xs text-destructive">
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           ) : !loading && selectionError ? (
             <p className="text-xs text-muted-foreground">{selectionError}</p>
           ) : null}
@@ -648,7 +860,7 @@ export function ExportDialog({
             </p>
           ) : null}
           {activeProgress ? (
-            <p role="status" className="text-xs">
+            <p role="status" className="truncate text-xs">
               {activeProgress.index}/{activeProgress.total} ·{" "}
               {activeProgress.name} · {activeProgress.variant} ·{" "}
               {activeProgress.stage} {Math.round(activeProgress.progress * 100)}
@@ -656,32 +868,68 @@ export function ExportDialog({
             </p>
           ) : null}
           {results.length ? (
-            <p className="text-xs text-muted-foreground">
-              Saved:{" "}
-              {results
+            <p
+              className="truncate text-xs text-muted-foreground"
+              title={results
                 .map((result) => `${result.name} (${result.variant})`)
                 .join(", ")}
+            >
+              Saved {results.length} file{results.length === 1 ? "" : "s"}
             </p>
           ) : null}
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {mode ? (
-              <Button variant="outline" onClick={cancel}>
-                Cancel export
-              </Button>
-            ) : (
-              <>
-                <Button disabled={!canRun} onClick={() => void run("browser")}>
-                  Export {fileCount} file{fileCount === 1 ? "" : "s"} in browser
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={!canRun || !localSupported}
-                  onClick={() => void run("local")}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <Monitor className="hidden size-5 shrink-0 text-muted-foreground sm:block" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  {selected.length} video{selected.length === 1 ? "" : "s"}{" "}
+                  selected · {fileCount} MP4 file{fileCount === 1 ? "" : "s"}
+                </p>
+                <p
+                  className="mt-1 truncate text-xs text-muted-foreground"
+                  title={choices.map((choice) => choice.name).join(", ")}
                 >
-                  Render on this computer
+                  {[
+                    selectedDuration,
+                    summarySize
+                      ? `${summarySize.width} × ${summarySize.height}`
+                      : null,
+                    `${quality === "maximum" ? "Maximum" : "High"} quality`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+            </div>
+            <div
+              className="flex shrink-0 flex-col gap-2 sm:flex-row sm:justify-end"
+              data-export-actions
+            >
+              {mode ? (
+                <Button variant="outline" onClick={cancel}>
+                  Cancel export
                 </Button>
-              </>
-            )}
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    disabled={!canRun || !localSupported}
+                    onClick={() => void run("local")}
+                  >
+                    <Monitor data-icon="inline-start" />
+                    Render on this computer
+                  </Button>
+                  <Button
+                    disabled={!canRun}
+                    onClick={() => void run("browser")}
+                  >
+                    <Upload data-icon="inline-start" />
+                    Export {fileCount} file{fileCount === 1 ? "" : "s"} in
+                    browser
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

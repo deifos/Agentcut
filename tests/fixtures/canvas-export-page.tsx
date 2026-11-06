@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { StudioBridge } from "../../lib/studio/bridge";
-import type { StudioDoc } from "../../lib/studio/types";
+import type { StudioDoc, LoadedModule } from "../../lib/studio/types";
 import type { ExportJob } from "../../components/studio/useStudioController";
 declare global {
   interface Window {
     calls: Record<string, unknown>[];
+    replaceFormatAfterRender?: boolean;
   }
 }
 import { ExportDialog } from "../../components/studio/ExportDialog";
@@ -21,6 +22,8 @@ const snapshots = Object.fromEntries(
           name: i ? "How to use Agentcut" : "Agentcut launch",
           variants: { wide: { width: 1920, height: 1080 } },
           defaultVariant: "wide",
+          fps: 30,
+          durationInFrames: i ? 4140 : 6120,
         },
         layers: { tracks: [{ kind: "scene", clips: [{ id: "clip" }] }] },
         projectValid: true,
@@ -29,7 +32,14 @@ const snapshots = Object.fromEntries(
         layersHash: "l",
         issues: [],
         scenes: [],
-        assets: [],
+        assets: [
+          {
+            path: "renders/fixture-cover.png",
+            kind: "image",
+            size: 1,
+            updatedAt: 1,
+          },
+        ],
         bundle: { ok: true, hasCode: true, revision: 1 },
         chat: { messages: [], running: null },
       },
@@ -37,6 +47,7 @@ const snapshots = Object.fromEntries(
   }),
 );
 window.calls = [];
+let refreshSlug: string | undefined;
 const bridge = {
   request: async (method: string, p: Record<string, string>) => {
     window.calls.push({ method, ...p });
@@ -44,13 +55,27 @@ const bridge = {
       return {
         cuts: Object.values(snapshots).map((s, i) => ({
           slug: s.slug,
+          poster: { project: s.slug, path: "assets/source.jpg", seconds: 0 },
           title: `${s.project.name}${i > 1 ? ` ${i}` : ""}`,
         })),
       };
-    if (method === "studio.project.snapshot")
-      return structuredClone(snapshots[p.slug]);
-    if (method === "studio.render.local")
+    if (method === "studio.project.snapshot") {
+      const snapshot = structuredClone(snapshots[p.slug]);
+      if (refreshSlug === p.slug) {
+        // Finish the render check, then simulate a project edit before the dialog refresh.
+        Object.assign(snapshots[p.slug].project, {
+          variants: { square: { width: 1080, height: 1080 } },
+          defaultVariant: "square",
+        });
+        snapshots[p.slug].projectHash = "edited";
+        refreshSlug = undefined;
+      }
+      return snapshot;
+    }
+    if (method === "studio.render.local") {
+      if (window.replaceFormatAfterRender) refreshSlug = p.slug;
       return { path: `renders/${p.slug}.mp4` };
+    }
     throw Error(method);
   },
 };
@@ -62,7 +87,7 @@ function App() {
       open
       onOpenChange={() => {}}
       doc={snapshots["video-0"] as unknown as StudioDoc}
-      loaded={null}
+      loaded={{ slug: "video-0", revision: 1, module: {} } as LoadedModule}
       assets={[]}
       currentVariant="wide"
       coverFrame={5}

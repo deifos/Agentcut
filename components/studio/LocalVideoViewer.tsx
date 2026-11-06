@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen, Play, X } from "lucide-react";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 const VIDEO = /\.(mp4|m4v|mov|webm|mkv|avi)$/i;
@@ -56,11 +58,12 @@ export function LocalVideoViewer() {
       <Button type="button" size="sm" variant="outline" onClick={() => folderInput.current?.click()}><FolderOpen className="size-3.5" />Choose folder</Button>
       {file ? <Button type="button" size="sm" variant="ghost" onClick={() => { setFiles([]); setError(""); }}><X className="size-3.5" />Close video</Button> : null}
     </div>
-    {files.length > 1 ? <label className="block text-xs font-medium">Video
-      <select className="mt-1 h-9 w-full rounded-md border bg-background px-2" value={selected} onChange={(event) => setSelected(Number(event.target.value))}>
-        {files.map((item, index) => <option key={index} value={index}>{item.webkitRelativePath || item.name}</option>)}
-      </select>
-    </label> : file ? <p className="break-all text-xs text-muted-foreground">{file.name}</p> : null}
+    {files.length > 1 ? <div className="flex flex-col gap-2"><Label htmlFor="local-preview-video">Video</Label>
+      <Select value={String(selected)} onValueChange={value => setSelected(Number(value))}>
+        <SelectTrigger id="local-preview-video" aria-label="Local video" className="w-full"><SelectValue /></SelectTrigger>
+        <SelectContent><SelectGroup>{files.map((item,index) => <SelectItem key={index} value={String(index)}>{item.webkitRelativePath || item.name}</SelectItem>)}</SelectGroup></SelectContent>
+      </Select>
+    </div> : file ? <p className="break-all text-xs text-muted-foreground">{file.name}</p> : null}
     {file ? <LocalPlayer key={`${selected}:${file.webkitRelativePath}:${file.name}:${file.size}:${file.lastModified}`} file={file} /> : null}
     {error ? <p role="alert" className="text-xs text-destructive">{error}</p> : null}
   </section>;

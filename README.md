@@ -20,12 +20,12 @@ You watch the live preview, scrub the timeline, tweak any layer by hand, and exp
 
 ## Video types in chat
 
-Choose **Product Launch** to introduce a product, or **How-to** to teach a task. You can also type
+Choose **Product Launch** to introduce a product, **Feature Launch** to show what a new feature lets people do, or **How-to** to teach a task. You can also type
 the request. Add a brief, URL or files in chat, or drop footage and images into the project Library.
 The actions keep your attachments, selected style and music and use the normal chat send path.
 
 On an empty project, a bare request shows a short question in the studio without an agent call or
-model-token use. Add the product description or task and press Send once. With existing project
+model-token use. Add the product description, feature, or task and press Send once. With existing project
 material, the agent inspects it first. A project name or unrelated shared stock is not a brief.
 The agent chooses duration and camera moves from your request and material; no slider is needed.
 

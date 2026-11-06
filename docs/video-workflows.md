@@ -6,7 +6,7 @@ the main skill should only route requests and state short safety or intake rules
 
 ## The chat flow
 
-Studio currently offers **Product Launch** and **How-to**. Both use the normal chat send path, so
+Studio offers **Product Launch**, **Feature Launch**, and **How-to**. All three use the normal chat send path, so
 typed context, frame attachments, uploaded files, selected style/music and queued requests keep their
 existing behavior. A project Library upload is available even if it has no timeline clip or chat chip.
 The launch and tutorial guides discover relevant supporting media after the brief is established.
@@ -33,6 +33,7 @@ projects. Send failure retains them for retry. Cancel removes the pending video 
 | Action | Local question | On-demand guide |
 | --- | --- | --- |
 | Product Launch | What are you launching? Add a product URL or a short description. | `references/product-launch.md` |
+| Feature Launch | Which feature are you announcing, and what can people now do? Add a short description, URL, or recording. | `references/feature-launch.md` |
 | How-to | What should viewers learn to do? Add a URL, recording, or a short description of the task. | `references/how-to.md` |
 
 Common bare free-text requests use the same local intake. The text matching is deliberately limited,

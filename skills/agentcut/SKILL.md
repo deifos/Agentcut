@@ -56,10 +56,19 @@ New-video actions create a separate canvas video when the current edit has conte
 video is reused. Work only on the assigned target. Keep the source video unchanged. Explicit edit
 requests stay on the intended edit; ask which destination for ambiguous requests before changing it.
 
+## Feature Launch
+
+For the **Feature Launch** chat action or a written request to announce a new feature or capability,
+read `references/feature-launch.md` first (through `agentcut_guide` when using MCP). Focus on one new
+benefit, a real demonstration, the visible result and one next step. A problem statement is optional.
+A bare request needs the feature and benefit before work; old product identity or incidental footage
+alone does not identify the new feature. Keep the normal asset, motion, sound and full final review
+workflow. Use a separate canvas video when the current edit is populated.
+
 ## Product Launch
 
 For the **Product Launch** chat action or a written request for a product launch video, product reveal,
-launch film, or video to introduce a new product or feature, read `references/product-launch.md` first
+launch film, or video to introduce a new product, read `references/product-launch.md` first
 (through `agentcut_guide` when using MCP). Use the same guide with uploaded footage or from scratch.
 Keep the user's brief, attachments and selected style/music. Inspect existing material before asking
 for input. For a bare request without product context or project material, ask what is launching and

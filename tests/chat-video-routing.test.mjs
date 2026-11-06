@@ -44,3 +44,9 @@ test("new-video controller routing binds source, uses dedicated creation, and op
   await assert.rejects(send("Create tutorial", { sourceSlug: "keep-launch", newVideo: { type: "how-to", requestId: "stable" } }), /video changed/);
   assert.equal(calls.length, 2);
 });
+
+test("Feature Launch blocks helpers that support only the earlier video types",async()=>{
+ const errors=[];let sends=0,captures=0;
+ const send=app({useCallback:fn=>fn,info:{features:["chat-video-creation"]},toast:{error:m=>errors.push(m)},doc:{slug:"keep-launch"},loaded:{},frameStore:{get:()=>10},captureFrame:()=>{captures++},variant:"wide",uploadToProject(){},studio:{sendChat(){sends++}},agentPickable:false,agent:null,model:null,effort:null});
+ await assert.rejects(send("Canvas versions feature launch",{attachFrame:true,newVideo:{type:"feature-launch",requestId:"stable"}}),/Update the helper/);assert.equal(captures,0);assert.equal(sends,0);assert.equal(errors.length,1);
+});

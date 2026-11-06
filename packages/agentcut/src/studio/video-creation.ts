@@ -6,7 +6,7 @@ import { createCut } from "./canvas.js";
 import { assertSlug, atomicWrite, projectDir, readProjectState, safeJoin, StudioError } from "./projects.js";
 import type { WorkspacePaths } from "./workspace.js";
 
-const input = z.object({ type: z.enum(["product-launch", "how-to"]), requestId: z.string().uuid() });
+const input = z.object({ type: z.enum(["product-launch", "feature-launch", "how-to"]), requestId: z.string().uuid() });
 type Saved = { slug: string; sent?: boolean; text: string; previousUserCount: number };
 type Send = (slug: string, text: string, context: Record<string, unknown>) => Promise<unknown>;
 
@@ -37,7 +37,7 @@ export class VideoCreation {
       mkdirSync(dirname(ledger), { recursive: true });
       const populated = state.layers.tracks.some((track) => track.clips.length > 0) || state.scenes.length > 0;
       const target = populated ? (await createCut(this.paths, { project: source,
-        name: request.type === "how-to" ? "How-to" : "Product Launch", kind: "clip", reuseAssets: true })).slug : source;
+        name: request.type === "how-to" ? "How-to" : request.type === "feature-launch" ? "Feature Launch" : "Product Launch", kind: "clip", reuseAssets: true })).slug : source;
       const sourceChatFile = safeJoin(dir, ".studio/chat.json");
       const history = existsSync(sourceChatFile) ? JSON.parse(readFileSync(sourceChatFile, "utf8")) as { messages?: { role: string }[] } : null;
       saved = { slug: target, text, previousUserCount: target === source ? history?.messages?.filter((message) => message.role === "user").length ?? 0 : 0 };

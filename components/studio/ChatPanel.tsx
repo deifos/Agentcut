@@ -950,7 +950,7 @@ export function ChatPanel({
     const intake = videoIntake?.type === type ? videoIntake : null;
     // Existing pictures or a finished launch do not identify a new tutorial task.
     // Current attachments are deliberate inputs; incidental project material is inspected after intake.
-    const hasContext = (type !== "how-to" && (hasVideo || hasLaunchMedia)) || references.length > 0 || attachFrame
+    const hasContext = (type === "product-launch" && (hasVideo || hasLaunchMedia)) || references.length > 0 || attachFrame
       || (type && hasEstablishedVideoContext(type, chat.messages))
       || Boolean(trimmed && !bareVideoType(trimmed));
     if (type && !hasContext) {
@@ -1432,6 +1432,15 @@ export function ChatPanel({
               onClick={() => void send(text, "product-launch")}
             >
               <Rocket data-icon="inline-start" /> Product Launch
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled || sending || Boolean(agentMissing) || uploading > 0 || dictating}
+              onClick={() => void send(text, "feature-launch")}
+            >
+              <Rocket data-icon="inline-start" /> Feature Launch
             </Button>
             <Button
               type="button"

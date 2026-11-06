@@ -1,5 +1,6 @@
 "use client";
 
+import type { NewVideoRequest } from "@/lib/studio/video-requests";
 import {
   useCallback,
   useEffect,
@@ -743,7 +744,7 @@ export function useStudioController() {
         effort?: string;
         /** The pencil's strokes, described (helpers with the "drawing" feature). */
         drawing?: string;
-        newVideo?: { type: "product-launch" | "how-to"; requestId: string };
+        newVideo?: NewVideoRequest;
         sourceSlug?: string;
       } = {},
     ) => {

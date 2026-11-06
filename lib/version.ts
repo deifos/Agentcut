@@ -3,8 +3,8 @@ import packageJson from "@/package.json";
 /** The studio page's version (package.json at the repo root). See CHANGELOG.md. */
 export const APP_VERSION: string = packageJson.version;
 
-/** Product Launch needs the helper's packaged launch guide. */
-export const MIN_HELPER_VERSION = "0.2.24";
+/** Feature Launch needs the new request type and its packaged guide. */
+export const MIN_HELPER_VERSION = "0.2.25";
 
 /**
  * Oldest helper Cinematic Mode works with: the workspace needs its skill references (cinematic.md,

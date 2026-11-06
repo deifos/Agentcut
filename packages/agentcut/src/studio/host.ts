@@ -914,7 +914,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["chat-video-creation", "clip-canvas", "project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
+      features: ["feature-launch", "chat-video-creation", "clip-canvas", "project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
     };
   }
 

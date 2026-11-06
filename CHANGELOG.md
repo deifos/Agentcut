@@ -13,6 +13,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.25] - 2026-11-06
+
+### Added
+
+- Feature Launch joins Product Launch and How-to in chat. It asks for the feature before an empty request uses model tokens, then follows a benefit, demonstration, result and next-step guide in its own canvas video.
+
 ## [0.2.24] - 2026-11-05
 
 ### Added
@@ -620,7 +626,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.24...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.25...HEAD
+[0.2.25]: https://github.com/deifos/Agentcut/compare/v0.2.24...v0.2.25
 [0.2.24]: https://github.com/deifos/Agentcut/compare/v0.2.23...v0.2.24
 [0.2.23]: https://github.com/deifos/Agentcut/compare/v0.2.22...v0.2.23
 [0.2.22]: https://github.com/deifos/Agentcut/compare/v0.2.21...v0.2.22

@@ -37,7 +37,7 @@ function fixture(populated = true) {
   return { paths, slug, dir, bound, engine, send, verifyOriginal, creator: new VideoCreation(paths) };
 }
 
-for (const type of ["how-to", "product-launch"]) {
+for (const type of ["how-to", "product-launch", "feature-launch"]) {
   test(`${type} on a populated edit gets a blank independent canvas video and copied material`, async () => {
     const f = fixture();
     await f.engine.send(f.slug, "Our product is Agentcut. Teach how to add a style.", {});

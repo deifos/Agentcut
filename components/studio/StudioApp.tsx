@@ -512,6 +512,11 @@ export function StudioApp() {
         toast.error(message);
         throw new Error(message);
       }
+      if (options.newVideo?.type === "feature-launch" && !info?.features?.includes("feature-launch")) {
+        const message = "Update the helper to create a Feature Launch video. Your current edit is safe.";
+        toast.error(message);
+        throw new Error(message);
+      }
       const attachments: string[] = [];
       if (options.attachFrame && doc && loaded) {
         try {

@@ -499,3 +499,31 @@ test("Library uploads and shared media are discoverable through the guide's MCP 
     await new Promise((resolve) => uploadServer.close(resolve));
   }
 });
+
+const clickFeatureLaunch = () => page.evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Feature Launch").click()');
+for (const simple of [true, false]) {
+  test(`Feature Launch asks locally on a populated source and sends one separate request (simple=${simple})`, options, async () => {
+    await page.evaluate(`api.mount({ simple: ${simple}, hasVideo: true, hasLaunchMedia: true, chat: {sessionId:"old",running:null,messages:[{role:"user",id:"old-product",at:1,text:"Our product is Agentcut, a video editor."}]} })`);
+    await tick(); await clickFeatureLaunch(); await tick();
+    assert.deepEqual(await page.evaluate('api.sent()'), []);
+    assert.match(await page.evaluate('document.body.textContent'), /Which feature are you announcing/);
+    await type("Canvas versions let people explore another edit while keeping the original.");
+    await page.evaluate('(() => { const field=document.querySelector("textarea"); for(let i=0;i<2;i++) field.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true})); })()');
+    await tick();const sent=await page.evaluate('api.sent()');assert.equal(sent.length,1);assert.equal(sent[0].options.newVideo.type,"feature-launch");assert.match(sent[0].text,/^Create a feature launch video\.\n\nCanvas versions/);
+  });
+}
+for(const text of ["Announce our new feature.", "Make an announcement video for our new feature.", "Feature Launch", "Create a feature launch video.", "Create a 30-second feature announcement video."]) {
+  test(`bare feature request asks before dispatch: ${text}`,options,async()=>{await page.evaluate('api.mount({hasVideo:true})');await tick();await type(text);await page.evaluate('document.querySelector("textarea").dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}))');await tick();assert.deepEqual(await page.evaluate('api.sent()'),[]);assert.match(await page.evaluate('document.body.textContent'),/Which feature are you announcing/);});
+}
+test("specific Feature Launch brief bypasses intake and keeps the feature request",options,async()=>{
+ await page.evaluate('api.mount({})');await tick();await type("Announce canvas versions: compare independent edits while keeping the original.");await clickFeatureLaunch();await tick();const sent=await page.evaluate('api.sent()');assert.equal(sent.length,1);assert.equal(sent[0].options.newVideo.type,"feature-launch");assert.match(sent[0].text,/Create a feature launch video using this context/);
+});
+test("Feature Launch routes separately, preserves edits and exposes its packaged guide",async()=>{
+ assert.equal(creationVideoType("How should we announce the new feature?"), null);
+ assert.equal(bareVideoType("Feature Launch"),"feature-launch");assert.equal(bareVideoType("Create a 30-second feature announcement video."),"feature-launch");
+ assert.equal(creationVideoType("Make a feature launch video for canvas versions"),"feature-launch");assert.equal(creationVideoType("Announce the new canvas versions feature"),"feature-launch");assert.equal(creationVideoType("Edit this feature launch title"),null);
+ assert.equal(hasEstablishedVideoContext("feature-launch",[{role:"user",id:"p",at:1,text:"Our product is Agentcut."}]),false);
+ assert.equal(hasEstablishedVideoContext("feature-launch",[{role:"user",id:"f",at:1,text:"Our new feature lets users compare canvas versions."}]),true);
+ assert.equal(hasEstablishedVideoContext("feature-launch",[{role:"user",id:"f",at:1,text:"Create a feature launch video."}]),false);
+ const path="references/feature-launch.md";assert.equal(readGuide(path),readFileSync(new URL(`../skills/agentcut/${path}`,import.meta.url),'utf8'));assert.match(readGuide('SKILL.md'),/Feature Launch[\s\S]*references\/feature-launch\.md/);assert.match(readGuide(path),/problem statement is optional/);assert.match(readGuide(path),/final full-picture and audio review/);
+});

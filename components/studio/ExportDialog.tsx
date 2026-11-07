@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { exportInBrowser, planLoudness } from "@/lib/studio/export";
 import { fetchStudioBundle, evaluateStudioBundle } from "@/lib/studio/bundle";
 import {
@@ -347,6 +348,8 @@ export function ExportDialog({
           ),
         }))
         .filter((choice) => choice.variants.length);
+      const completedCount =
+        fileCount - pending.reduce((sum, choice) => sum + choice.variants.length, 0);
       await studioPageWork.run("studio_export", () =>
         exportCanvasVideos(pending, where, controller.signal, {
           members: async () =>
@@ -410,7 +413,11 @@ export function ExportDialog({
             }
           },
           onProgress: (update) => {
-            setProgress(update);
+            setProgress({
+              ...update,
+              index: update.index + completedCount,
+              total: fileCount,
+            });
             setJob({
               slug: update.slug,
               variant: update.variant,
@@ -478,9 +485,26 @@ export function ExportDialog({
         .catch(() => undefined);
   }
   const activeProgress =
-    mode === "local" && job && job.slug === progress?.slug
+    mode === "local" &&
+    job &&
+    job.slug === progress?.slug &&
+    job.variant === progress.variant
       ? { ...progress, stage: job.stage, progress: job.progress }
       : progress;
+  // Browser rendering reports 0–0.95, then upload progress starts again at zero.
+  const fraction =
+    mode === "browser" && activeProgress?.stage === "uploading"
+      ? 0.95 + Math.max(0, Math.min(1, activeProgress.progress)) * 0.05
+      : (activeProgress?.progress ?? 0);
+  const fileProgress = Number.isFinite(fraction)
+    ? Math.max(0, Math.min(1, fraction))
+    : 0;
+  const exportPercent = activeProgress
+    ? Math.floor(
+        ((activeProgress.index - 1 + fileProgress) / activeProgress.total) *
+          100,
+      )
+    : 0;
   const singleVideo =
     selectedRows.length === 1 ? selectedRows[0]?.video : undefined;
   const summarySize =
@@ -859,13 +883,20 @@ export function ExportDialog({
               {message}
             </p>
           ) : null}
-          {activeProgress ? (
-            <p role="status" className="truncate text-xs">
-              {activeProgress.index}/{activeProgress.total} ·{" "}
-              {activeProgress.name} · {activeProgress.variant} ·{" "}
-              {activeProgress.stage} {Math.round(activeProgress.progress * 100)}
-              %
-            </p>
+          {mode ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <p role="status" className="min-w-0 truncate">
+                  {activeProgress
+                    ? `${activeProgress.index}/${activeProgress.total} · ${activeProgress.name} · ${activeProgress.variant} · ${activeProgress.stage}`
+                    : "Preparing export…"}
+                </p>
+                <span aria-hidden="true" className="shrink-0 tabular-nums">
+                  {exportPercent}%
+                </span>
+              </div>
+              <Progress aria-label="Export progress" value={exportPercent} />
+            </div>
           ) : null}
           {results.length ? (
             <p

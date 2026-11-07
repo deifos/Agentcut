@@ -42,7 +42,7 @@ test(
                 : a.path.endsWith("/file-url")
                   ? `export function studioFileUrl(slug,path){return "/thumbnail.jpg?"+slug+"&"+path}`
                   : a.path.endsWith("/export")
-                    ? `export async function exportInBrowser(o){window.calls.push({method:'browser',slug:o.doc.slug,module:o.loaded.slug,variant:o.variant});await new Promise(r=>setTimeout(r,80));if(window.failBrowserFor===o.doc.slug){window.failBrowserFor=null;throw Error('Fixture render failed')}return {path:'renders/test.mp4'}};export async function planLoudness(){return {gain:1}};`
+                    ? `export async function exportInBrowser(o){window.calls.push({method:'browser',slug:o.doc.slug,module:o.loaded.slug,variant:o.variant});o.onProgress('rendering',0.5);await new Promise(r=>setTimeout(r,80));o.onProgress('rendering',0.95);await new Promise(r=>setTimeout(r,40));o.onProgress('uploading',0);await new Promise(r=>setTimeout(r,40));if(window.failBrowserFor===o.doc.slug){window.failBrowserFor=null;throw Error('Fixture render failed')}return {path:'renders/test.mp4'}};export async function planLoudness(){return {gain:1}};`
                     : `export async function fetchStudioBundle(){return {code:'',revision:1}};export function evaluateStudioBundle(){return {}};export function studioFileUrl(){return ''};export function studioAssetBase(slug){return '/assets/'+slug};export const STUDIO_LIBRARY_BASE='/library/';`,
             }));
           },
@@ -188,9 +188,23 @@ test(
         wide.areas.map((a) => a.scroll),
         [false, false],
       );
-      await page.evaluate(
-        `(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('in browser'));b.click();b.click()})()`,
-      );
+      await page.evaluate(`
+        window.exportProgress = [];
+        window.progressObserver = new MutationObserver(() => {
+          const bar = document.querySelector('[role="progressbar"]');
+          if (bar) window.exportProgress.push({
+            value: Number(bar.getAttribute("aria-valuenow")),
+            stage: document.querySelector('[role="status"]')?.textContent,
+          });
+        });
+        window.progressObserver.observe(document.body, {
+          subtree: true, childList: true, attributes: true,
+        });
+        const button = [...document.querySelectorAll("button")]
+          .find(button => button.textContent.includes("in browser"));
+        button.click();
+        button.click();
+      `);
       await page.evaluate("new Promise(r=>setTimeout(r,500))");
       assert.deepEqual(
         await page.evaluate(
@@ -201,6 +215,12 @@ test(
           ["video-1", "video-1"],
         ],
       );
+      const progress = await page.evaluate("window.exportProgress");
+      assert.ok(progress.some(update => update.value === 25));
+      assert.ok(progress.some(update => update.value === 47 && update.stage.includes("uploading")));
+      assert.ok(progress.some(update => update.value === 97 && update.stage.includes("uploading")));
+      assert.ok(progress.every((update, index) =>
+        index === 0 || update.value >= progress[index - 1].value));
       await page.evaluate(
         `window.calls=[];window.failBrowserFor='video-1';[...document.querySelectorAll('button')].find(b=>b.textContent.includes('in browser')).click()`,
       );
@@ -214,7 +234,7 @@ test(
         /1 file\(s\) saved/,
       );
       await page.evaluate(
-        `[...document.querySelectorAll('button')].find(b=>b.textContent.includes('in browser')).click()`,
+        `window.exportProgress = [];[...document.querySelectorAll('button')].find(b=>b.textContent.includes('in browser')).click()`,
       );
       await page.evaluate(
         `(async()=>{const end=Date.now()+5000;while(document.querySelector('[role="alert"]')||!document.querySelector('[role="status"]')?.textContent.includes('saved')){if(Date.now()>end)throw Error('Retry did not finish');await new Promise(r=>setTimeout(r,30))}})()`,
@@ -225,6 +245,10 @@ test(
         ),
         ["video-0", "video-1", "video-1"],
       );
+      const retryProgress = await page.evaluate("window.exportProgress");
+      assert.ok(retryProgress.some(update =>
+        update.value === 75 && update.stage.includes("2/2")));
+      await page.evaluate("window.progressObserver.disconnect()");
       await page.evaluate(
         `[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Render on this computer')).click()`,
       );

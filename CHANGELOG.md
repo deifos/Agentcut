@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- The export dialog shows progress for the full batch above Cancel export. Progress includes saved files when you retry and continues when saving starts.
+
 ### Changed
 
 - The export dialog shows a preview and duration for each video. Select output formats with the format cards. Open Advanced to adjust loudness, watch local videos, or open saved files.

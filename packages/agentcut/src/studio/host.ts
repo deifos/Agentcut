@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, watch, writeFileSync, type FSWatcher } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { join, sep } from "node:path";
+import { isAbsolute, join, sep } from "node:path";
+import { mingDevice, mingDir, setupMing } from "./voice/ming.js";
 import { callEditor, getEditorSession, sendToEditor, type BridgeExtension } from "../bridge.js";
 import { TranscriptionService, transcriptionSettings, saveTranscriptionKey, removeTranscriptionKey, preferTranscription } from "./transcription/service.js";
 import type { TranscriptionInput } from "./transcription/types.js";
@@ -48,6 +49,7 @@ import {
   type VoiceProviderId,
 } from "./voice.js";
 import { studioMcpServer, type WorkspacePaths } from "./workspace.js";
+import { previewVoice } from "./voice/previews.js";
 import { ReleaseVideos } from "./release-video.js";
 import { listMcpFiles, readMcpFile, writeMcpFile, copyMcpFile, type McpFileScope } from "./mcp-files.js";
 import { deleteEditingStyle, saveEditingStyle } from "./editing-styles.js";
@@ -88,6 +90,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 const HOUSEKEEPING_EVERY_MS = 6 * 60 * 60 * 1000;
 
 export class StudioHost implements BridgeExtension {
+  private mingInstall: Promise<void> | null = null;
   readonly paths: WorkspacePaths;
   private readonly options: StudioHostOptions;
   private readonly bundles = new Map<string, BundleState>();
@@ -495,7 +498,18 @@ export class StudioHost implements BridgeExtension {
       case "studio.transcription.setDefault": return preferTranscription(String(p.provider));
       case "studio.transcription.cancel": return this.transcription.cancel(String(p.job));
       case "studio.voice.settings":
-        return voiceSettings();
+        return { ...voiceSettings(), mingDirectory: mingDir(), mingDevice: mingDevice(), mingInstalling: this.mingInstall !== null };
+      case "studio.voice.installMing": {
+        if (p.confirm !== true) throw new Error("Confirm the Ming download and space requirements first.");
+        if (this.mingInstall) throw new Error("Ming installation is already running. Wait, then refresh the voice list.");
+        if (typeof p.directory !== "string" || !isAbsolute(p.directory)) throw new Error("Enter a full folder path for Ming.");
+        if (p.device !== "cpu" && p.device !== "cuda") throw new Error("Choose CPU or NVIDIA GPU for Ming.");
+        this.mingInstall = setupMing(p.directory, console.log, p.device);
+        try { await this.mingInstall; return { installed: true }; }
+        finally { this.mingInstall = null; }
+      }
+      case "studio.voice.preview":
+        return previewVoice(String(p.provider), String(p.voice), typeof p.style === "string" ? p.style : "");
       case "studio.voice.saveKey":
         return saveKey(p.provider, p.key, Boolean(p.makeDefault));
       case "studio.voice.removeKey":

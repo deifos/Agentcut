@@ -33,7 +33,7 @@ test("28 catalog identifiers, labels and previews match the installed upstream r
     assert.ok(voice.language.startsWith("en"));
     assert.equal(voice.tone, undefined);
     const audio = readFileSync(
-      new URL(`../public${voice.previewUrl}`, import.meta.url),
+      new URL(`../public${voice.fallbackPreviewUrl}`, import.meta.url),
     );
     assert.ok(wavSeconds(audio) > 0);
   }

@@ -1,5 +1,7 @@
 "use client";
 
+import { LocalVoices } from "./LocalVoices";
+
 import { TooltipHint } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -1751,16 +1753,18 @@ function assetIcon(kind: AssetEntry["kind"]) {
         : FileQuestion;
 }
 
-type AssetFilter = "all" | "video" | "audio" | "image" | "motion";
+type AssetFilter = "all" | "video" | "audio" | "image" | "motion" | "voices";
 const ASSET_FILTERS: { value: AssetFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "video", label: "Video" },
   { value: "audio", label: "Audio" },
   { value: "image", label: "Images" },
   { value: "motion", label: "Motion" },
+  { value: "voices", label: "Voices" },
 ];
 
 function AssetsPanel({
+  getBridge,
   doc,
   assets,
   library,
@@ -1920,6 +1924,7 @@ function AssetsPanel({
     audio: 0,
     image: 0,
     motion: COMPONENT_COUNT,
+    voices: 0,
   };
   for (const asset of [...allProjectAssets, ...userLibrary]) {
     if (
@@ -2114,25 +2119,25 @@ function AssetsPanel({
         <div className="mb-2 space-y-1.5">
           <Tabs
             value={filter}
-            onValueChange={(value) => setFilter(value as AssetFilter)}
+            onValueChange={(value) => { previewRef.current?.pause(); setPreviewing(null); setOpenPreview(null); setFilter(value as AssetFilter); }}
           >
-            <TabsList className="h-7 w-full">
+            <TabsList className="grid h-auto w-full grid-cols-3 group-data-[orientation=horizontal]/tabs:h-auto">
               {ASSET_FILTERS.map((item) => (
                 <TabsTrigger
                   key={item.value}
                   value={item.value}
-                  disabled={item.value !== "all" && counts[item.value] === 0}
+                  disabled={item.value !== "all" && item.value !== "voices" && counts[item.value] === 0}
                   className="h-6 gap-1 px-1.5 text-[11px]"
                 >
                   {item.label}
                   <span className="text-[10px] text-muted-foreground">
-                    {counts[item.value]}
+                    {item.value === "voices" ? null : counts[item.value]}
                   </span>
                 </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
-          {counts.all + counts.motion > 6 ? (
+          {filter !== "voices" && counts.all + counts.motion > 6 ? (
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -2155,7 +2160,7 @@ function AssetsPanel({
             event.target.value = "";
           }}
         />
-        {filter === "motion" ? null : allProjectAssets.length === 0 ? (
+        {filter === "voices" ? <LocalVoices getBridge={getBridge} slug={doc.slug} readOnly={readOnly} onGenerated={onAssetsChanged} /> : filter === "motion" ? null : allProjectAssets.length === 0 ? (
           <p className="rounded-md border border-dashed border-border/70 p-3 text-center text-[11px] text-muted-foreground">
             Drop audio, images or video here. {agentName} can use anything in
             assets/.
@@ -2193,7 +2198,7 @@ function AssetsPanel({
           <div className="space-y-0.5">{list(libraryAssets, true)}</div>
         </Section>
       ) : null}
-      <Section title="Renders">
+      {filter !== "voices" ? <Section title="Renders">
         {renders.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
             Exports land in renders/ and are never overwritten.
@@ -2203,7 +2208,7 @@ function AssetsPanel({
             {list(renders.slice().reverse(), false)}
           </div>
         )}
-      </Section>
+      </Section> : null}
     </div>
   );
 }

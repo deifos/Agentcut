@@ -1,3 +1,4 @@
+import { adapter as ming } from "./ming.js";
 import { adapter as kokoro } from "./kokoro.js";
 import { adapter as elevenlabs } from "./elevenlabs.js";
 import { adapter as gemini } from "./gemini.js";
@@ -7,6 +8,7 @@ import type { VoiceAdapter } from "./types.js";
 /** One registration point for synthesis metadata, validation, voices and generation. */
 export const VOICE_ADAPTERS: Record<string, VoiceAdapter> = {
   kokoro,
+  ming,
   elevenlabs,
   gemini,
   openai,

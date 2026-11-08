@@ -7,9 +7,14 @@ import { CinematicTab } from "../../components/studio/Cinematic";
 import ClipCanvas from "../../components/studio/ClipCanvas";
 import { TooltipProvider } from "../../components/ui/tooltip";
 import { VoicesDialog } from "../../components/studio/VoicesDialog";
+import { StudioInspector } from "../../components/studio/StudioInspector";
+import { createFrameStore } from "../../lib/studio/frame-store";
+import type { StudioDoc } from "../../lib/studio/types";
 import { KOKORO_VOICES } from "../../packages/agentcut/src/studio/voice/kokoro-catalog";
 import type { StudioBridge } from "../../lib/studio/bridge";
 const noop = () => {};
+const doc: StudioDoc = { slug: "fixture", project: null, layers: null, layersHash: null, projectHash: null, issues: [], scenes: [], dir: null };
+const frameStore = createFrameStore();
 const local = {
   id: "kokoro",
   name: "Kokoro (free, local)",
@@ -29,21 +34,26 @@ const paid = {
   source: "saved",
   defaultVoice: "cedar",
 };
+const ming = {
+  ...local, id: "ming", name: "Ming 0.5B (local GPU)", defaultVoice: "US_Emma",
+};
 const calls: Record<string, unknown>[] = [];
 const bridge = {
   request: async (method: string, p: Record<string, unknown>) => {
     calls.push({ method, ...p });
     if (method === "studio.voice.settings")
-      return { providers: [local, paid], defaultProvider: "kokoro" };
+      return { providers: [local, paid, { ...ming, configured: !new URLSearchParams(location.search).has("uninstalled") }], defaultProvider: "kokoro", mingDirectory: "E:/voice-models/ming" };
     if (method === "studio.voice.voices")
       return {
         voices:
           p.provider === "kokoro"
             ? KOKORO_VOICES
-            : [{ id: "cedar", name: "Cedar" }],
+            : p.provider === "ming" ? [{ id: "US_Emma", name: "Emma" }, { id: "freeform", name: "Describe voice and delivery" }] : [{ id: "cedar", name: "Cedar" }],
       };
+    if (method === "studio.voice.installMing") return { installed: true };
     if (method === "studio.voice.generate")
-      return { provider: p.provider, voice: p.voice, takes: [] };
+      return { provider: p.provider, voice: p.voice, takes: [{ path: "assets/voice/test.wav", seconds: 2 }] };
+    if (method === "studio.voice.preview") return { url: `data:audio/wav;base64,${p.voice}` };
     return {
       group: "test",
       sources: [],
@@ -89,6 +99,8 @@ function App() {
         />
       </TooltipProvider>
     );
+  if (new URLSearchParams(location.search).has("local"))
+    return <TooltipProvider><div style={{ width: 320, height: 760 }}><StudioInspector doc={doc} getDoc={() => doc} variant="landscape" selection={[]} assets={[]} library={[]} frameStore={frameStore} readOnly={false} onPreview={noop} onCommit={noop} onSelect={noop} onSaveProject={noop} onAssetsChanged={noop} onAskClaude={async () => {}} onMentionAsset={noop} onAskText={async () => {}} chatBusy={false} chatDisabled={false} getBridge={() => new URLSearchParams(location.search).has("disconnected") ? null : bridge} onExport={noop} stylesSupported={false} onOpenStyles={noop} /></div></TooltipProvider>;
   return (
     <TooltipProvider>
       <div className="studio-app flex h-screen flex-col">

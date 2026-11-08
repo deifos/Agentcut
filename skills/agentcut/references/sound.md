@@ -77,6 +77,17 @@ Generic voice-over requests use **Kokoro**, even if paid keys are configured. Us
 
 The first local generation downloads about 93 MB plus support files. Later calls reuse the model cache. This runtime supports English only, speed 0.5–2, and no style instructions. For setup/offline/language errors, state the error and offer a retry, an English script, or an explicit provider choice. Never silently call paid. WAV output uses the same media-info, transcription, Voice track and word-timed caption workflow below.
 
+## Optional Ming voices
+
+Use `provider: "ming"` only when selected by the user. Check installation with `agentcut_voice_options`. CPU generation can take minutes; prefer short scripts. The integration uses Ming 3.0 0.5B on CPU or a compatible NVIDIA CUDA GPU and currently supports English. Setup: `agentcut --setup-ming --ming-dir <folder> --ming-device cpu` (or `cuda`). All model files, Python packages, caches and temporary generation files stay in that folder. A small location pointer is saved under the user's `.agentcut` folder. MIT permits commercial use; retain upstream license notices when distributing model/runtime files.
+
+Choose one mode per generation:
+- Named voice: `US_Emma`, `UK_George`, or `UK_Charlotte`. Do not supply `style`.
+- Voice and delivery instructions: `voice: "freeform"`, with required `style`, such as "A warm American female narrator, excited and playful, with a quick pace." This does not preserve a named voice.
+- Voice design: `voice: "voice_design"`, with required `style` describing the voice.
+
+Use pace and emotion words in freeform style. Do not combine modes. Numeric speed changes, inline laughter/sigh tags, reference-voice cloning, and other languages are not exposed by this integration. Spell numbers, dates and abbreviations as they should be spoken: automatic text normalization is disabled for portable setup. Check generated words and delivery before using audio. Local failures must not call another provider. Kokoro remains the default.
+
 ## Voice-overs
 
 Kokoro is available without credentials. Optional paid providers are ElevenLabs, Gemini, OpenAI and Grok/xAI. The helper adds their keys only for explicitly selected paid generation.

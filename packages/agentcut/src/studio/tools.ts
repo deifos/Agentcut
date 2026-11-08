@@ -493,22 +493,22 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_voice_options",
-    "Free local Kokoro plus configured paid providers, models and voices. Generic requests use Kokoro. Local voice metadata includes language, accent, authored gender labels, sample paths and editorial suggested uses. Pass provider: \"elevenlabs\" to list that account's voices (ids). Call before generating a voice-over. API keys are handled by the helper: never ask for them.",
-    { provider: z.enum(["kokoro", "elevenlabs", "gemini", "openai", "xai"]).optional() },
+    "Free local Kokoro, optional local Ming 0.5B (MIT, CPU or NVIDIA GPU), plus configured paid providers, models and voices. Generic requests use Kokoro. Local voice metadata includes language, accent, authored gender labels, sample paths and editorial suggested uses. Pass provider: \"elevenlabs\" to list that account's voices (ids). Call before generating a voice-over. API keys are handled by the helper: never ask for them.",
+    { provider: z.enum(["kokoro", "ming", "elevenlabs", "gemini", "openai", "xai"]).optional() },
     async (args) => callEditor("studio.local.voice_options", args, { timeoutMs: MINUTE }),
   );
 
   defineTool(
     server,
     "agentcut_generate_voice",
-    "Generate a voice-over and save it to assets/voice/ (never overwrites). Generic requests use free local Kokoro, even if paid keys exist. Use a paid provider only when explicitly selected by the user. Kokoro supports English; first use downloads its model. Never silently fall back to paid. Returns each take's path and length. Then check the words with agentcut_transcribe before using a take.",
+    "Generate a voice-over and save it to assets/voice/ (never overwrites). Generic requests use free local Kokoro, even if paid keys exist. Use a paid provider only when explicitly selected by the user. Kokoro supports English; first use downloads its model. Explicit Ming selection requires --setup-ming. Select US_Emma, UK_George or UK_Charlotte without style; select freeform or voice_design with style instructions. English only in this integration; spell out numbers. No inline expression tags or reference cloning yet. Never silently fall back to paid. Returns each take's path and length. Then check the words with agentcut_transcribe before using a take.",
     {
       project,
       text: z.string().min(1).describe("Exactly the words to speak. No stage directions (use style)."),
-      provider: z.enum(["kokoro", "elevenlabs", "gemini", "openai", "xai"]).optional(),
+      provider: z.enum(["kokoro", "ming", "elevenlabs", "gemini", "openai", "xai"]).optional(),
       model: z.string().optional().describe('e.g. "gemini-3.8-flash-tts", "eleven_v3", "gpt-4o-mini-tts".'),
       voice: z.string().optional().describe('Voice name/id, e.g. "Puck" (Gemini), "marin" (OpenAI), "eve" (Grok), an ElevenLabs voice id.'),
-      style: z.string().optional().describe("Delivery notes (tone, pace, pronunciation). Gemini and OpenAI only."),
+      style: z.string().optional().describe("Delivery notes (tone, pace, pronunciation). Gemini, OpenAI, and Ming freeform/voice_design modes only. Ming named voices cannot combine with style."),
       language: z.string().optional().describe('Language code, e.g. "en", "es".'),
       purpose: z.enum(["tutorial", "walkthrough", "demo", "launch", "sales"]).optional().describe("Kokoro editorial voice default; explicit voice and constraints take priority."),
       gender: z.enum(["female", "male"]).optional().describe("Honor the user's requested catalog voice label."),
@@ -517,7 +517,7 @@ export function registerStudioTools(server: McpServer) {
       name: z.string().optional().describe('File name, e.g. "launch-vo" → assets/voice/launch-vo.wav.'),
       takes: z.number().int().min(1).max(4).optional().describe("Takes to generate in parallel (default 1)."),
     },
-    async ({ project: slug, ...input }) => callEditor("studio.local.generate_voice", { ...input, slug }, { timeoutMs: 5 * MINUTE }),
+    async ({ project: slug, ...input }) => callEditor("studio.local.generate_voice", { ...input, slug }, { timeoutMs: 125 * MINUTE }),
   );
 
   defineTool(

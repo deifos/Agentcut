@@ -146,3 +146,32 @@ test, build the helper, start the local editor, set `AGENTCUT_RELEASE_E2E=1` and
 prepared Chat with Website sample. It does not validate a live Chat with Website account. The
 test saves its draft and result under `packages/agentcut/.tmp/release-test-<port>/`. Use a separate
 port and workspace from a live run. `AGENTCUT_RELEASE_TEST_DIR` can select another test workspace.
+
+## Optional Ming 0.5B voices
+
+Project Assets → Voices includes ready-made Kokoro and Ming samples hosted with the other sounds at `https://files.screenslick.com/studio/voice-samples/`. Anyone can listen without a model, GPU, API key, or connected helper. Copies in `public/voice-samples/` provide a fallback if shared storage is unavailable. They do not use a developer's disk path.
+
+For Ming, Set up Ming lets the user choose CPU or NVIDIA GPU and shows the memory and hardware requirements, an estimated 3 GB model download plus runtime files, and a recommendation for 20 GB free during setup. The user chooses an installation folder and selects Download and install before any download starts. Model and runtime files use up to about 8 GB after installation, depending on the selected mode, with additional space for caches.
+
+Creating speech still requires the local helper and the selected model. Ming description modes generate a custom preview locally and cache it under the selected Ming folder's `previews/` directory. Use voice opens a script form; Create voice-over saves the result in the project's `assets/voice/` folder. Paid providers are not available in this tab.
+
+Install Python 3.10-3.12, then run (use `cuda` instead of `cpu` for a compatible NVIDIA GPU):
+
+```sh
+agentcut --setup-ming --ming-dir E:/Agentcut-models/ming --ming-device cpu
+```
+
+From this repository: `npm run studio --workspace agentcut -- --setup-ming --ming-dir E:/Agentcut-models/ming`.
+
+The selected folder holds the Python environment, downloaded packages, model (about 3 GB), source, all runtime caches, and temporary audio. Allow several additional GB for PyTorch and its installation files. Only a small `~/.agentcut/ming-location.json` pointer is stored in the user folder. Set `AGENTCUT_MING_DIR` to override that location or `AGENTCUT_PYTHON` to select the setup Python executable. Setup is explicit and never runs from a generic voice request. Generation uses local files and does not call a paid fallback.
+
+Reopen Voice-over after setup. Select Ming and Emma, George or Charlotte. For natural-language voice and delivery control, select "Describe voice and delivery" and enter style instructions. "Design a voice" accepts a voice description. Named voices cannot combine with style instructions. This integration supports English, with no reference cloning or inline expression tags. Write numbers as spoken words; automatic text normalization is disabled. Kokoro stays the default.
+
+Ming code and model weights are published under MIT. Setup preserves the upstream LICENSE and LEGAL files. The model/runtime revisions are pinned in `src/studio/voice/ming.ts`. CPU mode uses float32 and a CPU-only PyTorch runtime. NVIDIA mode uses CUDA with BF16 support. Setup supports Windows/Linux x64; Windows CPU and NVIDIA modes are tested. Apple GPU and ARM support are not claimed. CPU mode needs about 9 GB free RAM; 16 GB system RAM or more is recommended.
+
+
+### Ming runtime release checks
+
+Run the fast checks with `node --import tsx --test tests/ming-voice.test.mjs tests/voice-previews.test.mjs tests/kokoro-voice.test.mjs tests/studio-rail-voice-browser.test.mjs`.
+
+For real generation, set `AGENTCUT_MING_RUNTIME_TEST=1` and `AGENTCUT_MING_DIR` to an installed model folder, then run `node --import tsx --test tests/ming-runtime.test.mjs`. Repeat with separate CPU and CUDA installations. CPU verification must report a `+cpu` PyTorch build and `torch.version.cuda` as `None`, not just hide the GPU. The test saves WAV files and timings under the selected folder's `release-test-results/`. Listen to the clips to check words, pacing, and voice consistency before publishing. CPU tests can take several minutes.

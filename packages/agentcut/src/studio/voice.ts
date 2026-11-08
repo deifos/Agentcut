@@ -1,3 +1,4 @@
+import { mingReady } from "./voice/ming.js";
 import { selectKokoroVoice } from "./voice/kokoro.js";
 // Voice-over generation for Agentcut, with the user's own API keys.
 //
@@ -49,7 +50,7 @@ export function keyFor(id: VoiceProviderId): string | null {
 export const VOICE_KEY_ENV_VARS = VOICE_PROVIDERS.map((p) => p.envVar).filter(Boolean);
 
 export function voiceSettings() {
-  const providers = VOICE_PROVIDERS.map(p => ({ ...p, ...(p.local ? { configured: true, source: null } : store.status(p.id)) }));
+  const providers = VOICE_PROVIDERS.map(p => ({ ...p, ...(p.local ? { configured: p.id === "ming" ? mingReady() : true, source: null } : store.status(p.id)) }));
   return { providers, defaultProvider: "kokoro" };
 }
 
@@ -219,8 +220,9 @@ export function voiceOptions() {
         ) ??
         "Call agentcut_voice_options with this provider to list account voices.",
     })),
+    mingVoices: getVoiceAdapter("ming").voices,
     localVoices: getVoiceAdapter("kokoro").voices,
-    note: "Use local Kokoro for generic voice-over requests, even when paid keys exist. Use a paid provider only when the user explicitly requests or selects it. Honor explicit voice, language, accent and gender preferences; do not silently substitute. Kokoro is English only. Its suggested uses are ScreenSlick editorial defaults, not measured tone. For unknown tone, audition a sample. Local failures never call a paid provider.",
+    note: "Ming is optional local CPU or NVIDIA GPU speech under MIT; select a named English voice or freeform/voice_design with style instructions. Named voices cannot combine with style. Use local Kokoro for generic voice-over requests, even when paid keys exist. Use a paid provider only when the user explicitly requests or selects it. Honor explicit voice, language, accent and gender preferences; do not silently substitute. Kokoro is English only. Its suggested uses are ScreenSlick editorial defaults, not measured tone. For unknown tone, audition a sample. Local failures never call a paid provider.",
   };
 }
 

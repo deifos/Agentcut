@@ -15,9 +15,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Project Assets now has a local Voices tab for Kokoro and Ming, with included preset samples, cached custom previews, and voice-over creation. Ming supports CPU-only and NVIDIA GPU setup, with confirmation, disk space and memory requirements before downloading. Woof is no longer offered.
+
+- Optional Ming 3.0 0.5B voice generation on CPU or NVIDIA GPUs, with named English voices and voice/delivery description modes. Setup supports a separate drive for all model, runtime and cache files.
+
+
 - The export dialog shows progress for the full batch above Cancel export. Progress includes saved files when you retry and continues when saving starts.
 
 ### Changed
+
+- Production builds use Webpack to avoid a font-resolution error in the current Turbopack build. Preset Kokoro and Ming voice samples use the shared sound CDN, with app copies as a fallback.
 
 - The export dialog shows a preview and duration for each video. Select output formats with the format cards. Open Advanced to adjust loudness, watch local videos, or open saved files.
 

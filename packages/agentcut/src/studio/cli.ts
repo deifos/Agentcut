@@ -83,6 +83,9 @@ your video workspace, live bundles for the preview, and a coding agent for chat
 
 Usage: npx -y agentcut [options]
 
+  --setup-ming [--ming-dir <folder>] [--ming-device cpu|cuda|auto]
+                   Install optional Ming 0.5B voices (CPU or NVIDIA GPU, Python 3.10-3.12).
+                   Keeps model, runtime, downloads and caches in that folder.
   --dir <path>      Workspace folder (default: ~/Agentcut)
   --port <n>        Bridge port (default 32118)
   --origin <url>    Also allow this web origin (repeatable)
@@ -123,6 +126,19 @@ function resolveReadFolders(paths: WorkspacePaths, add: string[], remove: string
 }
 
 async function main() {
+  if (process.argv[2] === "--setup-ming") {
+    const args = process.argv.slice(3);
+    let directory: string | undefined;
+    let device: "auto" | "cpu" | "cuda" = "auto";
+    for (let i = 0; i < args.length; i += 2) {
+      if (args[i] === "--ming-dir" && args[i + 1]) directory = args[i + 1];
+      else if (args[i] === "--ming-device" && ["auto", "cpu", "cuda"].includes(args[i + 1])) device = args[i + 1] as typeof device;
+      else throw new Error("Usage: agentcut --setup-ming [--ming-dir <folder>] [--ming-device cpu|cuda|auto]");
+    }
+    const { setupMing } = await import("./voice/ming.js");
+    await setupMing(directory, console.log, device);
+    return;
+  }
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
     process.stdout.write(HELP);

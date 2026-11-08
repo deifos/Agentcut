@@ -8,7 +8,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_heart.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_heart.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_heart.wav",
     suggestedUses: ["tutorial"],
   },
   {
@@ -18,7 +19,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_alloy.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_alloy.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_alloy.wav",
     suggestedUses: [],
   },
   {
@@ -28,7 +30,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_aoede.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_aoede.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_aoede.wav",
     suggestedUses: [],
   },
   {
@@ -38,7 +41,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_bella.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_bella.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_bella.wav",
     suggestedUses: ["demo"],
   },
   {
@@ -48,7 +52,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_jessica.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_jessica.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_jessica.wav",
     suggestedUses: [],
   },
   {
@@ -58,7 +63,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_kore.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_kore.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_kore.wav",
     suggestedUses: [],
   },
   {
@@ -68,7 +74,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_nicole.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_nicole.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_nicole.wav",
     suggestedUses: [],
   },
   {
@@ -78,7 +85,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_nova.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_nova.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_nova.wav",
     suggestedUses: [],
   },
   {
@@ -88,7 +96,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_river.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_river.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_river.wav",
     suggestedUses: [],
   },
   {
@@ -98,7 +107,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_sarah.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_sarah.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_sarah.wav",
     suggestedUses: [],
   },
   {
@@ -108,7 +118,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "female",
     description: "American English, female",
-    previewUrl: "/voice-samples/kokoro/af_sky.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/af_sky.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/af_sky.wav",
     suggestedUses: [],
   },
   {
@@ -118,7 +129,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_adam.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_adam.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_adam.wav",
     suggestedUses: [],
   },
   {
@@ -128,7 +140,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_echo.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_echo.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_echo.wav",
     suggestedUses: [],
   },
   {
@@ -138,7 +151,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_eric.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_eric.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_eric.wav",
     suggestedUses: [],
   },
   {
@@ -148,7 +162,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_fenrir.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_fenrir.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_fenrir.wav",
     suggestedUses: [],
   },
   {
@@ -158,7 +173,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_liam.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_liam.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_liam.wav",
     suggestedUses: [],
   },
   {
@@ -168,7 +184,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_michael.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_michael.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_michael.wav",
     suggestedUses: ["sales"],
   },
   {
@@ -178,7 +195,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_onyx.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_onyx.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_onyx.wav",
     suggestedUses: [],
   },
   {
@@ -188,7 +206,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_puck.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_puck.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_puck.wav",
     suggestedUses: ["launch", "release"],
   },
   {
@@ -198,7 +217,8 @@ export const KOKORO_VOICES = [
     accent: "American",
     gender: "male",
     description: "American English, male",
-    previewUrl: "/voice-samples/kokoro/am_santa.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/am_santa.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/am_santa.wav",
     suggestedUses: [],
   },
   {
@@ -208,7 +228,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "female",
     description: "British English, female",
-    previewUrl: "/voice-samples/kokoro/bf_alice.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bf_alice.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bf_alice.wav",
     suggestedUses: [],
   },
   {
@@ -218,7 +239,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "female",
     description: "British English, female",
-    previewUrl: "/voice-samples/kokoro/bf_emma.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bf_emma.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bf_emma.wav",
     suggestedUses: ["walkthrough"],
   },
   {
@@ -228,7 +250,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "female",
     description: "British English, female",
-    previewUrl: "/voice-samples/kokoro/bf_isabella.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bf_isabella.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bf_isabella.wav",
     suggestedUses: [],
   },
   {
@@ -238,7 +261,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "female",
     description: "British English, female",
-    previewUrl: "/voice-samples/kokoro/bf_lily.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bf_lily.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bf_lily.wav",
     suggestedUses: [],
   },
   {
@@ -248,7 +272,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "male",
     description: "British English, male",
-    previewUrl: "/voice-samples/kokoro/bm_daniel.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bm_daniel.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bm_daniel.wav",
     suggestedUses: [],
   },
   {
@@ -258,7 +283,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "male",
     description: "British English, male",
-    previewUrl: "/voice-samples/kokoro/bm_fable.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bm_fable.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bm_fable.wav",
     suggestedUses: [],
   },
   {
@@ -268,7 +294,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "male",
     description: "British English, male",
-    previewUrl: "/voice-samples/kokoro/bm_george.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bm_george.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bm_george.wav",
     suggestedUses: [],
   },
   {
@@ -278,7 +305,8 @@ export const KOKORO_VOICES = [
     accent: "British",
     gender: "male",
     description: "British English, male",
-    previewUrl: "/voice-samples/kokoro/bm_lewis.wav",
+    previewUrl: "https://files.screenslick.com/studio/voice-samples/kokoro/bm_lewis.wav",
+    fallbackPreviewUrl: "/voice-samples/kokoro/bm_lewis.wav",
     suggestedUses: [],
   },
 ] as const;

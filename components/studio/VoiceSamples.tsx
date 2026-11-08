@@ -19,6 +19,7 @@ interface SampleVoice {
   name: string;
   description?: string;
   url: string;
+  fallbackPreviewUrl?: string;
 }
 
 const PROVIDER_NAMES: Record<ProviderId, string> = {
@@ -114,7 +115,7 @@ export function useSamplePlayer() {
     },
     [],
   );
-  const toggle = (url: string) => {
+  const toggle = (url: string, fallbackUrl?: string) => {
     if (current?.url === url) {
       current.audio.pause();
       current.done();
@@ -131,7 +132,15 @@ export function useSamplePlayer() {
       if (current?.url === url) current = null;
     };
     audio.onended = done;
-    audio.onerror = done;
+    let triedFallback = false;
+    audio.onerror = () => {
+      if (current?.audio !== audio) return;
+      if (fallbackUrl && !triedFallback) {
+        triedFallback = true;
+        audio.src = fallbackUrl;
+        void audio.play().catch(done);
+      } else done();
+    };
     current = { audio, url, done };
     mine.current = url;
     setPlaying(url);
@@ -159,7 +168,7 @@ export function SampleButton({
         type="button"
         variant="outline"
         size="icon"
-        onClick={() => toggle(sample.url)}
+        onClick={() => toggle(sample.url, sample.fallbackPreviewUrl)}
         aria-label={
           isPlaying ? `Stop ${sample.name} sample` : `Play ${sample.name} sample`
         }
@@ -225,7 +234,7 @@ export function VoiceSamples({
                 <Button
                   type="button"
                   variant={isPlaying ? "secondary" : "outline"}
-                  onClick={() => toggle(voice.url)}
+                  onClick={() => toggle(voice.url, voice.fallbackPreviewUrl)}
                   className="h-auto justify-start gap-2 px-2 py-1.5 text-left"
                 >
                   {isPlaying ? <Pause className="text-primary" /> : <Play />}

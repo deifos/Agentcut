@@ -287,6 +287,16 @@ export function VoicesDialog({
                 ) : null}
                 </section>
 
+
+              {settings.providers.some(p => p.id === "ming") ? (
+                <section className="space-y-1 rounded-lg border p-3 text-xs">
+                  <p className="font-semibold">Ming 0.5B: local voices</p>
+                  <p>{settings.providers.find(p => p.id === "ming")?.configured ? "Ready. Select Ming under Try a voice." : "Install with agentcut --setup-ming --ming-dir followed by your model folder, then reopen this window."}</p>
+                  <p>CPU or compatible NVIDIA GPU. CPU is slower and needs about 9 GB free RAM. About 3 GB of model files, plus runtime packages. MIT license permits commercial use.</p>
+                  <p>Choose Emma, George or Charlotte, or select a description mode for voice and delivery instructions. Write numbers as spoken words.</p>
+                </section>
+              ) : null}
+
               <VoiceSamples
                 initialProvider={settings.defaultProvider ?? adding}
               />
@@ -436,7 +446,7 @@ function TryVoice({
           model,
           voice,
           text,
-          style: provider.id === "kokoro" ? undefined : style || undefined,
+          style: supportsStyle ? style || undefined : undefined,
           name: `sample-${voice || provider.id}`,
         },
         600_000,
@@ -454,7 +464,8 @@ function TryVoice({
     }
   };
 
-  const supportsStyle = provider.id === "gemini" || provider.id === "openai";
+  const mingDescription = provider.id === "ming" && (voice === "freeform" || voice === "voice_design");
+  const supportsStyle = provider.id === "gemini" || provider.id === "openai" || mingDescription;
 
   return (
     <section className="space-y-2 rounded-lg border border-border/70 p-3">
@@ -468,6 +479,8 @@ function TryVoice({
             const next = providers.find((p) => p.id === value)!;
             setProviderId(next.id);
             setModel(next.defaultModel);
+            setVoice(next.defaultVoice);
+            setResult(null);
           }}
         >
           <SelectTrigger className="w-full" aria-label="Provider">
@@ -525,7 +538,8 @@ function TryVoice({
         <Input
           value={style}
           onChange={(event) => setStyle(event.target.value)}
-          placeholder="Style (optional): warm, upbeat launch announcer, quick pace"
+          aria-label="Voice style"
+          placeholder={mingDescription ? "Required: describe the voice and delivery" : "Style (optional): warm, upbeat launch announcer, quick pace"}
         />
       ) : (
         <p className="text-[11px] text-muted-foreground">
@@ -538,7 +552,7 @@ function TryVoice({
           size="sm"
           onClick={() => void generate()}
           disabled={
-            busy || !text.trim() || (!voice && provider.id === "elevenlabs")
+            busy || !text.trim() || (mingDescription && !style.trim()) || (!voice && provider.id === "elevenlabs")
           }
         >
           {busy ? <Spinner /> : <Mic />} {busy ? "Generating…" : "Generate"}

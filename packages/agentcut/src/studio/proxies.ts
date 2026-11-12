@@ -3,12 +3,14 @@
 // keyframe every few frames. Only the preview's Player ever asks for one: captures and exports read
 // the original. They sit in .agentcut/proxies, keyed by the file's contents' identity, so they never
 // travel with a project and can always be made again.
+import type { ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { cpus } from "node:os";
 import { join } from "node:path";
 import { ensureFfmpeg, MEDIA_INPUT_ONLY, run } from "./references.js";
 import { debugLog } from "../log.js";
+import { killTree } from "./proc.js";
 
 const LONG_EDGE = 1920;
 const KEYFRAME_EVERY = 8;
@@ -122,6 +124,15 @@ export class ProxyStore {
   private tail: Promise<unknown> = Promise.resolve();
   /** The copy being written, which a sweep must leave alone. */
   private writing: string | null = null;
+  private encoder: ChildProcess | null = null;
+  private closed = false;
+
+  /** The helper is stopping: end the running encode and start no more. */
+  close() {
+    this.closed = true;
+    if (this.encoder) killTree(this.encoder);
+  }
+
 
   constructor(internalDir: string) {
     this.dir = join(internalDir, "proxies");
@@ -209,6 +220,7 @@ export class ProxyStore {
 
   private async make(key: string, file: string, target: string) {
     const part = `${target}.part.mp4`;
+    if (this.closed) return;
     try {
       const ffmpeg = await ensureFfmpeg();
       const info = await run(ffmpeg, ["-hide_banner", ...MEDIA_INPUT_ONLY, "-i", file], { timeoutMs: PROBE_TIMEOUT_MS });
@@ -232,7 +244,10 @@ export class ProxyStore {
       mkdirSync(this.dir, { recursive: true });
       const threads = Math.max(2, Math.floor(cpus().length / 2));
       this.writing = part;
-      const encoded = await run(ffmpeg, proxyArgs(file, part, threads), { timeoutMs: ENCODE_TIMEOUT_MS });
+      const encoded = await run(ffmpeg, proxyArgs(file, part, threads), {
+        timeoutMs: ENCODE_TIMEOUT_MS,
+        onChild: (child) => { this.encoder = child; },
+      });
       if (encoded.code !== 0) throw new Error(encoded.stderr.slice(-400));
       renameSync(part, target);
       // Which file it copies, so the copy goes when that file does.

@@ -1,6 +1,6 @@
 import type { TokenUsage } from "./agents/usage.js";
 import { randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, sep } from "node:path";
 import type { ChildProcess } from "node:child_process";
 import { pruneChatFrames } from "./housekeeping.js";

@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"tests/*.test.mjs\"",
     "test:share": "node --import tsx --test tests/share.test.mjs",
     "test:phone": "node --import tsx --test tests/phone.test.mjs",
     "test:music": "node --import tsx --test tests/music-search.test.mjs",

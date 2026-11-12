@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,12 +16,6 @@ export const PACKAGE_VERSION = readPackageVersion();
 export const AGENT_FRAMES_DIR =
   process.env.AGENTCUT_FRAMES_DIR ??
   join(packageRoot, ".tmp", "agent-frames");
-
-// Source videos downloaded for agents can be large, so they default to the
-// system temp folder rather than the package directory.
-export const AGENT_ASSETS_DIR =
-  process.env.AGENTCUT_ASSETS_DIR ??
-  join(tmpdir(), "agentcut-assets");
 
 function readPackageVersion() {
   try {

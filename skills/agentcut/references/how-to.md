@@ -144,18 +144,3 @@ Reuse current material and passed checks. Check changed regions first, then revi
 in both formats. Run page-heavy checks in sequence as `website-howto.md` requires. If a tool stalls,
 inspect active work before retrying. Record what passed and what remains blocked; do not claim a
 build alone proves instructional accuracy.
-
-## Evidence used for this guide
-
-The application above is original Agentcut guidance, informed by these primary sources. These studies
-do not establish a universal video length or guarantee an outcome for Agentcut users.
-
-- [Software-training research (2013)](https://ris.utwente.nl/ws/portalfiles/portal/6827789/s4.pdf)
-  supports task-focused demonstrations, accurate interfaces and coordinated action and narration.
-- [A controlled study of pause and navigation guidance (2022)](https://pmc.ncbi.nlm.nih.gov/articles/PMC9610327/)
-  supports explicit help for when to pause and review. Its experiment used educational material,
-  so applying it to software-step holds is a design inference.
-- [A software-tutorial study of reviews (2018)](https://research.utwente.nl/en/publications/supporting-motivation-task-performance-and-retention-in-video-tut/)
-  found no extra benefit from its review or second-demonstration conditions. Keep recaps purposeful.
-- [W3C caption guidance](https://www.w3.org/WAI/media/av/captions/) calls for synchronized, accurate
-  captions and correction of automatic output. This informs the caption review above.

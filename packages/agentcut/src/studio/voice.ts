@@ -5,7 +5,7 @@ import { selectKokoroVoice } from "./voice/kokoro.js";
 // Keys live in a file in the user's home folder (outside the workspace, so Claude's file
 // tools never see them), are never sent to the page after saving, never put in Claude's
 // environment, and never written to logs. The helper adds the key when it calls the provider.
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { debugLog } from "../log.js";
@@ -226,6 +226,3 @@ export function voiceOptions() {
   };
 }
 
-export function hasKeyFile() {
-  return existsSync(keyStorePath());
-}

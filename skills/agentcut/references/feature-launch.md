@@ -23,6 +23,10 @@ For example, a canvas-versions announcement could show making two independent ve
 
 ## Build and verify
 
+Read `references/launch-direction.md` before building a new film or a major revision. Use its
+concrete visual settings, shot table, early proof captures and transition checks with this feature's
+brief. Keep an approved script or existing direction when the request is a small edit.
+
 Follow the full Agentcut skill: inspect real assets and the component/3D libraries, plan intentional motion and camera changes, use editable tracks, coordinate music and sound effects, and retain final full-picture and audio review. Do not replace the process with a fixed animation recipe. Use the user's own footage or safe real-app capture. If proof or access is missing, ask for it before building a false demonstration.
 
 Use `sound.md` for voice and music. Generic voice-over uses local Kokoro; a paid voice requires explicit user selection. A silent announcement is valid when requested. If voice is used, inspect the take, check its words and use transcription timings for accurate captions. Music must support the action and leave the message clear.

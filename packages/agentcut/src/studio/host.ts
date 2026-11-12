@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, watch, writeFileSync, type FSWatcher } from "node:fs";
+import { mkdirSync, readFileSync, watch, writeFileSync, type FSWatcher } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { isAbsolute, join, sep } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { mingDevice, mingDir, setupMing } from "./voice/ming.js";
 import { callEditor, getEditorSession, sendToEditor, type BridgeExtension } from "../bridge.js";
 import { TranscriptionService, transcriptionSettings, saveTranscriptionKey, removeTranscriptionKey, preferTranscription } from "./transcription/service.js";
@@ -672,6 +672,8 @@ export class StudioHost implements BridgeExtension {
 
   async stop() {
     cancelResize();
+    cancelLocalRender();
+    this.proxyStore?.close();
     this.phones.stop();
     await this.phoneBrowser?.close();
     clearInterval(this.housekeepingTimer);
@@ -1022,8 +1024,3 @@ export class StudioHost implements BridgeExtension {
   }
 }
 
-export function ensureProjectsDir(paths: WorkspacePaths) {
-  if (!existsSync(paths.projects)) mkdirSync(paths.projects, { recursive: true });
-}
-
-export const PATH_SEP = sep;

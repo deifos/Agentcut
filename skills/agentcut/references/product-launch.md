@@ -64,7 +64,10 @@ Record a short brief in `notes.md` and show the direction in two or three lines 
   case when they are absent. Let the amount of proof and reading time determine the cut length.
   Honor a length stated in plain language. Do not require a duration slider or a length choice to start.
 
-Consider at least two distinct openings before choosing one. Examples include a useful result first,
+Read `references/launch-direction.md` before building. Use it to choose the story, record concrete
+visual settings and shot handoffs, check the opening and proof early, and review transition frames.
+
+Consider at least two distinct stories before choosing one. Examples include a useful result first,
 a recognizable problem with an immediate demonstration, a surprising verified detail, or a product
 reveal with a short promise. Compare them against the available material and audience. Record the
 choice and its reason in notes. Do not force a device orbit or logo reveal onto every film.

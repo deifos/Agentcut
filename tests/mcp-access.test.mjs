@@ -79,16 +79,14 @@ test("external stdio client discovers the full toolkit, reads the shipped skill 
     assert.match(client.getInstructions(), /same skills/);
     const tools = (await client.listTools()).tools.map((tool) => tool.name);
     const capabilities = await call(client, "agentcut_capabilities");
+    assert.ok(capabilities.guides.includes("SKILL.md"));
+    assert.equal(capabilities.tools, undefined);
     const inspection = await client.callTool({ name: "agentcut_inspect_reference", arguments: {
       path: "assets/references/sample/video.mp4", startFrame: 3,
     } });
     assert.equal(inspection.content[1]?.data, png);
     assert.equal(JSON.parse(inspection.content[0].text).frames[0].frame, 3);
     assert.equal(calls.at(-1).includeImages, true);
-    assert.deepEqual(
-      capabilities.tools.map((tool) => tool.name).sort(),
-      [...tools].sort(),
-    );
     for (const name of [
       "agentcut_components",
       "agentcut_music_catalog",
@@ -104,10 +102,6 @@ test("external stdio client discovers the full toolkit, reads the shipped skill 
       "agentcut_copy_file",
     ]) {
       assert.ok(tools.includes(name), name);
-      assert.ok(
-        capabilities.tools.some((tool) => tool.name === name),
-        name,
-      );
     }
     const guide = await client.callTool({
       name: "agentcut_guide",

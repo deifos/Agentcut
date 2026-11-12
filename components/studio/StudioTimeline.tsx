@@ -13,7 +13,6 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
-  type WheelEvent as ReactWheelEvent,
 } from "react";
 import {
   ArrowDown,
@@ -103,6 +102,7 @@ const ROW_HEIGHT: Record<TrackKind, number> = {
   adjustment: 34,
 };
 const EDGE_PX = 7;
+const MAX_CONTENT_PX = 16_000_000;
 const SNAP_PX = 8;
 
 export const TRACK_KIND_STYLE: Record<
@@ -421,6 +421,19 @@ type PlayheadAskProps = {
   disabled: boolean;
 };
 
+/** Moves an element with the playhead on the compositor: no React render and no layout per frame. */
+function usePlayheadPosition(frameStore: FrameStore, ppf: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      if (ref.current) ref.current.style.transform = `translateX(${frameStore.get() * ppf}px)`;
+    };
+    place();
+    return frameStore.subscribe(place);
+  }, [frameStore, ppf]);
+  return ref;
+}
+
 /** The line through the tracks. Sits under the sticky ruler, so the head (in the ruler) stays on top. */
 function PlayheadLine({
   frameStore,
@@ -431,11 +444,12 @@ function PlayheadLine({
   ppf: number;
   height: number;
 }) {
-  const frame = useFrame(frameStore);
+  const ref = usePlayheadPosition(frameStore, ppf);
   return (
     <div
-      className="pointer-events-none absolute top-0 z-[15]"
-      style={{ left: frame * ppf, height }}
+      ref={ref}
+      className="pointer-events-none absolute left-0 top-0 z-[15] will-change-transform"
+      style={{ height }}
     >
       <div className="absolute -left-px top-[20px] bottom-0 w-[2px] bg-brand" />
     </div>
@@ -459,11 +473,11 @@ function PlayheadHead({
   onGrab(event: ReactPointerEvent): void;
   ask?: PlayheadAskProps;
 }) {
-  const frame = useFrame(frameStore);
+  const ref = usePlayheadPosition(frameStore, ppf);
   return (
     <div
-      className="pointer-events-none absolute inset-y-0 z-30"
-      style={{ left: frame * ppf }}
+      ref={ref}
+      className="pointer-events-none absolute inset-y-0 left-0 z-30 will-change-transform"
     >
       <div className="absolute -left-px top-[20px] bottom-0 w-[2px] bg-brand" />
       {/* Drag the head to scrub. */}
@@ -525,7 +539,9 @@ function TimeReadout({
 
 function rulerStep(ppf: number, fps: number) {
   // Choose a tick spacing (in frames) that leaves ~80px between labels.
-  const candidates = [1, 2, 5, 10, 15, 30, 60, 150, 300, 600, 1800, 3600].map(
+  const candidates = [
+    1, 2, 5, 10, 15, 30, 60, 150, 300, 600, 1800, 3600, 9000, 18000, 54000, 108000,
+  ].map(
     (n) => (n >= fps ? Math.round(n / 30) * fps : n),
   );
   for (const step of candidates) if (step * ppf >= 80) return step;
@@ -576,10 +592,15 @@ export function StudioTimeline(props: StudioTimelineProps) {
     1,
   );
   const fitPpf = Math.max(
-    0.05,
+    1e-4,
     (viewportWidth - HEADER_WIDTH - 24) / contentFrames,
   );
-  const ppf = fitPpf * zoom;
+  // Far enough in to work on single frames, within the width a browser can lay out.
+  const maxZoom = Math.max(
+    1,
+    Math.min(Math.max(80, 8 / fitPpf), MAX_CONTENT_PX / (contentFrames * fitPpf)),
+  );
+  const ppf = fitPpf * Math.min(zoom, maxZoom);
   // At "Fit" the content fills the view exactly (no horizontal scrollbar); zooming in scrolls.
   const width = contentFrames * ppf + 24;
   const selected = useMemo(() => new Set(selection), [selection]);
@@ -602,15 +623,22 @@ export function StudioTimeline(props: StudioTimelineProps) {
   // Keep the playhead in view while playing. Reads cached sizes only: touching
   // scrollLeft/clientWidth on every frame forces a layout and stalls playback.
   const scrollLeftRef = useRef(0);
+  const [windowStart, setWindowStart] = useState(0);
+  const chunkPx = Math.max(200, Math.round(viewportWidth / 2));
   useEffect(() => {
     const element = scrollRef.current;
     if (!element) return;
     const onScroll = () => {
       scrollLeftRef.current = element.scrollLeft;
+      setWindowStart(Math.floor(element.scrollLeft / chunkPx) * chunkPx);
     };
     element.addEventListener("scroll", onScroll, { passive: true });
     return () => element.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [chunkPx]);
+  // Only what is in view (and a margin either side) is in the page: a long, zoomed-in timeline would
+  // otherwise be tens of thousands of elements.
+  const visibleFrom = (windowStart - viewportWidth) / ppf;
+  const visibleTo = (windowStart + chunkPx + 2 * viewportWidth) / ppf;
   useEffect(() => {
     if (zoom <= 1) return; // everything fits: nothing to follow
     return frameStore.subscribe(() => {
@@ -808,13 +836,46 @@ export function StudioTimeline(props: StudioTimelineProps) {
     onSeek(frameAtClientX(event.clientX));
   };
 
-  const onWheel = (event: ReactWheelEvent) => {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    setZoom((value) =>
-      Math.max(1, Math.min(80, value * (event.deltaY < 0 ? 1.15 : 1 / 1.15))),
-    );
-  };
+  // Zooming keeps one frame where it is on screen: the one under the pointer, else the playhead
+  // if it is in view, else the middle.
+  const zoomAnchor = useRef<{ frame: number; x: number } | null>(null);
+  const changeZoom = useCallback(
+    (update: (value: number) => number, clientX?: number) => {
+      const element = scrollRef.current;
+      if (element) {
+        const span = element.clientWidth - HEADER_WIDTH;
+        const playheadX = frameStore.get() * ppf - element.scrollLeft;
+        const x =
+          clientX !== undefined
+            ? clientX - element.getBoundingClientRect().left - HEADER_WIDTH
+            : playheadX >= 0 && playheadX <= span
+              ? playheadX
+              : span / 2;
+        zoomAnchor.current = { frame: (element.scrollLeft + x) / ppf, x };
+      }
+      setZoom((value) => Math.max(1, Math.min(maxZoom, update(Math.min(value, maxZoom)))));
+    },
+    [frameStore, maxZoom, ppf],
+  );
+  useLayoutEffect(() => {
+    const anchor = zoomAnchor.current;
+    const element = scrollRef.current;
+    if (!anchor || !element) return;
+    zoomAnchor.current = null;
+    element.scrollLeft = Math.max(0, anchor.frame * ppf - anchor.x);
+  }, [ppf]);
+  // React's wheel listeners are passive, so only a native one can stop the browser zooming the page.
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      changeZoom((value) => value * (event.deltaY < 0 ? 1.15 : 1 / 1.15), event.clientX);
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [changeZoom]);
 
   const editTrack = (
     trackId: string,
@@ -824,7 +885,12 @@ export function StudioTimeline(props: StudioTimelineProps) {
   };
 
   const ticks = [];
-  for (let f = 0; f <= contentFrames; f += step) ticks.push(f);
+  for (
+    let f = Math.max(0, Math.floor(visibleFrom / step) * step);
+    f <= Math.min(contentFrames, visibleTo);
+    f += step
+  )
+    ticks.push(f);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -890,7 +956,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
           />
           <TimelineButton
             label="Zoom out"
-            onClick={() => setZoom((v) => Math.max(1, v / 1.5))}
+            onClick={() => changeZoom((v) => v / 1.5)}
           >
             <ZoomOut className="size-3.5" />
           </TimelineButton>
@@ -902,12 +968,12 @@ export function StudioTimeline(props: StudioTimelineProps) {
             min={0}
             max={100}
             step={1}
-            value={Math.round((Math.log(zoom) / Math.log(80)) * 100)}
-            onChange={(value) => setZoom(Math.pow(80, value / 100))}
+            value={maxZoom > 1 ? Math.round((Math.log(Math.min(zoom, maxZoom)) / Math.log(maxZoom)) * 100) : 0}
+            onChange={(value) => changeZoom(() => Math.pow(maxZoom, value / 100))}
           />
           <TimelineButton
             label="Zoom in"
-            onClick={() => setZoom((v) => Math.min(80, v * 1.5))}
+            onClick={() => changeZoom((v) => v * 1.5)}
           >
             <ZoomIn className="size-3.5" />
           </TimelineButton>
@@ -929,7 +995,6 @@ export function StudioTimeline(props: StudioTimelineProps) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onWheel={onWheel}
         onPointerDown={(event) => {
           // Click on empty space (not a clip or a header) clears the selection.
           if (
@@ -1183,7 +1248,8 @@ export function StudioTimeline(props: StudioTimelineProps) {
                   )}
                   style={{ left: HEADER_WIDTH, width }}
                 >
-                  {(track.clips as StudioClip[]).map((clip, clipIndex) => (
+                  {(track.clips as StudioClip[]).map((clip, clipIndex) =>
+                    clipEnd(clip) < visibleFrom || clip.from > visibleTo ? null : (
                     <ClipView
                       key={`${clip.id}:${clipIndex}`}
                       slug={slug}

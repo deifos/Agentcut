@@ -226,7 +226,6 @@ export const clipSchemas = {
 } as const;
 
 export type TrackKind = keyof typeof clipSchemas;
-export const TRACK_KINDS = Object.keys(clipSchemas) as TrackKind[];
 
 const trackBase = {
   id: z.string().regex(/^[a-z0-9][a-z0-9-_]*$/i, "track id must be kebab-case"),

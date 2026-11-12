@@ -3,7 +3,6 @@ import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TEMPLATE_DIR } from "./workspace.js";
-import { studioToolIndex } from "./tools.js";
 
 export const MCP_INSTRUCTIONS = `Agentcut creates editable videos with the same skills, components, music, SFX, voice and review tools as its built-in chat. Start with agentcut_capabilities, read agentcut_guide (SKILL.md), then agentcut_status. Read the relevant supporting guides before creating scenes or sound. Use project file tools if you cannot access the helper's local files. Keep the full creative and review process. Catalogs, imports, rendering and audio review need the connected studio page; configured generation providers may incur charges. The release announcement prototype is a separate limited workflow, not the default for all video requests.`;
 
@@ -41,25 +40,6 @@ export function registerAgentGuides(server: McpServer) {
             {
               instructions: MCP_INSTRUCTIONS,
               guides: guides(),
-              tools: [
-                {
-                  name: "agentcut_capabilities",
-                  description:
-                    "Discover workflow, tools, guides and connection requirements.",
-                },
-                {
-                  name: "agentcut_guide",
-                  description:
-                    "List or read the packaged skill and supporting guides.",
-                },
-                ...studioToolIndex(server).map(({ name, description }) => ({
-                  name,
-                  description:
-                    description.length > 240
-                      ? `${description.slice(0, 237)}...`
-                      : description,
-                })),
-              ],
               fileScopes: {
                 project:
                   "Editable project files and assets. Write with the hash from read_file; null creates a new file.",
@@ -85,8 +65,6 @@ export function registerAgentGuides(server: McpServer) {
                 "Read relevant guides, then use the complete creative and review workflow",
               ],
             },
-            null,
-            2,
           ),
         },
       ],

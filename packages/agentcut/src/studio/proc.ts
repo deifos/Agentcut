@@ -63,11 +63,20 @@ export function killTree(child: ChildProcess) {
     spawnSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true });
     return;
   }
-  try {
-    process.kill(-child.pid, "SIGTERM");
-  } catch {
-    child.kill("SIGTERM");
-  }
+  const signal = (name: NodeJS.Signals) => {
+    try {
+      process.kill(-child.pid!, name);
+    } catch {
+      child.kill(name);
+    }
+  };
+  signal("SIGTERM");
+  // A process that ignores SIGTERM would otherwise hold its turn or render forever.
+  const force = setTimeout(() => {
+    if (child.exitCode === null && child.signalCode === null) signal("SIGKILL");
+  }, 5000);
+  force.unref();
+  child.once("close", () => clearTimeout(force));
 }
 
 export const DETACH_FOR_GROUP_KILL = !isWindows;

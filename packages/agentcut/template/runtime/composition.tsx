@@ -1031,6 +1031,7 @@ function TrackView({
   const visual = track.kind !== "audio";
   const { isRendering } = useRemotionEnvironment();
   const trackCtx = useMemo<TrackContext>(() => ({ ...ctx, order }), [ctx, order]);
+  const frame = useCurrentFrame();
   if (visual && track.hidden) return null;
   // Adjustment layers draw nothing themselves: the clips below them read them (useClipGrade).
   if (track.kind === "adjustment") return null;
@@ -1041,6 +1042,10 @@ function TrackView({
       {(track.clips as StudioClip[]).map((raw) => {
         const clip = resolveClip(raw, ctx.variant);
         if (clip.duration <= 0) return null;
+        const premountFor = clip.from > 0 ? Math.round(ctx.fps * PREMOUNT_SECONDS) : undefined;
+        // Only clips on screen (or about to be) get a <Sequence>: one for every clip on every frame
+        // is what made long edits drop frames. A <Sequence> outside this range draws nothing anyway.
+        if (frame < clip.from - (premountFor ?? 0) || frame >= clip.from + clip.duration) return null;
         let body: ReactNode = null;
         switch (track.kind) {
           case "scene":
@@ -1062,7 +1067,6 @@ function TrackView({
             body = <AudioClipView clip={clip as AudioClip} trackMuted={trackMuted} gain={gain} />;
             break;
         }
-        const premountFor = clip.from > 0 ? Math.round(ctx.fps * PREMOUNT_SECONDS) : undefined;
         const name = `${track.name} · ${clip.name ?? clip.id}`;
         if (!visual && !isRendering) {
           // Audio in the preview. Remotion only premounts a <Sequence> that has a layout box

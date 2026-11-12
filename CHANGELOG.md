@@ -13,6 +13,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- **Long timelines stay fast.** The timeline draws only the clips and ruler marks in view, the playhead moves
+  without redrawing the page, and the preview mounts only the clips at the playhead. "Fit" now fits videos of any
+  length, the ruler has steps up to an hour, and you can zoom in to single frames on long videos.
+- **Zooming the timeline keeps your place.** Ctrl/Cmd + wheel zooms around the pointer (and no longer zooms the
+  whole browser page); the zoom buttons and slider zoom around the playhead.
+- **Agents use fewer tokens.** The skill's main guide is half the size (release capture and external MCP rules moved
+  to guides read on demand), tool results are compact JSON, `agentcut_status` no longer lists every other project,
+  and `agentcut_capabilities` no longer repeats the tool list.
+- **Videos get a direction and a layout grid before the first scene.** The craft guide now has the agent write a
+  short look sheet (one idea, a returning motif, planned contrast and one surprise, colours and type in real values)
+  and build every frame on shared margins, a column grid and a four-size type scale.
+- Tool descriptions are shorter; their detailed rules live only in the guides they point to. Captured frames are
+  described as attached images, so agents stop opening the saved copies as well.
+
+### Fixed
+
+- Stopping the helper also stops a running local render and preview-copy encode, and a cancelled agent or encode
+  that ignores the first stop signal is force-stopped after 5 seconds.
+
 ### Added
 
 - Project Assets now has a local Voices tab for Kokoro and Ming, with included preset samples, cached custom previews, and voice-over creation. Ming supports CPU-only and NVIDIA GPU setup, with confirmation, disk space and memory requirements before downloading. Woof is no longer offered.
@@ -23,6 +44,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The export dialog shows progress for the full batch above Cancel export. Progress includes saved files when you retry and continues when saving starts.
 
 ### Changed
+
+- Product Launch and Feature Launch now use concrete visual settings, connected shot plans, early opening and proof checks, and review of frames around each cut. Product demonstrations use real evidence; rebuilt UI is treated as an illustration.
 
 - Production builds use Webpack to avoid a font-resolution error in the current Turbopack build. Preset Kokoro and Ming voice samples use the shared sound CDN, with app copies as a fallback.
 

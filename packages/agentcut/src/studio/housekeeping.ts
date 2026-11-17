@@ -19,12 +19,14 @@ const MAX_CHAT_FRAMES = 400;
 /** Pictures kept for a project's chat; the oldest go first (old messages then just don't show them). */
 const MAX_CHAT_FRAME_BYTES = 150 * 1024 * 1024;
 
-function entries(dir: string) {
+/** A folder's entries, or none if it or a parent up to the workspace is a link. */
+function entries(dir: string, root: string) {
   try {
-    // A scratch folder or one of its parents can be a junction to user files.
-    for (let path = resolve(dir); ; path = dirname(path)) {
-      if (lstatSync(path).isSymbolicLink()) return [];
-      if (dirname(path) === path) break;
+    // A scratch folder or one of its parents can be a junction to user files. Links above the
+    // workspace are the user's own setup (macOS's /var → /private/var, a synced Documents folder).
+    const top = resolve(root);
+    for (let path = resolve(dir); path !== top; path = dirname(path)) {
+      if (dirname(path) === path || lstatSync(path).isSymbolicLink()) return [];
     }
     return readdirSync(dir, { withFileTypes: true });
   } catch {
@@ -52,8 +54,8 @@ function remove(path: string, why: string) {
 }
 
 /** The newest chat pictures within MAX_CHAT_FRAMES and MAX_CHAT_FRAME_BYTES; the rest are removed. */
-export function pruneChatFrames(dir: string) {
-  const files = entries(dir)
+export function pruneChatFrames(dir: string, root: string) {
+  const files = entries(dir, root)
     .filter((entry) => entry.isFile())
     .map((entry) => {
       const stat = statSync(join(dir, entry.name));
@@ -68,10 +70,10 @@ export function pruneChatFrames(dir: string) {
 }
 
 /** Files in a project's scratch folder, oldest first; what's past SCRATCH_DAYS or MAX_SCRATCH_BYTES goes. */
-export function pruneScratch(dir: string) {
+export function pruneScratch(dir: string, root: string) {
   const files: { path: string; mtime: number; size: number }[] = [];
   const walk = (folder: string) => {
-    for (const entry of entries(folder)) {
+    for (const entry of entries(folder, root)) {
       const path = join(folder, entry.name);
       if (entry.isDirectory()) walk(path);
       else if (entry.isFile()) {
@@ -89,11 +91,11 @@ export function pruneScratch(dir: string) {
   }
   // Folders the removals emptied (the scratch folder itself stays).
   const prune = (folder: string) => {
-    for (const entry of entries(folder)) {
+    for (const entry of entries(folder, root)) {
       if (!entry.isDirectory()) continue;
       const path = join(folder, entry.name);
       prune(path);
-      if (entries(path).length === 0) rmSync(path, { recursive: true, force: true });
+      if (entries(path, root).length === 0) rmSync(path, { recursive: true, force: true });
     }
   };
   prune(dir);
@@ -107,7 +109,7 @@ const projectExists = (paths: WorkspacePaths, slug: string) => existsSync(join(p
  * Each render makes its own again, so none are kept between renders.
  */
 export function sweepRenderFolder(paths: WorkspacePaths, renderingSlug: string | null) {
-  for (const entry of entries(paths.render)) {
+  for (const entry of entries(paths.render, paths.root)) {
     const name = entry.name;
     const mirror = /^public-(.+)$/.exec(name);
     if (entry.isDirectory() && mirror) {
@@ -132,15 +134,15 @@ export function sweepWorkspace(paths: WorkspacePaths, { renderingSlug }: { rende
   sweepRenderFolder(paths, renderingSlug);
 
   const trash = join(paths.internal, "deleted-editing-styles");
-  for (const entry of entries(trash)) {
+  for (const entry of entries(trash, paths.root)) {
     const path = join(trash, entry.name);
     if (ageMs(path) > STYLE_TRASH_DAYS * DAY) remove(path, "deleted style past its recovery window");
   }
 
-  for (const entry of entries(paths.projects)) {
+  for (const entry of entries(paths.projects, paths.root)) {
     if (entry.isDirectory() && !entry.name.startsWith(".")) {
-      pruneChatFrames(join(paths.projects, entry.name, ".studio", "attachments", "claude-frames"));
-      pruneScratch(join(paths.projects, entry.name, ".studio", "scratch"));
+      pruneChatFrames(join(paths.projects, entry.name, ".studio", "attachments", "claude-frames"), paths.root);
+      pruneScratch(join(paths.projects, entry.name, ".studio", "scratch"), paths.root);
     }
     if (!entry.isDirectory() || !entry.name.startsWith(".incoming-")) continue;
     const path = join(paths.projects, entry.name);

@@ -28,6 +28,23 @@ test("cleanup does not follow linked scratch folders or linked parent folders", 
   }
 });
 
+test("a workspace inside a linked folder is still cleaned", () => {
+  const outer = mkdtempSync(join(tmpdir(), "agentcut-linked-"));
+  try {
+    mkdirSync(join(outer, "real"));
+    symlinkSync(join(outer, "real"), join(outer, "link"), "junction");
+    const paths = workspacePaths(join(outer, "link", "workspace"));
+    const trash = join(paths.internal, "deleted-editing-styles", "old-style");
+    mkdirSync(trash, { recursive: true });
+    const when = new Date(Date.now() - 31 * DAY);
+    utimesSync(trash, when, when);
+    sweepWorkspace(paths, { renderingSlug: null });
+    assert.equal(existsSync(trash), false);
+  } finally {
+    rmSync(outer, { recursive: true, force: true });
+  }
+});
+
 function workspace() {
   const root = mkdtempSync(join(tmpdir(), "agentcut-housekeeping-"));
   const paths = workspacePaths(root);

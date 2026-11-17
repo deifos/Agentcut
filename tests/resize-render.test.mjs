@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, realpathSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -11,7 +11,8 @@ import { StudioHost } from "../packages/agentcut/src/studio/host.ts";
 import { ensureFfmpeg } from "../packages/agentcut/src/studio/references.ts";
 
 test("resize only accepts a project render, never another path", () => {
-  const paths = workspacePaths(mkdtempSync(join(tmpdir(), "resize-path-test-")));
+  // resizeSource answers with the resolved path, and macOS's temp folder sits under the /var link.
+  const paths = workspacePaths(realpathSync(mkdtempSync(join(tmpdir(), "resize-path-test-"))));
   const renders = join(paths.projects, "demo", "renders");
   mkdirSync(renders, { recursive: true });
   writeFileSync(join(renders, "original.mp4"), "test");

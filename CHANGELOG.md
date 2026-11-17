@@ -29,6 +29,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Tool descriptions are shorter; their detailed rules live only in the guides they point to. Captured frames are
   described as attached images, so agents stop opening the saved copies as well.
 
+- Give your agent a link to a song, video or image from any site and it saves the file to your project. Protected links, such as Suno songs, need downloading first.
+
 ### Fixed
 
 - Stopping the helper also stops a running local render and preview-copy encode, and a cancelled agent or encode

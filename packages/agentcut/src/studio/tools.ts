@@ -619,6 +619,20 @@ export function registerStudioTools(server: McpServer) {
 
   defineTool(
     server,
+    "agentcut_download",
+    "Download the audio, video, image, font or .glb model at a link into the project's assets/ (never overwrites). Use it for every file from the web, from any site: your shell can't reach most of them. Takes a direct file link or a page with a video on it. Audio lands in assets/music/, video in assets/video/, images in assets/images/. SVG, HTML, documents and archives are refused, and private or protected links (Suno song links) fail: then ask the user to download the file and add it.",
+    {
+      project,
+      url: z.string().min(1).describe("The link."),
+      name: z.string().optional().describe('File name without extension, e.g. "launch-song". The extension comes from the file itself.'),
+      folder: z.string().optional().describe('Another folder under assets/, e.g. "sfx".'),
+      audioOnly: z.boolean().optional().describe("Keep only the audio when the link is a video or a page."),
+    },
+    async ({ project: slug, ...input }) => callEditor("studio.local.download_media", { ...input, slug }, { timeoutMs: 10 * MINUTE }),
+  );
+
+  defineTool(
+    server,
     "agentcut_generate_music",
     "Generate an original music bed with Google Lyria (the user's Gemini key; the helper adds it) and save it to assets/music/ (never overwrites). Write the prompt like a brief: \"Instrumental only, no vocals.\", total length, key and steady BPM, instruments, mix, then [m:ss - m:ss] sections that follow the video's beats (intro, build, drop on the reveal, final hit, ring-out). No artist or song names. Takes 1–3 minutes per take.",
     {

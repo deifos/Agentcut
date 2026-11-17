@@ -57,9 +57,8 @@ curl -G https://api.openverse.org/v1/audio/ --data-urlencode "q=whoosh" -d licen
 ```
 
 - `length`: `shortest` (< 30 s), `short`, `medium`, `long`. Only `license=cc0` (no credit needed).
-- Download each result's `url` into a new empty folder under a name you choose, check with ffprobe if available, copy the ones you
-  keep into `assets/sfx/`, rank and check them with the listen tools, and record `foreign_landing_url` in
-  notes.md.
+- Save each result's `url` with `agentcut_download` and `folder: "sfx"`, rank and check them with the listen tools,
+  delete the ones you don't keep, and record `foreign_landing_url` in notes.md.
 - Anonymous limits: 20 requests/minute, 200/day. Space requests ≥ 4 s apart (HTTP 429 → wait).
 
 ## Check the mix
@@ -110,9 +109,11 @@ Kokoro is available without credentials. Optional paid providers are ElevenLabs,
 
 ## Music
 
-Where a song comes from, in order (never download music from the web: it's slow and fails often):
+Where a song comes from, in order (never go looking for music on the web: it's slow and fails often):
 
-1. **A file the user gives you** (in `assets/`, or one they point at): use it.
+1. **A song the user gives you**: a file in `assets/`, a file they point at (copy it into `assets/music/`), or a link to the
+   file (`agentcut_download` with `audioOnly: true`). Use it. A Suno link can't be fetched: ask them to use Download in
+   Suno, then drop the file in the chat or tell you where it saved.
 2. **The Agentcut music library** unless the user asks for a new song: 224 licensed tracks, each
    measured (tempo, energy 1–5, intro length, drops, ending, shape) and tagged (moods, genres,
    instruments, vocals). Search `agentcut_music_catalog` in plain words for the video's feel

@@ -6,6 +6,7 @@ import { callEditor, getEditorSession, sendToEditor, type BridgeExtension } from
 import { TranscriptionService, transcriptionSettings, saveTranscriptionKey, removeTranscriptionKey, preferTranscription } from "./transcription/service.js";
 import type { TranscriptionInput } from "./transcription/types.js";
 import { PACKAGE_VERSION } from "../config.js";
+import { downloadMedia, type DownloadMediaInput } from "./download.js";
 import { generateMusic, musicOptions, type GenerateMusicInput } from "./music.js";
 import { debugLog } from "../log.js";
 import { buildProjectBundle, buildRenderEntrySource, type BundleState } from "./bundler.js";
@@ -587,6 +588,13 @@ export class StudioHost implements BridgeExtension {
         return (async () => {
           const slug = assertSlug(p.slug ?? this.pageSession?.activeProject);
           const result = await generateMusic(this.paths, slug, p as unknown as GenerateMusicInput);
+          this.emit("studio.assets", { slug });
+          return result;
+        })();
+      case "studio.local.download_media":
+        return (async () => {
+          const slug = assertSlug(p.slug ?? this.pageSession?.activeProject);
+          const result = await downloadMedia(this.paths, slug, p as unknown as DownloadMediaInput);
           this.emit("studio.assets", { slug });
           return result;
         })();

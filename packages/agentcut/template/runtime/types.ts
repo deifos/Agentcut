@@ -78,12 +78,21 @@ interface BaseClipFields {
   note?: string;
 }
 
+/** Where a scene was moved and resized by hand: x/y in frame fractions, scale about the frame's centre. */
+export interface ClipTransform {
+  x?: number;
+  y?: number;
+  scale?: number;
+}
+
 export interface SceneClipFields {
   /** A scene file in scenes/ ("Hook" → scenes/Hook.tsx)… */
   scene?: string;
   /** …or an Agentcut library component ("text-reveal"). Exactly one of the two. */
   component?: string;
   props?: Record<string, unknown>;
+  /** Moves and scales everything the scene draws (the user drags it on the preview). */
+  transform?: ClipTransform;
 }
 
 /** A colour wheel: x/y push towards a hue on the vectorscope disk (-1…1), level moves the brightness. */

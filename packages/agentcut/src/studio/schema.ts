@@ -74,6 +74,11 @@ const sceneFields = {
   /** …or a component from the Agentcut library ("text-reveal"). One of the two. */
   component: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "component must be a library id like text-reveal").optional(),
   props: z.record(z.unknown()).optional(),
+  /** Moved or resized by hand on the preview: x/y in frame fractions, scale about the frame's centre. */
+  transform: z
+    .object({ x: finite.min(-4).max(4).optional(), y: finite.min(-4).max(4).optional(), scale: finite.min(0.05).max(20).optional() })
+    .strict()
+    .optional(),
 };
 
 /** What the helper knows about the library components (template/components/catalog.json). */

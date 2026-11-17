@@ -66,6 +66,7 @@ import { uploadToProject } from "@/lib/studio/export";
 import { fileName, formatBytes, formatFrameTime } from "@/lib/studio/format";
 import type { FrameStore } from "@/lib/studio/frame-store";
 import type {
+  ClipTransform,
   AssetEntry,
   AudioClip,
   Box,
@@ -688,6 +689,13 @@ function ClipInspector({
           patch={patch}
         />
       ) : null}
+      {kind === "scene" && (view as SceneClip).transform ? (
+        <PlacementFields
+          transform={(view as SceneClip).transform!}
+          disabled={locked}
+          patch={patch}
+        />
+      ) : null}
       {kind === "adjustment" ? (
         <ColorPanel
           title="Adjustment"
@@ -904,6 +912,53 @@ function BoxFields({
         />
       </Row>
     </div>
+  );
+}
+
+/** Where a scene was dragged and scaled to on the preview. */
+function PlacementFields({
+  transform,
+  disabled,
+  patch,
+}: {
+  transform: ClipTransform;
+  disabled: boolean;
+  patch: Patch;
+}) {
+  const set = (fields: ClipTransform) => {
+    const next = { x: transform.x ?? 0, y: transform.y ?? 0, scale: transform.scale ?? 1, ...fields };
+    const moved = next.x !== 0 || next.y !== 0 || next.scale !== 1;
+    patch({ transform: moved ? next : undefined } as Partial<StudioClip>);
+  };
+  const pct = (n: number) => Math.round(n * 1000) / 10;
+  return (
+    <Section
+      title="Placement"
+      right={
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          disabled={disabled}
+          onClick={() => patch({ transform: undefined } as Partial<StudioClip>)}
+          className="h-5 px-1.5 text-[10px]"
+        >
+          Reset
+        </Button>
+      }
+    >
+      <div className="grid grid-cols-2 gap-2">
+        <Row label="Move X %">
+          <NumberField value={pct(transform.x ?? 0)} step={0.1} min={-400} max={400} onCommit={(v) => set({ x: (v ?? 0) / 100 })} disabled={disabled} />
+        </Row>
+        <Row label="Move Y %">
+          <NumberField value={pct(transform.y ?? 0)} step={0.1} min={-400} max={400} onCommit={(v) => set({ y: (v ?? 0) / 100 })} disabled={disabled} />
+        </Row>
+        <Row label="Scale %">
+          <NumberField value={pct(transform.scale ?? 1)} step={1} min={5} max={2000} onCommit={(v) => set({ scale: (v ?? 100) / 100 })} disabled={disabled} />
+        </Row>
+      </div>
+    </Section>
   );
 }
 

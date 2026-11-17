@@ -13,6 +13,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.28] - 2026-11-17
+
+### Added
+
+- Edit by hand on the preview. Click any text or picture to select its clip, drag it to move it, and pull
+  a corner to make it bigger or smaller. This works for text, image and video clips and, with this
+  version of the helper, for scenes and library components, which move and scale as a whole.
+- Double-click text on the preview to retype it. Text clips are edited in place; text from a scene or
+  component opens a small field next to it and redraws as you type. Text written into a scene's code
+  still needs the agent.
+- An "Add text" button under the preview puts a new text clip at the playhead, ready to type in.
+- A moved clip snaps to the frame's edges and centre (hold Cmd/Ctrl to turn that off). Corners keep the
+  shape; hold Shift to stretch an image or video. On a layout other than the main one, position and size
+  are saved for that layout only.
+- A moved scene shows a Placement section in the inspector, with a Reset button.
+
 ## [0.2.27] - 2026-11-17
 
 ### Added
@@ -673,7 +689,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.27...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.28...HEAD
+[0.2.28]: https://github.com/deifos/Agentcut/compare/v0.2.27...v0.2.28
 [0.2.27]: https://github.com/deifos/Agentcut/compare/v0.2.26...v0.2.27
 [0.2.26]: https://github.com/deifos/Agentcut/compare/v0.2.25...v0.2.26
 [0.2.25]: https://github.com/deifos/Agentcut/compare/v0.2.24...v0.2.25

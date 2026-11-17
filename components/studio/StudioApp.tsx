@@ -1079,6 +1079,11 @@ export function StudioApp() {
                   onPlayingChange={setPlaying}
                   editing={Boolean(chat.running)}
                   workingAgentName={workingAgentName}
+                  edit={
+                    readOnly
+                      ? undefined
+                      : { onSelect: setSelection, onCommit: studio.commitLayers }
+                  }
                   draw={
                     readOnly
                       ? undefined

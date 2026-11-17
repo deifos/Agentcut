@@ -98,6 +98,8 @@ projects/<slug>/
 - **Scenes are for what clips and components can't express**: kinetic typography, diagrams,
   backgrounds, illustrated UI. A scene clip names a component (`"scene": "Hook"` → `scenes/Hook.tsx`)
   and passes `props`. Put words, colors and timings the user may want to change in `props`.
+  The user retypes on-screen text by double-clicking it, which only works for words that come from a
+  string in `props` and are drawn as written (never hard-code copy in the scene file).
 - **Frames are the unit** everywhere. `tracks[0]` is drawn on top. Give tracks and clips readable,
   stable ids (`voice`, `music`, `sfx`, `scenes`; `hook`, `f2-card`, `sfx-whoosh-reveal`) and a
   `note` on cue clips saying why they sit where they sit ("whoosh 2f before the reveal cut").

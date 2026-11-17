@@ -78,6 +78,9 @@ on) show on the timeline ruler. Keep section markers in sync with scene clips.
 **scene** — `{ "scene": "Hook", "props": { … } }` renders `scenes/Hook.tsx`; or
 `{ "component": "text-reveal", "props": { … } }` renders a library component (one of the two per clip;
 see `references/components.md`).
+`transform: { "x", "y", "scale" }` moves and scales everything the clip draws (x/y in frame fractions,
+scale about the frame's centre). The user sets it by dragging the scene on the preview: keep it, and
+change the scene's own layout instead when you are asked to reposition something.
 
 **audio** — `{ "src": "assets/voice.wav", "volume": 1, "trimStart": 0, "fadeIn": 0, "fadeOut": 0, "loop": false, "playbackRate": 1, "role": "voice" | "music" | "sfx" | "ambience" }`.
 `trimStart` skips frames of the file. Set `duration` from `agentcut_media_info` (frames). An SFX

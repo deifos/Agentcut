@@ -18,6 +18,7 @@ import {
   Pencil,
   Play,
   Repeat,
+  Type,
   SkipBack,
   StepBack,
   StepForward,
@@ -29,7 +30,7 @@ import { LabeledSlider } from "@/components/ui/labeled-slider";
 import { PreviewWorkingStatus } from "@/components/studio/PreviewWorkingStatus";
 import { cn } from "@/lib/utils";
 import { buildInputProps, variantSize } from "@/lib/studio/composition-props";
-import { findClip } from "@/lib/studio/edit";
+import { addClip, findClip, uniqueClipId } from "@/lib/studio/edit";
 import { formatFrameTime } from "@/lib/studio/format";
 import { useFrame, type FrameStore } from "@/lib/studio/frame-store";
 import { trackPlayerBuffering, type Scrubber } from "@/lib/studio/scrub";
@@ -44,13 +45,16 @@ import {
   type PreviewPerfStore,
 } from "@/lib/studio/preview-perf";
 import { DrawAsk } from "@/components/studio/DrawAsk";
+import { PreviewTransform } from "@/components/studio/PreviewTransform";
 import { useAgentName } from "@/components/studio/StudioAgent";
 import type { DrawStroke } from "@/lib/studio/drawing";
 import type {
   Box,
   BundleSummary,
   LoadedModule,
+  StudioClip,
   StudioDoc,
+  StudioLayers,
 } from "@/lib/studio/types";
 
 export interface StudioPreviewProps {
@@ -88,6 +92,11 @@ export interface StudioPreviewProps {
     busy: boolean;
     disabled: boolean;
     onSend(strokes: DrawStroke[], text: string): Promise<void>;
+  };
+  /** Move, resize and retype clips on the picture (left out where nothing can be saved). */
+  edit?: {
+    onSelect(ids: string[]): void;
+    onCommit(layers: StudioLayers, base?: StudioLayers): void;
   };
 }
 
@@ -173,6 +182,7 @@ function Transport({
   editing,
   drawing,
   onDraw,
+  onAddText,
   slow,
 }: {
   simple?: boolean;
@@ -183,6 +193,8 @@ function Transport({
   /** Shown only when the pencil is available. */
   drawing?: boolean;
   onDraw?(): void;
+  /** Shown only where clips can be edited by hand. */
+  onAddText?(): void;
   frameStore: FrameStore;
   fps: number;
   durationInFrames: number;
@@ -285,6 +297,11 @@ function Transport({
             </span>
           </TooltipHint>
         ) : null}
+        {onAddText ? (
+          <IconButton label="Add text at the playhead" onClick={onAddText} disabled={disabled}>
+            <Type className="size-4" />
+          </IconButton>
+        ) : null}
         {onDraw ? (
           <IconButton
             label={
@@ -341,6 +358,7 @@ export function StudioPreview(props: StudioPreviewProps) {
     editing,
     assetBase,
     draw,
+    edit,
   } = props;
   const agentName = useAgentName();
   const perfStore = previewPerf ?? NO_PREVIEW_PERF;
@@ -539,6 +557,26 @@ export function StudioPreview(props: StudioPreviewProps) {
     return null;
   }, [layers, selection, variant]);
 
+  // Held here rather than in PreviewTransform: "Add text" can close the pencil, which mounts it fresh.
+  const [typing, setTyping] = useState<string | null>(null);
+  /** A new text clip at the playhead, ready to type in. */
+  const addText = () => {
+    if (!edit || !layers || !project) return;
+    playerRef.current?.pause();
+    const from = Math.max(0, Math.round(frameStore.get()));
+    const id = uniqueClipId(layers, "text");
+    const clip = {
+      id,
+      from,
+      duration: Math.max(project.fps, Math.min(project.fps * 3, project.durationInFrames - from)),
+      text: "Your text",
+    } as StudioClip;
+    edit.onCommit(addClip(layers, "text", clip).layers, layers);
+    edit.onSelect([id]);
+    setDrawing(false);
+    setTyping(id);
+  };
+
   const errors = doc.issues.filter((issue) => issue.severity === "error");
   const slow = usePreviewPerf(perfStore, (state) =>
     slowLabel(state, doc.slug, revision, variant, layers),
@@ -630,7 +668,24 @@ export function StudioPreview(props: StudioPreviewProps) {
             </div>
           )}
           {editing || checking ? <PreviewWorkingStatus agentName={workingAgentName ?? agentName} checking={checking} /> : null}
-          {selectedBox && ready ? (
+          {edit && ready && project && layers && !drawing && !checking ? (
+            <PreviewTransform
+              layers={layers}
+              project={project}
+              variant={variant}
+              size={size}
+              rect={rect}
+              stageRef={stageRef}
+              canMoveScenes={Boolean(loaded?.module.features?.includes("clip-transform"))}
+              selection={selection}
+              frameStore={frameStore}
+              playerRef={playerRef}
+              typing={typing}
+              onTypingChange={setTyping}
+              onSelect={edit.onSelect}
+              onCommit={edit.onCommit}
+            />
+          ) : selectedBox && ready ? (
             <SelectionOutline box={selectedBox} rect={rect} />
           ) : null}
           {draw && drawing && ready ? (
@@ -694,6 +749,7 @@ export function StudioPreview(props: StudioPreviewProps) {
           editing={editing}
           drawing={drawing}
           onDraw={draw ? toggleDrawing : undefined}
+          onAddText={edit && ready && !checking ? addText : undefined}
           slow={slow || undefined}
         />
       ) : null}

@@ -63,6 +63,7 @@ import type {
   AudioClip,
   AdjustmentClip,
   Box,
+  ClipTransform,
   CaptionsClip,
   ClipAnim,
   ColorGrade,
@@ -240,6 +241,19 @@ function useClipStyle(clip: StudioClip): CSSProperties {
   };
 }
 
+/** A scene the user moved or resized on the preview: everything it draws shifts and scales together. */
+function Moved({ transform, children }: { transform: ClipTransform | undefined; children: ReactNode }) {
+  const x = transform?.x ?? 0;
+  const y = transform?.y ?? 0;
+  const scale = transform?.scale ?? 1;
+  if (!x && !y && scale === 1) return <>{children}</>;
+  return (
+    <AbsoluteFill style={{ transform: `translate(${x * 100}%, ${y * 100}%) scale(${scale})`, transformOrigin: "50% 50%" }}>
+      {children}
+    </AbsoluteFill>
+  );
+}
+
 function boxStyle(box: Box | undefined): CSSProperties {
   if (!box) return { position: "absolute", left: 0, top: 0, width: "100%", height: "100%" };
   return {
@@ -286,14 +300,16 @@ function SceneClipView({
     const Component = entry.Component;
     return (
       <AbsoluteFill style={style}>
-        <Component
-          {...resolveComponentProps(clip.component, clip.props, ctx.project.style)}
-          width={ctx.width}
-          height={ctx.height}
-          fps={ctx.fps}
-          durationInFrames={clip.duration}
-          variant={ctx.variant}
-        />
+        <Moved transform={clip.transform}>
+          <Component
+            {...resolveComponentProps(clip.component, clip.props, ctx.project.style)}
+            width={ctx.width}
+            height={ctx.height}
+            fps={ctx.fps}
+            durationInFrames={clip.duration}
+            variant={ctx.variant}
+          />
+        </Moved>
       </AbsoluteFill>
     );
   }
@@ -316,14 +332,16 @@ function SceneClipView({
   }
   return (
     <AbsoluteFill style={style}>
-      <Scene
-        {...(clip.props ?? {})}
-        clip={{ id: clip.id, from: clip.from, duration: clip.duration }}
-        variant={ctx.variant}
-        width={ctx.width}
-        height={ctx.height}
-        fps={ctx.fps}
-      />
+      <Moved transform={clip.transform}>
+        <Scene
+          {...(clip.props ?? {})}
+          clip={{ id: clip.id, from: clip.from, duration: clip.duration }}
+          variant={ctx.variant}
+          width={ctx.width}
+          height={ctx.height}
+          fps={ctx.fps}
+        />
+      </Moved>
     </AbsoluteFill>
   );
 }

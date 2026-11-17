@@ -142,7 +142,7 @@ At completion, give the user a short report of changes, tested hardware, results
 
 ## Release order agreed with the user
 
-Finish and test Mac support before the version bump and helper publication. Both packages are currently `0.2.25`; do not publish this work under that existing version.
+Finish and test Mac support before announcing it. The Ming work already shipped in 0.2.26 and 0.2.27 with Mac and ARM setup blocked, so the next Mac release uses the next unused version.
 
 1. Finish the Mac implementation and the applicable Windows regression checks. Record any unavailable hardware tests explicitly.
 2. Choose the next unused release version. Update root `package.json`, `packages/agentcut/package.json`, and `package-lock.json` together. Follow README → Releasing. Check `MIN_HELPER_VERSION` in `lib/version.ts`; the new install/preview endpoints require a helper that includes this work.

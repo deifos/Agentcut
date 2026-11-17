@@ -13,6 +13,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.27] - 2026-11-17
+
+### Added
+
+- Give your agent a link to a song, video or image from any site and it saves the file to your project. Protected links, such as Suno songs, need downloading first.
+
+### Changed
+
+- The studio asks you to update a helper older than 0.2.26, which its Voices tab needs.
+
+### Fixed
+
+- Old chat pictures, agent scratch files, render leftovers and deleted styles are cleaned up again when the
+  workspace sits inside a linked folder (such as a synced Documents folder). Before, nothing was removed.
+
+## [0.2.26] - 2026-11-12
+
 ### Changed
 
 - **Long timelines stay fast.** The timeline draws only the clips and ruler marks in view, the playhead moves
@@ -28,32 +45,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   and build every frame on shared margins, a column grid and a four-size type scale.
 - Tool descriptions are shorter; their detailed rules live only in the guides they point to. Captured frames are
   described as attached images, so agents stop opening the saved copies as well.
-
-- Give your agent a link to a song, video or image from any site and it saves the file to your project. Protected links, such as Suno songs, need downloading first.
+- Product Launch and Feature Launch now use concrete visual settings, connected shot plans, early opening and proof checks, and review of frames around each cut. Product demonstrations use real evidence; rebuilt UI is treated as an illustration.
+- Production builds use Webpack to avoid a font-resolution error in the current Turbopack build. Preset Kokoro and Ming voice samples use the shared sound CDN, with app copies as a fallback.
+- The export dialog shows a preview and duration for each video. Select output formats with the format cards. Open Advanced to adjust loudness, watch local videos, or open saved files.
 
 ### Fixed
 
 - Stopping the helper also stops a running local render and preview-copy encode, and a cancelled agent or encode
   that ignores the first stop signal is force-stopped after 5 seconds.
-- Old chat pictures, agent scratch files, render leftovers and deleted styles are cleaned up again when the
-  workspace sits inside a linked folder (such as a synced Documents folder). Before, nothing was removed.
 
 ### Added
 
 - Project Assets now has a local Voices tab for Kokoro and Ming, with included preset samples, cached custom previews, and voice-over creation. Ming supports CPU-only and NVIDIA GPU setup, with confirmation, disk space and memory requirements before downloading. Woof is no longer offered.
-
 - Optional Ming 3.0 0.5B voice generation on CPU or NVIDIA GPUs, with named English voices and voice/delivery description modes. Setup supports a separate drive for all model, runtime and cache files.
-
-
 - The export dialog shows progress for the full batch above Cancel export. Progress includes saved files when you retry and continues when saving starts.
-
-### Changed
-
-- Product Launch and Feature Launch now use concrete visual settings, connected shot plans, early opening and proof checks, and review of frames around each cut. Product demonstrations use real evidence; rebuilt UI is treated as an illustration.
-
-- Production builds use Webpack to avoid a font-resolution error in the current Turbopack build. Preset Kokoro and Ming voice samples use the shared sound CDN, with app copies as a fallback.
-
-- The export dialog shows a preview and duration for each video. Select output formats with the format cards. Open Advanced to adjust loudness, watch local videos, or open saved files.
 
 ## [0.2.25] - 2026-11-06
 
@@ -668,7 +673,9 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.25...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.27...HEAD
+[0.2.27]: https://github.com/deifos/Agentcut/compare/v0.2.26...v0.2.27
+[0.2.26]: https://github.com/deifos/Agentcut/compare/v0.2.25...v0.2.26
 [0.2.25]: https://github.com/deifos/Agentcut/compare/v0.2.24...v0.2.25
 [0.2.24]: https://github.com/deifos/Agentcut/compare/v0.2.23...v0.2.24
 [0.2.23]: https://github.com/deifos/Agentcut/compare/v0.2.22...v0.2.23

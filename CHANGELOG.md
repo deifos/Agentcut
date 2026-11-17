@@ -33,6 +33,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Stopping the helper also stops a running local render and preview-copy encode, and a cancelled agent or encode
   that ignores the first stop signal is force-stopped after 5 seconds.
+- Old chat pictures, agent scratch files, render leftovers and deleted styles are cleaned up again when the
+  workspace sits inside a linked folder (such as a synced Documents folder). Before, nothing was removed.
 
 ### Added
 

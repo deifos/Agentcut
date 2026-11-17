@@ -742,7 +742,7 @@ export class ChatEngine {
   }
 
   private pruneFrames(dir: string) {
-    pruneChatFrames(dir);
+    pruneChatFrames(dir, this.deps.paths.root);
   }
 
   private toolSummary(slug: string, name: string, input: Record<string, unknown>) {

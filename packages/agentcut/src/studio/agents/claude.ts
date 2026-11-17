@@ -31,8 +31,9 @@ const BASE_TOOLS = [
 
 // A file name, web page or transcript can carry instructions, and the agent runs without anyone
 // approving its commands. So its shell only writes to the workspace, only reaches these sites, and
-// neither the shell nor Read can open logins and keys.
-const SHELL_DOMAINS = ["registry.npmjs.org", "api.openverse.org", "freesound.org", "cdn.freesound.org", "upload.wikimedia.org"];
+// neither the shell nor Read can open logins and keys. Media from any other site comes through
+// agentcut_download, which the helper runs outside the sandbox.
+const SHELL_DOMAINS = ["registry.npmjs.org", "api.openverse.org"];
 
 const SECRET_FOLDERS = [
   ".ssh",

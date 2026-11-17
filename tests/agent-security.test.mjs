@@ -14,6 +14,7 @@ test("editor link opener refuses files, executable protocols and credentials", (
     assert.throws(() => openWebUrl(url));
 });
 import { MEDIA_INPUT_ONLY } from "../packages/agentcut/src/studio/references.ts";
+import { fetchPublic, publicUrl, sniffMedia } from "../packages/agentcut/src/studio/download.ts";
 
 const home = "/home/someone";
 const run = {
@@ -150,4 +151,24 @@ test("media-looking symlinks and directories cannot launch scripts or apps", (t)
   const folder = join(dir, "bundle.mp4");
   mkdirSync(folder);
   assert.throws(() => openFile(folder), /can be opened/);
+});
+
+test("downloads refuse this computer and its network", async () => {
+  for (const url of ["http://127.0.0.1:32118/", "http://2130706433/", "http://[::1]/", "http://[::ffff:127.0.0.1]/", "http://169.254.169.254/latest", "http://192.168.1.1/", "file:///etc/passwd", "https://user:pw@example.com/a.mp3"]) {
+    assert.throws(() => publicUrl(url), undefined, url);
+  }
+  await assert.rejects(fetchPublic("http://localhost:32118/", AbortSignal.timeout(5000)), /this computer/);
+});
+
+test("downloads keep real media and nothing else, whatever the name says", () => {
+  const riff = (type) => Buffer.from(`RIFF\0\0\0\0${type}`, "latin1");
+  assert.deepEqual(sniffMedia(Buffer.from("ID3\x04", "latin1")), { kind: "audio", ext: "mp3" });
+  assert.deepEqual(sniffMedia(Buffer.from([0xff, 0xfb, 0x90, 0x00])), { kind: "audio", ext: "mp3" });
+  assert.deepEqual(sniffMedia(riff("WAVE")), { kind: "audio", ext: "wav" });
+  assert.deepEqual(sniffMedia(Buffer.from("\0\0\0\x20ftypM4A ", "latin1")), { kind: "audio", ext: "m4a" });
+  assert.deepEqual(sniffMedia(Buffer.from("\0\0\0\x20ftypisom", "latin1")), { kind: "video", ext: "mp4" });
+  assert.deepEqual(sniffMedia(Buffer.from([0xff, 0xd8, 0xff, 0xe0])), { kind: "image", ext: "jpg" });
+  for (const bad of ["<!doctype html>", "<svg xmlns=", "#!/bin/sh\n", "#EXTM3U\n", "MZ\x90\0", "PK\x03\x04", ""]) {
+    assert.equal(sniffMedia(Buffer.from(bad, "latin1")), null, bad);
+  }
 });

@@ -13,6 +13,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.29] - 2026-11-17
+
+### Fixed
+
+- Playing a cinematic shot while the camera pans, pushes or whips no longer makes the whole studio flash:
+  the preview draws each plane (and its lens-blur copies and reflection) once and only moves it with the
+  camera, instead of redrawing all of them on every frame of the move. A glare sweep is likewise a strip
+  that moves on its own layer. Exports draw exactly as before.
+
 ## [0.2.28] - 2026-11-17
 
 ### Added
@@ -689,7 +698,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.28...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.29...HEAD
+[0.2.29]: https://github.com/deifos/Agentcut/compare/v0.2.28...v0.2.29
 [0.2.28]: https://github.com/deifos/Agentcut/compare/v0.2.27...v0.2.28
 [0.2.27]: https://github.com/deifos/Agentcut/compare/v0.2.26...v0.2.27
 [0.2.26]: https://github.com/deifos/Agentcut/compare/v0.2.25...v0.2.26

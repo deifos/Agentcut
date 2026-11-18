@@ -571,6 +571,11 @@ function PlaneBody({
   // mounting and dropping blurred copies of the content (and their GPU layers) frame after frame, which made
   // the whole studio flicker. Captures and exports draw as before.
   const [was, setWas] = useState({ filter: false, copies: false });
+  // Without this hint Chromium redraws a layer whenever its on-screen scale changes, which a moving camera
+  // does on every frame: each pan, push or whip redrew every copy of every plane (the picture inside, its
+  // blur and its mask) frame after frame, and that churn of big GPU layers made the whole studio flash.
+  // With it a copy is drawn once and only moved; it's redrawn if the camera ends up far closer.
+  const moveOnly = lightPreview ? "transform" : undefined;
   const model = mul(ctx.model, basis);
   const camModel = mul(ctx.view, model, translate(-width / 2, -height / 2, 0));
 
@@ -632,6 +637,7 @@ function PlaneBody({
         height: height + o.pad * 2,
         transformOrigin: "0 0",
         transform: toCss(projected),
+        willChange: moveOnly,
         display: hidden ? "none" : undefined,
         ...o.mask,
       }}
@@ -663,6 +669,7 @@ function PlaneBody({
           height: height + pad * 2,
           transformOrigin: "0 0",
           transform: matrix(mul(sm, translate(-pad, -pad, 0))),
+          willChange: moveOnly,
         }}
       >
         <div
@@ -1118,6 +1125,34 @@ export function Lift({
 /** A band of light sweeping across a plane (put it last inside a Plane or Device screen). */
 export function Glare({ progress, angle = 115, width = 0.35, strength = 0.35, color = "#ffffff" }: { progress: number; angle?: number; width?: number; strength?: number; color?: string }) {
   const p = -0.6 + progress * 2.2;
+  const env = useRemotionEnvironment();
+  if (env.isPlayer && !env.isRendering) {
+    // Live preview: the same band as a fixed strip that only moves. A gradient that changes every frame
+    // repaints the whole plane, once per lens-blur copy and reflection (each a filtered, masked layer with
+    // the screenshot in it), and that per-frame churn of big GPU layers made the whole studio flash during
+    // a sweep. A moving strip on its own layer leaves the plane's picture untouched.
+    const rad = (angle * Math.PI) / 180;
+    const [dx, dy] = [Math.sin(rad), -Math.cos(rad)];
+    const [a, b] = [Math.abs(dx), Math.abs(dy)];
+    // Along the gradient line (length a·W + b·H), in the box's own units.
+    const along = (k: number) => `calc(${(k * a * 100).toFixed(3)}cqw + ${(k * b * 100).toFixed(3)}cqh)`;
+    return (
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", containerType: "size", pointerEvents: "none" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: along(width),
+            height: "calc(100cqw + 100cqh)",
+            background: `linear-gradient(90deg, ${alpha(color, 0)} 0%, ${alpha(color, strength)} 50%, ${alpha(color, 0)} 100%)`,
+            transform: `translate(-50%, -50%) translate(${along((p - 0.5) * dx)}, ${along((p - 0.5) * dy)}) rotate(${angle - 90}deg)`,
+            willChange: "transform",
+          }}
+        />
+      </div>
+    );
+  }
   const g = `linear-gradient(${angle}deg, ${alpha(color, 0)} ${((p - width / 2) * 100).toFixed(1)}%, ${alpha(color, strength)} ${(p * 100).toFixed(1)}%, ${alpha(color, 0)} ${((p + width / 2) * 100).toFixed(1)}%)`;
   return <div style={{ position: "absolute", inset: 0, background: g, pointerEvents: "none" }} />;
 }

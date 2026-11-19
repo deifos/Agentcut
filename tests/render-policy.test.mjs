@@ -22,6 +22,9 @@ test("worker selection leaves memory headroom and bounds media caches", () => {
   assert.equal(renderPolicy(16 * GiB, 12, "6").workers, 6);
   assert.equal(renderPolicy(3 * GiB, 12, "6").workers, 1);
   assert.ok(renderPolicy(64 * GiB, 12).cacheBytes <= 512 * 1024 ** 2);
+  // @remotion/media cancels the render below 240 MB, and macOS often reports well under 2 GB free.
+  assert.equal(renderPolicy(256 * 1024 ** 2, 12).cacheBytes, 240 * 1024 ** 2);
+  assert.equal(renderPolicy(0, 12).cacheBytes, 240 * 1024 ** 2);
   for (const invalid of ["0", "-1", "2.5", "Infinity", "13", ""]) {
     assert.throws(() => renderPolicy(16 * GiB, 12, invalid), /CONCURRENCY/);
   }

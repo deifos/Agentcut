@@ -13,6 +13,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.31] - 2026-11-19
+
+### Fixed
+
+- "Render on this computer" no longer fails at frame 0 with `The minimum value for the "mediaCacheSizeInBytes"
+  prop is 240MB` when the computer reports little free memory (common on macOS): the helper never asks for
+  a media cache smaller than Remotion accepts. A failed local render now shows the reason first, not only
+  the end of the stack trace.
+
 ## [0.2.30] - 2026-11-19
 
 ### Added
@@ -719,6 +728,7 @@ preview, timeline and inspector, browser and local export, motion component libr
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
 [Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.30...HEAD
+[0.2.31]: https://github.com/deifos/Agentcut/compare/v0.2.30...v0.2.31
 [0.2.30]: https://github.com/deifos/Agentcut/compare/v0.2.29...v0.2.30
 [0.2.29]: https://github.com/deifos/Agentcut/compare/v0.2.28...v0.2.29
 [0.2.28]: https://github.com/deifos/Agentcut/compare/v0.2.27...v0.2.28

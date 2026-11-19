@@ -266,7 +266,9 @@ export async function runLocalRender(options: LocalRenderOptions) {
     if (cancelled) throw new StudioError("Render cancelled.", "cancelled");
     if (result.code !== 0 || !existsSync(outPath)) {
       debugLog(`local render failed ${result.tail}`);
-      throw new StudioError(`Local render failed:\n${result.tail.slice(-1500)}`);
+      // Remotion prints the reason first and a long stack after it: lead with the reason so the cut tail can't lose it.
+      const reason = result.tail.split("\n").reverse().find((line) => /^Error\b/.test(line))?.replace(/^Error\s*/, "");
+      throw new StudioError(`Local render failed:\n${reason ? `${reason}\n\n` : ""}${result.tail.slice(-1500)}`);
     }
     const rel = outPath.slice(projectDir(paths, slug).length + 1).split(/[\\/]/).join("/");
     const renderDurationMs = Math.round(performance.now() - exportStarted);

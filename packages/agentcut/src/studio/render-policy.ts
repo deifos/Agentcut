@@ -2,6 +2,7 @@ import { StringDecoder } from "node:string_decoder";
 
 const MiB = 1024 * 1024;
 const GiB = 1024 * MiB;
+export const MIN_MEDIA_CACHE_BYTES = 240 * MiB;
 
 /** Budget caches and workers, not total Chrome/GPU memory. Leave room for the editor and OS. */
 export function renderPolicy(freeBytes: number, cpus: number, requested?: string) {
@@ -14,7 +15,8 @@ export function renderPolicy(freeBytes: number, cpus: number, requested?: string
     }
     workers = Math.min(Number(requested), memoryLimit);
   }
-  const cacheBytes = Math.floor(Math.max(64 * MiB, Math.min(512 * MiB, freeBytes / (workers * 8))));
+  // @remotion/media refuses to render with a media cache under 240 MB, however little memory is free.
+  const cacheBytes = Math.floor(Math.max(MIN_MEDIA_CACHE_BYTES, Math.min(512 * MiB, freeBytes / (workers * 8))));
   return { workers, cacheBytes };
 }
 

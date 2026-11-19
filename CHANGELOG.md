@@ -13,6 +13,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.30] - 2026-11-19
+
+### Added
+
+- **Style Spy can clone a video.** Choose "Clone the video" to have your agent rebuild a video you have the
+  right to use as an editable project: text, captions and graphics are redrawn at the measured size, position
+  and frame, and footage and people stay as clips of the original.
+- Two Style Spy tools for agents: `agentcut_measure_reference` returns numbers without an image (when a region
+  changes, the box and line heights of text, a region's colours), and `agentcut_compare_reference` puts reference
+  frames beside the edit's frames on one image with a difference score per pair.
+
+### Changed
+
+- **Style Spy reads the reference from measurements.** The import now measures every frame: hard cuts, flashes
+  and transitions are told apart (including animation drawn on twos), shots with the same setup are grouped
+  into looks, and things appearing inside a shot are listed with their frame and place. Agents open one frame
+  per look and a few packed motion sheets, not a strip per cut, and write one short recipe file.
+  References imported earlier are measured again the next time they are used.
+- The editor asks for helper 0.2.30, which Style Spy's measurements and cloning need.
+
 ## [0.2.29] - 2026-11-17
 
 ### Fixed
@@ -698,7 +718,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.29...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.30...HEAD
+[0.2.30]: https://github.com/deifos/Agentcut/compare/v0.2.29...v0.2.30
 [0.2.29]: https://github.com/deifos/Agentcut/compare/v0.2.28...v0.2.29
 [0.2.28]: https://github.com/deifos/Agentcut/compare/v0.2.27...v0.2.28
 [0.2.27]: https://github.com/deifos/Agentcut/compare/v0.2.26...v0.2.27

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { cutInput } from "./canvas.js";
 import { editingStyleInput } from "./editing-styles.js";
 import { referenceInspection } from "./references.js";
+import { referenceComparison, referenceMeasurement } from "./reference-tools.js";
 import { callEditor, persistAgentFrameResult } from "../bridge.js";
 import { releaseInput, releaseAction, releasePlan } from "./release-video.js";
 import { readBatch, type ReadResult } from "./read-batch.js";
@@ -253,7 +254,7 @@ export function registerStudioTools(server: McpServer) {
   defineTool(
     server,
     "agentcut_import_reference",
-    "Style Spy: bring a reference video into the project. `url` (a public Instagram, TikTok, YouTube or X link) downloads it; `path` (a video already in assets/references/<id>/) only prepares it. Saves video.mp4, reference.json (cuts, shots), a frame per shot with an overview sheet, and motion strips under assets/references/<id>/, and returns the paths. If a link needs a login, the user retries from Style Spy: never ask for passwords or cookies. See references/style-spy.md.",
+    "Style Spy: bring a reference video into the project. `url` (a public Instagram, TikTok, YouTube or X link) downloads it; `path` (a video already in assets/references/<id>/) only prepares it. Saves video.mp4, reference.json (measured cuts, shots, looks, on-screen events, rhythm), a frame per shot with an overview sheet, and motion sheets under assets/references/<id>/, and returns the paths. If a link needs a login, the user retries from Style Spy: never ask for passwords or cookies. See references/style-spy.md.",
     {
       url: z.string().url().optional(),
       path: z.string().regex(/^assets\/references\/[a-zA-Z0-9_-]+\/[^/]+$/).optional(),
@@ -271,6 +272,25 @@ export function registerStudioTools(server: McpServer) {
     async ({ project: slug, ...input }) => {
       const result = await callEditor("studio.local.inspect_reference", { slug, ...input }, { timeoutMs: 3 * MINUTE, includeImages: true });
       const { dataUrl, ...metadata } = result as { dataUrl: string; sheet: string };
+      const images: VisualResult["images"] = [];
+      collectImages({ dataUrl }, images);
+      return new VisualResult(metadata, images);
+    });
+
+  defineTool(server, "agentcut_measure_reference",
+    "Style Spy: numbers from a reference video, no image. kind=changes lists when a region changes over `count` frames from startFrame (caption switches, an element arriving); kind=ink gives the box, line heights and colour of the text or marks in a region of one frame, in fractions and source pixels; kind=colors gives a region's main colours. `region` uses fractions of the displayed frame from the top left.",
+    { ...referenceMeasurement.shape, project },
+    async ({ project: slug, ...input }) => callEditor("studio.local.measure_reference", { slug, input }, { timeoutMs: 4 * MINUTE }));
+
+  defineTool(server, "agentcut_compare_reference",
+    "Style Spy: put reference frames beside this edit's frames on one image, with a difference score per pair (0 identical; meaningful for a clone, where both show the same content) and the worst quarter of each. Up to 12 pairs of referenceFrame (source frame number) and projectFrame.",
+    { ...referenceComparison.shape, variant, project },
+    async ({ project: slug, variant: which, ...input }) => {
+      const frames = [...new Set(input.pairs.map(pair => pair.projectFrame))];
+      const captured = await callEditor("studio_capture_frames", { frames, variant: which, scale: 0.5, project: slug }, { timeoutMs: 5 * MINUTE, includeImages: true }) as { frames?: { frame: number; dataUrl: string }[] };
+      const captures = (captured.frames ?? []).map(({ frame, dataUrl }) => ({ frame, dataUrl }));
+      const result = await callEditor("studio.local.compare_reference", { slug, input, captures }, { timeoutMs: 6 * MINUTE, includeImages: true });
+      const { dataUrl, ...metadata } = result as { dataUrl: string };
       const images: VisualResult["images"] = [];
       collectImages({ dataUrl }, images);
       return new VisualResult(metadata, images);

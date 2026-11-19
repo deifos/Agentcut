@@ -35,6 +35,7 @@ import {
   type CreateProjectInput,
 } from "./projects.js";
 import { inspectReference, installedBrowsers, ReferenceImports } from "./references.js";
+import { compareReference, measureReference } from "./reference-tools.js";
 import { cancelLocalRender, localRenderSlug, runLocalRender } from "./render.js";
 import { importShare, shareProject } from "./share.js";
 import { openFile, openWebUrl, projectFile, revealFile } from "./reveal.js";
@@ -607,6 +608,10 @@ export class StudioHost implements BridgeExtension {
         })();
       case "studio.local.inspect_reference":
         return inspectReference(this.paths, assertSlug(p.slug ?? this.pageSession?.activeProject), p);
+      case "studio.local.measure_reference":
+        return measureReference(this.paths, assertSlug(p.slug ?? this.pageSession?.activeProject), p.input);
+      case "studio.local.compare_reference":
+        return compareReference(this.paths, assertSlug(p.slug ?? this.pageSession?.activeProject), p.input, p.captures);
       case "studio.local.import_reference":
         return (async () => {
           const slug = assertSlug(p.slug ?? this.pageSession?.activeProject);
@@ -624,7 +629,7 @@ export class StudioHost implements BridgeExtension {
             reference: `${job.dir}/reference.json`,
             sheet: job.sheet,
             frameCount: job.frames?.length ?? 0,
-            next: "Read reference.json (cuts, shots, frames, strips), open the sheet, the frames of each distinct look and the motion strips, and transcribe the video before describing its style (see references/style-spy.md).",
+            next: "Read reference.json, then follow references/style-spy.md (or references/style-spy-clone.md for a clone).",
           };
         })();
       case "studio.local.project_state":

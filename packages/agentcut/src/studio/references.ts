@@ -19,6 +19,10 @@ import { pipeline } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
 import { z } from "zod";
 import { debugLog } from "../log.js";
+import {
+  analyzeSignatures, motionFilter, motionLayout, planMotionRows, readSignatures, ROW_FRAMES, tileSize,
+  type Measured, type MotionRow,
+} from "./reference-measure.js";
 import { killTree } from "./proc.js";
 import { assertSlug, projectDir, safeJoin, StudioError } from "./projects.js";
 import type { WorkspacePaths } from "./workspace.js";
@@ -37,7 +41,6 @@ const MAX_SECONDS = 600;
 const SCENE_THRESHOLD = 0.3;
 const LONG_SHOT_SECONDS = 6;
 const MAX_FRAMES = 48;
-const MAX_CUT_STRIPS = 30;
 const YTDLP_CHECK_MS = 3 * 24 * 60 * 60 * 1000;
 const VIDEO_EXT = /\.(mp4|webm|mov|m4v)$/i;
 /**
@@ -442,10 +445,24 @@ async function probeDuration(ffmpeg: string, file: string) {
   return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
 }
 
+/** Displayed size (after rotation and pixel aspect), or null when ffmpeg does not print one. */
+export async function probeSize(ffmpeg: string, file: string) {
+  const result = await run(ffmpeg, ["-hide_banner", ...MEDIA_INPUT_ONLY, "-i", file], { timeoutMs: 30_000 });
+  const stream = /Stream #.*Video:.*?[, ](\d{2,5})x(\d{2,5})(?:\s*\[SAR (\d+):(\d+)|[, ])/.exec(result.stderr);
+  if (!stream) return null;
+  let width = Number(stream[1]);
+  let height = Number(stream[2]);
+  if (Number(stream[3]) > 0 && Number(stream[4]) > 0) width = Math.round((width * Number(stream[3])) / Number(stream[4]));
+  const rotation = /rotation of (-?\d+(?:\.\d+)?) degrees/.exec(result.stderr);
+  if (rotation && Math.abs(Math.round(Number(rotation[1]) / 90)) % 2 === 1) [width, height] = [height, width];
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
 // Score every decoded frame. Streaming the metadata keeps the first cuts of long
 // videos even when the process log exceeds the retained diagnostic buffer.
 async function measureCuts(ffmpeg: string, video: string) {
   const candidates: { frame: number; pts: number }[] = [];
+  const stamps: number[] = [];
   let frame = -1;
   let pts = 0;
   let origin = 0;
@@ -460,6 +477,7 @@ async function measureCuts(ffmpeg: string, video: string) {
         frame = Number(header[1]);
         pts = Number(header[2]);
         if (frame === 0) origin = pts;
+        stamps[frame] = pts - origin;
       } else if (frame > 0 && line.startsWith("lavfi.scene_score=") && Number(line.split("=")[1]) > SCENE_THRESHOLD) {
         candidates.push({ frame, pts: pts - origin });
       }
@@ -471,6 +489,8 @@ async function measureCuts(ffmpeg: string, video: string) {
     frameCount: frame + 1,
     frameRate: Number(config[4]) > 0 && Number(config[3]) > 0 ? `${config[3]}/${config[4]}` : null,
     cutFrames: candidates.map(({ frame, pts }) => ({ frame, time: pts * Number(config[1]) / Number(config[2]) })),
+    /** Presentation time of every frame, in seconds. */
+    times: stamps.map((stamp) => stamp * Number(config[1]) / Number(config[2])),
   };
 }
 
@@ -511,14 +531,19 @@ export async function inspectReference(paths: WorkspacePaths, slug: string, inpu
 }
 
 export interface ReferenceShot {
+  id: string;
+  startFrame: number;
+  endFrameExclusive: number;
   start: number;
   end: number;
+  /** Shots with the same look share a setup or layout. */
+  look: string;
   frames: string[];
 }
 
 /**
- * Shots from cut times, and when to grab frames: the opening, the middle of every shot (more for
- * long ones), and the ending. Capped at MAX_FRAMES, keeping the opening and an even spread.
+ * When to grab frames: the opening, the middle of every shot (more for long ones), and the ending.
+ * Capped at MAX_FRAMES, keeping the opening and an even spread.
  */
 export function planFrames(duration: number, cuts: number[]) {
   const bounds = [0, ...cuts.filter((t) => t > 0 && t < duration), duration];
@@ -538,86 +563,53 @@ export function planFrames(duration: number, cuts: number[]) {
   return { shots, times };
 }
 
-export interface ReferenceStrip {
-  kind: "hook" | "cut" | "captions";
-  /** Seconds covered, sampled at `fps`, frames left to right, top to bottom. */
-  start: number;
-  end: number;
-  fps: number;
-  path: string;
-  /** For cuts: the cut time. */
-  at?: number;
-}
-
-/** Windows worth seeing in motion: the hook, around every cut, and a stretch of captions. */
-export function planStrips(duration: number, shots: { start: number; end: number }[]) {
-  const round = (t: number) => Math.round(t * 100) / 100;
-  const strips: Omit<ReferenceStrip, "path">[] = [{ kind: "hook", start: 0, end: round(Math.min(3, duration)), fps: 6 }];
-  const cuts = shots.slice(1).map((shot) => shot.start);
-  const step = cuts.length > MAX_CUT_STRIPS ? cuts.length / MAX_CUT_STRIPS : 1;
-  for (let i = 0; i < cuts.length && strips.length <= MAX_CUT_STRIPS; i += step) {
-    const at = cuts[Math.floor(i)];
-    strips.push({ kind: "cut", at, start: round(Math.max(0, at - 0.25)), end: round(Math.min(duration, at + 0.75)), fps: 8 });
-  }
-  const longest = [...shots].sort((a, b) => b.end - b.start - (a.end - a.start))[0];
-  if (longest && longest.end - longest.start >= 1.5) {
-    const start = round(longest.start + Math.min(0.5, (longest.end - longest.start) / 4));
-    strips.push({ kind: "captions", start, end: round(Math.min(longest.end, start + 2)), fps: 8 });
-  }
-  return strips;
-}
-
-async function renderStrip(ffmpeg: string, video: string, strip: Omit<ReferenceStrip, "path">, file: string) {
-  const count = Math.max(1, Math.round((strip.end - strip.start) * strip.fps));
-  const columns = Math.min(count, strip.kind === "hook" ? 6 : 8);
-  const rows = Math.ceil(count / columns);
-  await run(
-    ffmpeg,
-    [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-ss",
-      String(strip.start),
-      "-t",
-      String(strip.end - strip.start),
-      ...MEDIA_INPUT_ONLY,
-      "-i",
-      video,
-      "-an",
-      "-vf",
-      `fps=${strip.fps},scale=-2:320,tile=${columns}x${rows}:padding=4:color=black`,
-      "-frames:v",
-      "1",
-      "-q:v",
-      "4",
-      "-y",
-      file,
-    ],
-    { timeoutMs: 60_000 },
-  );
-  return existsSync(file);
-}
-
 export interface ReferenceAnalysis {
-  timing: Awaited<ReturnType<typeof measureCuts>> | null;
+  timing: { frameRate: string | null; frameCount: number } | null;
+  /** Displayed size in pixels. */
+  width: number | null;
+  height: number | null;
   duration: number;
-  cuts: number[];
   averageShotSeconds: number;
+  /** Where the picture changes as a whole. Flashes return to the same picture and do not split a shot. */
+  cuts: { frame: number; time: number; kind: "cut" | "flash" | "transition"; endFrame?: number }[];
   shots: ReferenceShot[];
+  looks: { id: string; shots: string[]; frame: string | null }[];
+  /** Things that appear, move or leave inside a shot, one row each in the order of `eventFields`. */
+  eventFields: ["id", "frame", "settledFrame", "box", "strength"];
+  events: [string, number, number, Measured["events"][number]["box"], number][];
+  /** Places that keep changing briefly, such as captions: the frame of every change. */
+  bands: Measured["bands"];
+  /** One digit per half second: how much the picture changes. */
+  rhythm: string;
   frames: ReferenceFrame[];
   /** Every frame in one image, in order, left to right. */
   sheet: string | null;
-  /** Short stretches sampled several times a second: transitions, graphics entering, captions. */
-  strips: ReferenceStrip[];
+  /** Stretches to see in motion, eight frames a row, on as few images as fit. */
+  motion: { columns: number; sheets: { path: string; rows: MotionRow[] }[] };
 }
 
-/** Cuts, shots, frames and an overview sheet in `<folder>/frames`, for the agent to read. */
+/** Cuts, shots, events, frames and sheets in `<folder>`, for the agent to read. */
 async function analyzeVideo(ffmpeg: string, video: string, folder: string, rel: string): Promise<ReferenceAnalysis> {
-  const duration = await probeDuration(ffmpeg, video);
-  const timing = await measureCuts(ffmpeg, video).catch(() => null);
-  const cuts = timing?.cutFrames.map(cut => cut.time) ?? [];
-  const { shots, times } = planFrames(duration, cuts);
+  const [duration, size, timing, signatures] = await Promise.all([
+    probeDuration(ffmpeg, video),
+    probeSize(ffmpeg, video).catch(() => null),
+    measureCuts(ffmpeg, video).catch(() => null),
+    readSignatures(ffmpeg, MEDIA_INPUT_ONLY, video).catch((error: unknown) => {
+      debugLog(`references: signatures failed ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }),
+  ]);
+  const frameCount = timing?.frameCount ?? signatures?.count ?? 0;
+  const [rateTop, rateBottom] = (timing?.frameRate ?? "").split("/").map(Number);
+  const fps = rateTop > 0 && rateBottom > 0 ? rateTop / rateBottom : frameCount > 0 && duration > 0 ? frameCount / duration : 30;
+  const round = (value: number) => Math.round(value * 1e6) / 1e6;
+  const timeOf = (frame: number) => round(timing?.times[frame] ?? frame / fps);
+  // Both passes decode every frame, so their frame numbers agree; if they don't, keep the scene scores.
+  const measured = signatures && (!timing || signatures.count === timing.frameCount) ? analyzeSignatures(signatures, fps) : null;
+  const cuts: ReferenceAnalysis["cuts"] = measured
+    ? measured.cuts.map((cut) => ({ frame: cut.frame, time: timeOf(cut.frame), kind: cut.kind, ...(cut.endFrame === undefined ? {} : { endFrame: cut.endFrame }) }))
+    : (timing?.cutFrames ?? []).map((cut) => ({ frame: cut.frame, time: round(cut.time), kind: "cut" as const }));
+  const { shots: spans, times } = planFrames(duration, cuts.filter((cut) => cut.kind !== "flash").map((cut) => cut.time));
   const dir = join(folder, "frames");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
@@ -632,35 +624,72 @@ async function analyzeVideo(ffmpeg: string, video: string, folder: string, rel: 
     if (existsSync(join(dir, name))) frames.push({ path: `${rel}/frames/${name}`, time });
   }
   if (!frames.length) throw new ReferenceError("failed", "Couldn't read frames from this video. Try uploading an MP4.");
+  const aspect = size ? size.width / size.height : 16 / 9;
+  // The overview fills one image a model reads without shrinking it, and no more.
   const columns = Math.min(8, frames.length);
-  const rows = Math.ceil(frames.length / columns);
+  const tile = tileSize(aspect, frames.length, columns, 6);
   await run(
     ffmpeg,
-    ["-hide_banner", "-loglevel", "error", "-i", join(dir, "%02d.jpg"), "-vf", `scale=-2:360,tile=${columns}x${rows}:padding=6:color=black`, "-frames:v", "1", "-q:v", "4", "-y", join(dir, "sheet.jpg")],
+    ["-hide_banner", "-loglevel", "error", "-i", join(dir, "%02d.jpg"), "-vf", `scale=${tile.width}:${tile.height},setsar=1,tile=${columns}x${tile.rows}:padding=6:color=black`, "-frames:v", "1", "-q:v", "4", "-y", join(dir, "sheet.jpg")],
     { timeoutMs: 60_000 },
   ).catch(() => undefined);
+
   const motionDir = join(folder, "motion");
   rmSync(motionDir, { recursive: true, force: true });
   mkdirSync(motionDir, { recursive: true });
-  const strips: ReferenceStrip[] = [];
-  for (const strip of planStrips(duration, shots)) {
-    const name = strip.kind === "cut" ? `cut-${String(strips.length).padStart(2, "0")}.jpg` : `${strip.kind}.jpg`;
-    const ok = await renderStrip(ffmpeg, video, strip, join(motionDir, name)).catch(() => false);
-    if (ok) strips.push({ ...strip, path: `${rel}/motion/${name}` });
+  const motion: ReferenceAnalysis["motion"] = { columns: ROW_FRAMES, sheets: [] };
+  const rows = measured ? planMotionRows(measured, frameCount, fps) : [];
+  if (rows.length) {
+    const layout = motionLayout(aspect);
+    // One decode lays every row out; ffmpeg starts a new image whenever one is full.
+    await run(
+      ffmpeg,
+      ["-hide_banner", "-loglevel", "error", ...MEDIA_INPUT_ONLY, "-i", video, "-map", "0:v:0", "-an", "-vf", motionFilter(rows, layout),
+        "-fps_mode", "passthrough", "-q:v", "4", "-y", join(motionDir, "%02d.jpg")],
+      { timeoutMs: 8 * 60_000 },
+    ).catch(() => undefined);
+    const perSheet = Math.min(layout.rows, rows.length);
+    for (let i = 0; i * perSheet < rows.length; i += 1) {
+      const name = `${String(i + 1).padStart(2, "0")}.jpg`;
+      if (existsSync(join(motionDir, name))) motion.sheets.push({ path: `${rel}/motion/${name}`, rows: rows.slice(i * perSheet, (i + 1) * perSheet) });
+    }
   }
+
+  const frameAt = (time: number) => Math.max(0, Math.min(Math.max(0, frameCount - 1), Math.round(time * fps)));
+  const shots: ReferenceShot[] = measured
+    ? measured.shots.map((shot) => {
+        const start = timeOf(shot.startFrame);
+        const end = shot.endFrameExclusive >= frameCount ? round(duration) : timeOf(shot.endFrameExclusive);
+        return { ...shot, start, end, frames: frames.filter((f) => f.time >= start && f.time < end).map((f) => f.path) };
+      })
+    : spans.map((shot, i) => ({
+        id: `s${i + 1}`,
+        startFrame: frameAt(shot.start),
+        endFrameExclusive: i === spans.length - 1 ? frameCount : frameAt(shot.end),
+        start: round(shot.start),
+        end: round(shot.end),
+        look: `L${i + 1}`,
+        frames: frames.filter((f) => f.time >= shot.start && f.time < shot.end).map((f) => f.path),
+      }));
+  const looks = measured
+    ? measured.looks.map((look) => ({ id: look.id, shots: look.shots, frame: shots.find((shot) => shot.id === look.example)?.frames[0] ?? null }))
+    : shots.map((shot) => ({ id: shot.look, shots: [shot.id], frame: shot.frames[0] ?? null }));
   return {
-    timing,
+    timing: timing ? { frameRate: timing.frameRate, frameCount: timing.frameCount } : null,
+    width: size?.width ?? null,
+    height: size?.height ?? null,
     duration: Math.round(duration * 100) / 100,
+    averageShotSeconds: Math.round((duration / Math.max(1, shots.length)) * 10) / 10,
     cuts,
-    averageShotSeconds: Math.round((duration / shots.length) * 10) / 10,
-    shots: shots.map((shot) => ({
-      start: shot.start,
-      end: shot.end,
-      frames: frames.filter((f) => f.time >= shot.start && f.time < shot.end).map((f) => f.path),
-    })),
+    shots,
+    looks,
+    eventFields: ["id", "frame", "settledFrame", "box", "strength"],
+    events: (measured?.events ?? []).map((event) => [event.id, event.frame, event.settledFrame, event.box, event.strength]),
+    bands: measured?.bands ?? [],
+    rhythm: measured?.rhythm ?? "",
     frames,
     sheet: existsSync(join(dir, "sheet.jpg")) ? `${rel}/frames/sheet.jpg` : null,
-    strips,
+    motion,
   };
 }
 
@@ -815,8 +844,6 @@ export class ReferenceImports {
         title: meta.title ?? null,
         uploader: meta.uploader ?? null,
         site: meta.extractor ?? null,
-        width: meta.width ?? null,
-        height: meta.height ?? null,
         usedBrowserLogin: Boolean(job.browser),
         importedAt: new Date().toISOString(),
         video: `${rel}/video.mp4`,
@@ -929,6 +956,8 @@ export class ReferenceImports {
     try {
       previous = JSON.parse(readFileSync(join(dir, rel, "reference.json"), "utf8")) as Record<string, unknown>;
     } catch {}
+    // Motion strips of an import from before the measurements were deleted above.
+    delete previous.strips;
     writeReferenceJson(join(dir, rel), {
       sourceUrl: null,
       importedAt: new Date().toISOString(),
@@ -943,5 +972,14 @@ export class ReferenceImports {
 }
 
 function writeReferenceJson(folder: string, data: Record<string, unknown>) {
-  writeFileSync(join(folder, "reference.json"), `${JSON.stringify(data, null, 2)}\n`);
+  // One line per field and paths relative to this folder: the agent reads the file whole, and
+  // indentation and repeated folder names would double its size.
+  const prefix = typeof data.video === "string" ? `"${dirname(data.video)}/` : null;
+  const lines = Object.entries({ paths: "relative to this file's folder, except video", ...data })
+    .filter(([, value]) => value !== undefined)
+    .map(([key, value]) => {
+      const text = JSON.stringify(value);
+      return `${JSON.stringify(key)}:${prefix && key !== "video" ? text.split(prefix).join('"') : text}`;
+    });
+  writeFileSync(join(folder, "reference.json"), `{\n${lines.join(",\n")}\n}\n`);
 }

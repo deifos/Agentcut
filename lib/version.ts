@@ -3,8 +3,8 @@ import packageJson from "@/package.json";
 /** The studio page's version (package.json at the repo root). See CHANGELOG.md. */
 export const APP_VERSION: string = packageJson.version;
 
-/** Feature Launch needs the new request type and its packaged guide. */
-export const MIN_HELPER_VERSION = "0.2.26";
+/** Cloning a video in Style Spy needs the measured import, its tools and the clone guide. */
+export const MIN_HELPER_VERSION = "0.2.30";
 
 /**
  * Oldest helper Cinematic Mode works with: the workspace needs its skill references (cinematic.md,

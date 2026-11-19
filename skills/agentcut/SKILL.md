@@ -40,6 +40,7 @@ matches before you start; read nothing you don't need.
 | A **Footage** track, or **Screen** and **Camera** raw takes | `references/footage.md` |
 | A video with a `<video>.cursor.json` beside it | `references/cursor.md` |
 | A reference video URL, or adapting a video's style, hook, captions or pacing | `references/style-spy.md` |
+| Cloning a reference video: the same video rebuilt as an editable project | `references/style-spy.md`, then `references/style-spy-clone.md` |
 | Choosing a background, or any flat-colour area | `references/loops.md` |
 | Archival or retro b-roll, a shot per lyric or transcript line | `references/broll.md` |
 | "Cinematic:" messages, 3D camera, device mockups, depth of field | `references/cinematic.md` |

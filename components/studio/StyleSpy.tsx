@@ -110,6 +110,9 @@ export function StyleSpy({
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [topic, setTopic] = useState("");
+  // "style" borrows the editing style for the user's own video; "clone" rebuilds the reference itself.
+  const [mode, setMode] = useState<"style" | "clone">("style");
+  const [hasRights, setHasRights] = useState(false);
   const [dictatingTopic, setDictatingTopic] = useState(false);
   const [dictatingNotes, setDictatingNotes] = useState(false);
   const [selected, setSelected] = useState("");
@@ -133,7 +136,8 @@ export function StyleSpy({
   const working =
     job !== null && job.stage !== "ready" && job.stage !== "failed";
   const locked = disabled || busy || working;
-  const needsTopic = blank && !topic.trim();
+  const clone = mode === "clone";
+  const needsTopic = !clone && blank && !topic.trim();
   const pendingUrl = referenceUrl(url);
   const newLink = pendingUrl !== null && pendingUrl !== job?.url;
   const canRetryWithLogin =
@@ -257,6 +261,7 @@ export function StyleSpy({
         file,
       );
       setSelected(path);
+      setHasRights(false);
       // Frames for the agent, like an imported link.
       await start("studio.reference.prepare", { path });
     } catch (e) {
@@ -272,11 +277,13 @@ export function StyleSpy({
     try {
       const dir = path.slice(0, path.lastIndexOf("/"));
       const extra = notes.trim();
-      const analyze = `Follow references/style-spy.md: analyze ${dir} (reference.json, the frames and a transcript; if reference.json is missing or has no shots, call agentcut_import_reference with this path first), write the recipe`;
+      const analyze = `Follow references/style-spy.md: analyze ${dir} (reference.json, the frames and a transcript; if reference.json is missing or has no "events" field, call agentcut_import_reference with this path first), write the recipe`;
       const copy =
         "its layouts and when they switch (split screens, full-screen cards, what fills each part), cut rhythm, captions and how they animate, every motion graphic and how it enters, transitions, zooms, color and effects";
       await onSend(
-        blank
+        clone
+          ? `Style Spy: clone the reference video ${JSON.stringify(path)}: rebuild it as this project so it matches the original and every drawn layer is editable. I have the right to use this video. Follow references/style-spy.md (Import and Measure; if reference.json is missing or has no "events" field, call agentcut_import_reference with this path first), then references/style-spy-clone.md. Tell me first which shots you will rebuild and which stay original footage.${extra ? ` Also: ${extra}` : ""}`
+          : blank
           ? `Style Spy: my project is empty, so make a new video in the editing style of the reference video ${JSON.stringify(path)}. It's about: ${topic.trim()}. ${analyze}, then follow "Empty project": write the script for my topic and build ${copy}, with placeholders where it needs footage I haven't given you. Tell me exactly what to send to replace each placeholder.${extra ? ` Also: ${extra}` : ""}`
           : `Style Spy: copy the editing style of the reference video ${JSON.stringify(path)} onto my video. ${analyze}, back up my edit, then apply it. Copy ${copy}, using my own footage, words and brand. Tell me what you couldn't match with my material.${extra ? ` Also: ${extra}` : ""}`,
       );
@@ -307,7 +314,7 @@ export function StyleSpy({
           <DialogTitle>Style Spy</DialogTitle>
           <DialogDescription>
             Copy the look of a video you like: its cuts, captions, motion and
-            transitions.
+            transitions. Or clone a video you own as an editable project.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -321,7 +328,10 @@ export function StyleSpy({
             placeholder="Paste an Instagram, TikTok, YouTube, or X link"
             value={url}
             disabled={disabled}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              setHasRights(false);
+            }}
             onPaste={(e) => {
               const pasted = e.clipboardData.getData("text");
               if (!locked && referenceUrl(pasted)) void importUrl(pasted);
@@ -466,6 +476,7 @@ export function StyleSpy({
             value={preview?.path ?? ""}
             onChange={(e) => {
               setSelected(e.target.value);
+              setHasRights(false);
               setNotice("");
             }}
           >
@@ -476,7 +487,50 @@ export function StyleSpy({
             ))}
           </select>
         )}
-        {blank && (
+        <div
+          role="group"
+          aria-label="What to make"
+          className="grid grid-cols-2 gap-1 rounded-lg border p-1 text-xs"
+        >
+          {(
+            [
+              ["style", "Copy the style"],
+              ["clone", "Clone the video"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={mode === value}
+              disabled={locked}
+              className={`rounded-md px-2 py-1.5 ${mode === value ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setMode(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {clone && (
+          <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+            <p>
+              Your agent rebuilds this video as an editable project: text,
+              captions and graphics are redrawn, and footage and people stay
+              as clips of the original. It takes longer than copying the
+              style{blank ? "" : ", and it replaces the current edit (a backup is kept)"}.
+            </p>
+            <label className="flex items-start gap-2 text-foreground">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={hasRights}
+                disabled={locked}
+                onChange={(e) => setHasRights(e.target.checked)}
+              />
+              <span>I have the right to use this video.</span>
+            </label>
+          </div>
+        )}
+        {blank && !clone && (
           <div className="flex flex-col gap-1.5">
             <SpeechTextarea
               disabled={locked}
@@ -521,12 +575,13 @@ export function StyleSpy({
             busy ||
             running ||
             needsTopic ||
+            (clone && !hasRights) ||
             dictatingTopic || dictatingNotes ||
             (!newLink && !working && !preview)
           }
           onClick={copyStyle}
         >
-          Copy this style
+          {clone ? "Clone this video" : "Copy this style"}
         </Button>
       </DialogContent>
     </Dialog>

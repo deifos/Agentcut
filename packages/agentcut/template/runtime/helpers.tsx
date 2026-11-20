@@ -2,7 +2,8 @@
 // Same animation helpers as video-studio's shared/anim.ts, plus asset URLs and
 // browser-export-safe building blocks (SVG radial glows instead of CSS radial-gradient).
 import { createContext, useContext, useId, type CSSProperties, type ReactNode } from "react";
-import { Easing, interpolate, spring, staticFile, useRemotionEnvironment, type SpringConfig } from "remotion";
+import { Easing, interpolate, Sequence, spring, staticFile, useRemotionEnvironment, type SpringConfig } from "remotion";
+import { Video } from "@remotion/media";
 import type { StudioProject } from "./types";
 
 export interface StudioRuntimeContextValue {
@@ -125,6 +126,25 @@ export const sp = (
   durationInFrames?: number,
 ) => spring({ frame: frame - start, fps: runtimeState.fps, config, durationInFrames });
 
+/**
+ * A value that follows keyframes: `keys(frame, [[12, 0], [16, 1], [40, 1], [44, 0]])`. Eased between
+ * each pair, held before the first and after the last. Two keys on neighbouring frames are a hard set.
+ */
+export const keys = (
+  frame: number,
+  points: readonly (readonly [number, number])[],
+  easing: (t: number) => number = Easing.inOut(Easing.cubic),
+) => {
+  if (!points.length) return 0;
+  if (frame <= points[0][0]) return points[0][1];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const [a, from] = points[i];
+    const [b, to] = points[i + 1];
+    if (frame <= b) return mix(from, to, easing(Math.min(1, Math.max(0, (frame - a) / Math.max(0.0001, b - a)))));
+  }
+  return points[points.length - 1][1];
+};
+
 /** Seconds → frames at the project's fps. */
 export const sec = (seconds: number) => Math.round(seconds * runtimeState.fps);
 
@@ -213,6 +233,43 @@ export function FrameBox({
     >
       {children}
     </div>
+  );
+}
+
+/**
+ * A window onto a video file: shows the part of its picture inside `rect`, at the same place and
+ * size, in step with the timeline. For a picture a scene has to carry (a photo or a logo inside a
+ * rebuilt card) when the source video and the composition are the same size.
+ * `sourceFrame` is the source's frame shown on this scene's frame `from`.
+ */
+export function SourceWindow({
+  src,
+  rect,
+  sourceFrame,
+  from = 0,
+  durationInFrames,
+  radius = 0,
+  opacity = 1,
+  style,
+}: {
+  src: string;
+  rect: { x: number; y: number; width: number; height: number };
+  sourceFrame: number;
+  from?: number;
+  durationInFrames: number;
+  radius?: number;
+  opacity?: number;
+  style?: CSSProperties;
+}) {
+  const { width, height } = useStudio();
+  return (
+    <Sequence from={from} durationInFrames={durationInFrames} layout="none">
+      <div style={{ position: "absolute", left: rect.x, top: rect.y, width: rect.width, height: rect.height, overflow: "hidden", borderRadius: radius, opacity, ...style }}>
+        <div style={{ position: "absolute", left: -rect.x, top: -rect.y, width, height }}>
+          <Video src={asset(src)} muted trimBefore={sourceFrame > 0 ? sourceFrame : undefined} objectFit="fill" style={{ width, height }} />
+        </div>
+      </div>
+    </Sequence>
   );
 }
 

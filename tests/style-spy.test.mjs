@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { ensureFfmpeg, inspectReference, ReferenceImports } from "../packages/agentcut/src/studio/references.ts";
-import { compareReference, measureReference } from "../packages/agentcut/src/studio/reference-tools.ts";
+import { cloneSetup, compareReference, measureReference } from "../packages/agentcut/src/studio/reference-tools.ts";
 import { analyzeSignatures, planMotionRows, signatureCollector, tileSize, SHEET_PIXELS, SHEET_SIDE } from "../packages/agentcut/src/studio/reference-measure.ts";
 import { workspacePaths } from "../packages/agentcut/src/studio/workspace.ts";
 
@@ -70,6 +70,33 @@ test("Style Spy measures short shots and inspects the source pixels at a caption
   const tail = await inspectReference(paths, "demo", { path, startFrame: 18, count: 8 });
   assert.deepEqual(tail.frames.map(f => f.frame), [18, 19]);
   await assert.rejects(inspectReference(paths, "demo", { path, startFrame: 20 }), /frame range/);
+  // Any frames on one image, in order, and several measurements in one call.
+  const picked = await inspectReference(paths, "demo", { path, frames: [14, 2, 4] });
+  assert.deepEqual(picked.frames.map(f => f.frame), [2, 4, 14]);
+  const strip = execFileSync(ffmpeg, ["-loglevel", "error", "-i", join(project, picked.sheet),
+    "-vf", "crop=iw:8:0:ih/2-4,scale=3:1", "-f", "rawvideo", "-pix_fmt", "gray", "-"]);
+  assert.ok(strip[0] < 40 && strip[1] > 200 && strip[2] < 40, "black, the white flash, black above the band");
+  await assert.rejects(inspectReference(paths, "demo", { path, startFrame: 1, frames: [2] }), /either/);
+  const several = await measureReference(paths, "demo", { path, batch: [
+    { kind: "colors", startFrame: 4 }, { kind: "colors", startFrame: 2 }, { kind: "ink", startFrame: 14 }] });
+  assert.deepEqual(several.results.map(result => result.kind), ["colors", "colors", "ink"]);
+  assert.match(several.results[0].colors[0].color, /^#f[c-f]f[c-f]f[c-f]$/);
+  await assert.rejects(measureReference(paths, "demo", { path, kind: "ink", startFrame: 1, batch: [{ kind: "ink", startFrame: 1 }] }), /either/);
+
+  // Clone setup: the reference's size, a whole-number rate, its length and its sound, with a backup.
+  writeFileSync(join(project, "project.json"), JSON.stringify({ version: 1, name: "Demo", fps: 60, durationInFrames: 600,
+    background: "#ffffff", variants: { mobile: { width: 1080, height: 1920 } }, defaultVariant: "mobile", fonts: ["Inter:400"] }));
+  writeFileSync(join(project, "layers.json"), JSON.stringify({ version: 1, tracks: [] }));
+  const setup = cloneSetup(paths, "demo", { path });
+  assert.deepEqual([setup.variant, setup.width, setup.height, setup.fps, setup.durationInFrames], ["wide", 320, 90, 30, 20]);
+  assert.match(setup.frames, /equal/);
+  assert.deepEqual(setup.shots, [{ id: "s1", from: 0, duration: 20 }]);
+  const made = JSON.parse(readFileSync(join(project, "project.json"), "utf8"));
+  assert.deepEqual([made.name, made.fps, made.fonts, made.variants], ["Demo", 30, ["Inter:400"], { wide: { width: 320, height: 90 } }]);
+  const tracks = JSON.parse(readFileSync(join(project, "layers.json"), "utf8")).tracks;
+  assert.deepEqual(tracks.map(track => [track.kind, track.clips[0].src, track.clips[0].duration]), [["audio", path, 20]]);
+  assert.equal(JSON.parse(readFileSync(join(project, setup.backup, "project.json"), "utf8")).fps, 60);
+  assert.ok(existsSync(join(project, setup.backup, "layers.json")));
 });
 
 // Frames of flat gray, with an optional box of another gray, as the detector sees them.

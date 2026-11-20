@@ -35,7 +35,7 @@ import {
   type CreateProjectInput,
 } from "./projects.js";
 import { inspectReference, installedBrowsers, ReferenceImports } from "./references.js";
-import { compareReference, measureReference } from "./reference-tools.js";
+import { cloneSetup, compareReference, measureReference } from "./reference-tools.js";
 import { cancelLocalRender, localRenderSlug, runLocalRender } from "./render.js";
 import { importShare, shareProject } from "./share.js";
 import { openFile, openWebUrl, projectFile, revealFile } from "./reveal.js";
@@ -610,6 +610,13 @@ export class StudioHost implements BridgeExtension {
         return inspectReference(this.paths, assertSlug(p.slug ?? this.pageSession?.activeProject), p);
       case "studio.local.measure_reference":
         return measureReference(this.paths, assertSlug(p.slug ?? this.pageSession?.activeProject), p.input);
+      case "studio.local.clone_setup":
+        return (async () => {
+          const slug = assertSlug(p.slug ?? this.pageSession?.activeProject);
+          const result = cloneSetup(this.paths, slug, p.input);
+          this.emit("studio.assets", { slug });
+          return result;
+        })();
       case "studio.local.compare_reference":
         return compareReference(this.paths, assertSlug(p.slug ?? this.pageSession?.activeProject), p.input, p.captures);
       case "studio.local.import_reference":

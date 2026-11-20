@@ -13,6 +13,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.32] - 2026-11-19
+
+### Changed
+
+- **Cloning a video is faster.** A new `agentcut_clone_setup` tool sets the project's size, frame rate, length
+  and sound from the reference in one call and backs up the edit that was there. Agents can ask for up to 24
+  measurements in one `agentcut_measure_reference` call and for any 16 frames in one
+  `agentcut_inspect_reference` image. The clone guide now gives a fixed order of work, ready-made recipes for
+  common text and backdrop effects, and checks with the side-by-side comparison in place of full captures.
+- Scenes can import `keys` (a value that follows measured keyframes) and `SourceWindow` (part of a video's
+  picture, in step with the timeline) from `agentcut`.
+
 ## [0.2.31] - 2026-11-19
 
 ### Fixed
@@ -727,7 +739,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.30...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.32...HEAD
+[0.2.32]: https://github.com/deifos/Agentcut/compare/v0.2.31...v0.2.32
 [0.2.31]: https://github.com/deifos/Agentcut/compare/v0.2.30...v0.2.31
 [0.2.30]: https://github.com/deifos/Agentcut/compare/v0.2.29...v0.2.30
 [0.2.29]: https://github.com/deifos/Agentcut/compare/v0.2.28...v0.2.29

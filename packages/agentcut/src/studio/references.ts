@@ -496,15 +496,22 @@ async function measureCuts(ffmpeg: string, video: string) {
 
 export const referenceInspection = z.object({
   path: z.string().regex(/^assets\/references\/[a-zA-Z0-9_-]{1,80}\/[^/:\\]+\.(mp4|webm|mov|m4v)$/i),
-  startFrame: z.number().int().min(0).max(10_000_000),
+  // Consecutive frames from startFrame, or any frames you list.
+  startFrame: z.number().int().min(0).max(10_000_000).optional(),
   count: z.number().int().min(1).max(16).default(8),
+  frames: z.array(z.number().int().min(0).max(10_000_000)).min(1).max(16).optional(),
   // Fractions of the displayed frame, measured from its top left.
   region: z.object({ x: z.number().min(0), y: z.number().min(0), width: z.number().positive(), height: z.number().positive() })
     .refine(r => r.x + r.width <= 1 && r.y + r.height <= 1, "Region exceeds the frame.").optional(),
 });
 
 export async function inspectReference(paths: WorkspacePaths, slug: string, input: unknown) {
-  const { path, startFrame, count, region } = referenceInspection.parse(input);
+  const parsed = referenceInspection.parse(input);
+  const { path, region } = parsed;
+  const listed = parsed.frames ? [...new Set(parsed.frames)].sort((a, b) => a - b) : null;
+  if ((parsed.startFrame === undefined) === (listed === null)) throw new StudioError("Pass either startFrame (with count) or frames.", "bad_input");
+  const startFrame = parsed.startFrame ?? 0;
+  const count = listed ? listed.length : parsed.count;
   const root = projectDir(paths, slug);
   const video = safeJoin(root, path);
   const rel = `.studio/scratch/style-spy/${randomUUID()}.jpg`;
@@ -512,7 +519,8 @@ export async function inspectReference(paths: WorkspacePaths, slug: string, inpu
   mkdirSync(dirname(output), { recursive: true });
   const columns = Math.min(count, 4);
   const filters = [
-    "setpts=PTS-STARTPTS", `trim=start_frame=${startFrame}:end_frame=${startFrame + count}`, "showinfo=checksum=0",
+    ...(listed ? [`select='${listed.map((frame) => `eq(n,${frame})`).join("+")}'`] : ["setpts=PTS-STARTPTS", `trim=start_frame=${startFrame}:end_frame=${startFrame + count}`]),
+    "showinfo=checksum=0",
     ...(region ? [`crop=w=max(2\\,iw*${region.width}):h=max(2\\,ih*${region.height}):x=iw*${region.x}:y=ih*${region.y}`] : []),
     // Fit the displayed aspect ratio into square-pixel cells, including anamorphic sources.
     "scale=w='max(1,min(480,round(320*dar)))':h='max(1,min(320,round(480/dar)))',setsar=1",
@@ -520,9 +528,10 @@ export async function inspectReference(paths: WorkspacePaths, slug: string, inpu
     `tile=${columns}x${Math.ceil(count / columns)}:nb_frames=${count}:padding=2`,
   ];
   const result = await run(await ensureFfmpeg(), ["-hide_banner", "-nostats", ...MEDIA_INPUT_ONLY, "-i", video,
-    "-map", "0:v:0", "-an", "-vf", filters.join(","), "-frames:v", "1", "-q:v", "3", output], { timeoutMs: 120_000 });
+    "-map", "0:v:0", "-an", "-vf", filters.join(","), "-fps_mode", "passthrough", "-frames:v", "1", "-q:v", "3", output], { timeoutMs: 120_000 });
   const frames = [...result.stderr.matchAll(/\bn:\s*(\d+)\s+pts:\s*-?\d+\s+pts_time:(\S+)/g)]
-    .map(match => ({ frame: startFrame + Number(match[1]), time: Number(match[2]) }));
+    .map(match => ({ frame: listed ? listed[Number(match[1])] : startFrame + Number(match[1]), time: Number(match[2]) }))
+    .filter(frame => frame.frame !== undefined);
   if (result.code !== 0 || !frames.length || !existsSync(output)) {
     rmSync(output, { force: true });
     throw new StudioError("Could not read that frame range. Check the video and its frame count.");

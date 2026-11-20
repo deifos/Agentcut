@@ -3,7 +3,7 @@ import { z } from "zod";
 import { cutInput } from "./canvas.js";
 import { editingStyleInput } from "./editing-styles.js";
 import { referenceInspection } from "./references.js";
-import { referenceComparison, referenceMeasurement } from "./reference-tools.js";
+import { cloneSetupInput, referenceComparison, referenceMeasurement } from "./reference-tools.js";
 import { callEditor, persistAgentFrameResult } from "../bridge.js";
 import { releaseInput, releaseAction, releasePlan } from "./release-video.js";
 import { readBatch, type ReadResult } from "./read-batch.js";
@@ -267,7 +267,7 @@ export function registerStudioTools(server: McpServer) {
   );
 
   defineTool(server, "agentcut_inspect_reference",
-    "Style Spy: inspect up to 16 consecutive source frames starting at zero-based startFrame. Optional region uses fractions of the displayed width and height from the top left. Returns the image in reading order and each frame's timestamp.",
+    "Style Spy: inspect up to 16 source frames on one image: consecutive ones from zero-based startFrame (with count), or any you list in `frames`. Optional region uses fractions of the displayed width and height from the top left. Returns the image in reading order and each frame's timestamp.",
     { ...referenceInspection.shape, project },
     async ({ project: slug, ...input }) => {
       const result = await callEditor("studio.local.inspect_reference", { slug, ...input }, { timeoutMs: 3 * MINUTE, includeImages: true });
@@ -278,9 +278,14 @@ export function registerStudioTools(server: McpServer) {
     });
 
   defineTool(server, "agentcut_measure_reference",
-    "Style Spy: numbers from a reference video, no image. kind=changes lists when a region changes over `count` frames from startFrame (caption switches, an element arriving); kind=ink gives the box, line heights and colour of the text or marks in a region of one frame, in fractions and source pixels; kind=colors gives a region's main colours. `region` uses fractions of the displayed frame from the top left.",
+    "Style Spy: numbers from a reference video, no image. Pass one measurement, or up to 24 in `batch` (each with kind, startFrame, region). kind=changes lists when a region changes over `count` frames from startFrame (caption switches, an element arriving); kind=ink gives the box, line heights and colour of the text or marks in a region of one frame, in fractions and source pixels; kind=colors gives a region's main colours. `region` uses fractions of the displayed frame from the top left.",
     { ...referenceMeasurement.shape, project },
     async ({ project: slug, ...input }) => callEditor("studio.local.measure_reference", { slug, input }, { timeoutMs: 4 * MINUTE }));
+
+  defineTool(server, "agentcut_clone_setup",
+    "Style Spy clone: set this project up from a reference in one call. Backs up the current edit, then sets the size, frame rate and length to the reference's, puts its sound on the timeline and adds a marker per shot. Returns how reference frames map to project frames and a cut-out clip to copy.",
+    { ...cloneSetupInput.shape, project },
+    async ({ project: slug, ...input }) => callEditor("studio.local.clone_setup", { slug, input }, { timeoutMs: MINUTE }));
 
   defineTool(server, "agentcut_compare_reference",
     "Style Spy: put reference frames beside this edit's frames on one image, with a difference score per pair (0 identical; meaningful for a clone, where both show the same content) and the worst quarter of each. Up to 12 pairs of referenceFrame (source frame number) and projectFrame.",

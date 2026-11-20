@@ -55,8 +55,10 @@ Ask for more only where the recipe still has a gap:
 - `agentcut_measure_reference` returns numbers, no image. `kind: "changes"` with a `region` over the
   caption band lists every caption switch frame in up to 900 frames. `kind: "ink"` gives the box,
   line heights and colour of text in a region of one frame. `kind: "colors"` gives a region's colours.
-- `agentcut_inspect_reference` returns up to 16 consecutive frames from `startFrame`, optionally
-  cropped to a `region`, when you need to see a move frame by frame.
+  Ask for several at once in `batch`, not a call per value.
+- `agentcut_inspect_reference` returns up to 16 frames on one image, optionally cropped to a
+  `region`: consecutive ones from `startFrame` to see a move frame by frame, or any moments you
+  list in `frames`.
 
 Do not claim to have watched or heard anything you have not inspected.
 

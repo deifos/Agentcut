@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import { projectDir, safeJoin, StudioError } from "./projects.js";
+import { projectDir, readProjectState, safeJoin, StudioError, writeLayers, writeProjectFile } from "./projects.js";
 import { comparePictures, measureChanges, measureColors, measureInk, readRawFrames, THUMB, tileSize } from "./reference-measure.js";
 import { ensureFfmpeg, MEDIA_INPUT_ONLY, probeSize, run } from "./references.js";
 import type { WorkspacePaths } from "./workspace.js";
@@ -17,23 +17,41 @@ type Region = z.infer<typeof regionShape>;
 
 const INK_SIDE = 256;
 
-export const referenceMeasurement = z.object({
-  path: referencePath,
+const measurement = z.object({
   kind: z.enum(["changes", "ink", "colors"]),
   startFrame: z.number().int().min(0).max(10_000_000),
   // For changes: how many frames to read.
   count: z.number().int().min(2).max(900).default(120),
   // Fractions of the displayed frame, measured from its top left.
   region: regionShape.optional(),
+}).strict();
+
+export const referenceMeasurement = z.object({
+  path: referencePath,
+  // One measurement (kind, startFrame, count, region), or several in `batch`.
+  kind: measurement.shape.kind.optional(),
+  startFrame: measurement.shape.startFrame.optional(),
+  count: z.number().int().min(2).max(900).optional(),
+  region: regionShape.optional(),
+  batch: z.array(measurement).min(1).max(24).optional(),
 });
 
 const crop = (region?: Region) => (region ? [`crop=w=max(2\\,iw*${region.width}):h=max(2\\,ih*${region.height}):x=iw*${region.x}:y=ih*${region.y}`] : []);
 const round3 = (value: number) => Math.round(value * 1000) / 1000;
 
 export async function measureReference(paths: WorkspacePaths, slug: string, input: unknown) {
-  const { path, kind, startFrame, count, region } = referenceMeasurement.parse(input);
+  const { path, batch, ...single } = referenceMeasurement.parse(input);
   const video = safeJoin(projectDir(paths, slug), path);
   const ffmpeg = await ensureFfmpeg();
+  if (!batch) return measureOne(ffmpeg, video, measurement.parse(single));
+  if (single.kind !== undefined || single.startFrame !== undefined) throw new StudioError("Pass either one measurement or batch, not both.", "bad_input");
+  // One at a time: each reads the video from its start, and they are short.
+  const results: unknown[] = [];
+  for (const item of batch) results.push(await measureOne(ffmpeg, video, item).catch((error: unknown) => ({ ...item, error: error instanceof Error ? error.message : String(error) })));
+  return { results };
+}
+
+async function measureOne(ffmpeg: string, video: string, { kind, startFrame, count, region }: z.infer<typeof measurement>) {
   const read = async (frames: number, scale: string, format: "gray" | "rgb24", bytes: number) => {
     const out: Uint8Array[] = [];
     await readRawFrames(
@@ -143,4 +161,78 @@ export async function compareReference(paths: WorkspacePaths, slug: string, inpu
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
+}
+
+export const cloneSetupInput = z.object({ path: referencePath });
+
+/**
+ * Set this project up as a clone of a reference: its size, a whole-number frame rate, its length,
+ * its sound, and a marker per shot. The edit that was there is backed up first.
+ */
+export function cloneSetup(paths: WorkspacePaths, slug: string, input: unknown) {
+  const { path } = cloneSetupInput.parse(input);
+  const root = projectDir(paths, slug);
+  let reference: { width?: number; height?: number; duration?: number; timing?: { frameRate?: string | null; frameCount?: number } | null; shots?: { id: string; startFrame: number; endFrameExclusive: number }[] };
+  try {
+    reference = JSON.parse(readFileSync(safeJoin(root, `${dirname(path)}/reference.json`), "utf8"));
+  } catch {
+    throw new StudioError("This reference has no reference.json. Call agentcut_import_reference with its path first.", "bad_input");
+  }
+  const { width, height, duration } = reference;
+  const [top, bottom] = (reference.timing?.frameRate ?? "").split("/").map(Number);
+  if (!width || !height || !duration || !(top > 0 && bottom > 0)) {
+    throw new StudioError("This reference was imported before it could be measured. Call agentcut_import_reference with its path, then try again.", "bad_input");
+  }
+  const sourceRate = top / bottom;
+  const fps = Math.max(1, Math.min(120, Math.round(sourceRate)));
+  const toProject = (frame: number) => Math.round((frame / sourceRate) * fps);
+  const durationInFrames = Math.max(1, Math.round(duration * fps));
+  const state = readProjectState(paths, slug);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backup = `.studio/style-spy-backups/${stamp}`;
+  mkdirSync(safeJoin(root, backup), { recursive: true });
+  for (const name of ["project.json", "layers.json", "scenes"]) {
+    if (existsSync(join(root, name))) cpSync(join(root, name), join(safeJoin(root, backup), name), { recursive: true });
+  }
+  const variant = width >= height ? "wide" : "mobile";
+  const even = (value: number) => Math.max(16, Math.round(value / 2) * 2);
+  const previous = (state.projectRaw && typeof state.projectRaw === "object" ? state.projectRaw : {}) as Record<string, unknown>;
+  writeProjectFile(paths, slug, {
+    ...previous,
+    version: 1,
+    name: previous.name ?? slug,
+    fps,
+    durationInFrames,
+    background: "#000000",
+    variants: { [variant]: { width: even(width), height: even(height) } },
+    defaultVariant: variant,
+  });
+  const shots = (reference.shots ?? []).map((shot) => ({ id: shot.id, from: toProject(shot.startFrame), duration: Math.max(1, toProject(shot.endFrameExclusive) - toProject(shot.startFrame)) }));
+  writeLayers(paths, slug, {
+    version: 1,
+    tracks: [{
+      id: "original-sound",
+      name: "Original sound",
+      kind: "audio",
+      clips: [{ id: "original-sound", name: "Original soundtrack", from: 0, duration: durationInFrames, src: path, volume: 1, trimStart: 0, role: "music" }],
+    }],
+    markers: shots.map((shot) => ({ id: `shot-${shot.id}`, frame: shot.from, label: `Shot ${shot.id.slice(1)}`, kind: "section" })),
+  }, null);
+  const last = Math.max(0, (reference.timing?.frameCount ?? 1) - 1);
+  return {
+    variant,
+    width: even(width),
+    height: even(height),
+    fps,
+    durationInFrames,
+    backup,
+    // Source frame numbers are project frame numbers when the rates agree to the last frame.
+    frames: toProject(last) === last
+      ? "Project frames equal the reference's frame numbers."
+      : `Project frame = round(reference frame / ${Math.round(sourceRate * 1000) / 1000} * ${fps}). The last reference frame ${last} is project frame ${toProject(last)}.`,
+    shots,
+    // A picture or footage cut from the original: box and crop are the same region, in fractions of the frame.
+    cutout: { from: 0, duration: 30, src: path, trimStart: 0, muted: true, box: { x: 0.4, y: 0.35, width: 0.2, height: 0.3 }, framing: { crop: { x: 0.4, y: 0.35, width: 0.2, height: 0.3 } } },
+    next: "Add scene tracks above the sound for what you rebuild, and video tracks of cutout clips for pictures and footage. Tracks listed first draw on top. Never put the whole reference on the timeline: look at it with agentcut_inspect_reference and agentcut_compare_reference.",
+  };
 }

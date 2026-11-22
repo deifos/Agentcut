@@ -4,19 +4,107 @@
 Claude Code or Codex builds the video on your computer as real [Remotion](https://www.remotion.dev) code.
 You watch the live preview, scrub the timeline, tweak any layer by hand, and export an MP4 from the browser.
 
-![Agentcut studio with agent chat, video preview, assets, and a multitrack timeline](docs/images/studio.png)
+![Agentcut Simple view with the chat and quick actions on the left and the video preview in the centre](docs/images/studio-simple.png)
 
-**Try it:** https://agentcut.synteq.app · [components](https://agentcut.synteq.app/components) · [templates](https://agentcut.synteq.app/templates) · [changelog](CHANGELOG.md)
+**Try it:** https://agentcut.synteq.app · [components](https://agentcut.synteq.app/components) · [templates](https://agentcut.synteq.app/templates) · [loops](https://agentcut.synteq.app/loops) · [b-roll](https://agentcut.synteq.app/b-roll) · [sound effects](https://agentcut.synteq.app/sound-effects) · [changelog](CHANGELOG.md)
 
-- **Chat to edit**: describe the change; the agent writes the scenes, layers, captions and sound.
-- **Style Spy**: paste an Instagram, TikTok, YouTube or X link (or drop a video) and copy its editing style:
-  layouts and split screens, cut rhythm, captions, motion graphics, transitions and color.
-- **Record**: record talking-head takes from your camera right in the studio, then tell the agent what to do.
-- **Edit by hand**: timeline, inspector, components, templates and video styles; export an MP4 in the
-  browser or locally with Remotion.
-- **Scrub faster**: use fast preview copies, cached frames and background pictures for slow scenes.
-- **Grade colour**: correct individual shots, match footage, apply looks and LUTs, and check colour scopes.
+- **Chat to edit**: describe the change; the agent writes the scenes, layers, captions and sound. Type it
+  or hold to speak, attach files or the current frame, or draw on the video to point at something.
+- **Simple view or the full editor**: start with a chat and a preview, then switch to the Advanced editor
+  (timeline, inspector, assets) at any time without losing your draft.
+- **Style Spy**: paste an Instagram, TikTok, YouTube or X link (or drop a video) and copy its editing style,
+  or clone a video you have the right to use as an editable project.
+- **Launch videos and how-tos**: one click starts a Product Launch, Feature Launch or How-to video.
+- **Cinematic Mode**: turn screenshots and screen recordings into camera moves around 3D devices.
+- **Edit on the preview**: click to select, drag to move, pull a corner to resize, double-click to retype.
+- **Record**: record talking-head takes from your camera in the studio, or send a video from your phone.
+- **Sound and media**: free local voice-over, a sound effects library, a music library, archival and
+  AI-generated b-roll, and downloads from links to any site.
+- **Grade colour**: correct shots, match footage, apply looks and LUTs, and check colour scopes.
+- **Scrub faster**: fast preview copies, cached frames and background pictures for slow scenes.
 - **Reuse your style**: save editing rules from a project and apply them to new footage.
+- **Export**: MP4 in the browser or rendered on your computer, up to 4K, in several formats at once.
+- **Share**: send a whole project as an encrypted link that expires after 3 days.
+
+## Simple view and the Advanced editor
+
+The studio opens in **Simple view**: the chat on the left, the video in the centre, and quick actions
+such as **Styles**, **Style Spy**, **Add music**, **Remove filler words**, **Add captions** and
+**Make it shorter**. Pick a format (16:9, 9:16, 1:1 or 4:5) above the preview. On an empty project,
+upload footage, record yourself, or describe a new video with text, voice, files or a product link.
+Choose the agent (Claude Code or Codex), model and thinking level under the message box.
+
+Select **Advanced editor** for the full studio: a multitrack timeline, the clip inspector, assets,
+renders and project settings, plus the Styles, Style Spy and Cinematic tabs. **Simple view** switches back.
+The project, draft, attachments and selected options stay the same in both views.
+
+![Agentcut Advanced editor with agent chat, video preview, assets, and a multitrack timeline](docs/images/studio.png)
+
+**Canvas** shows the project's videos as cards: source recordings connect to the clips and versions made
+from them, and each card can be played, edited, chatted about or exported on its own. New launch or
+how-to requests on an existing edit become a separate video in the same canvas.
+
+Other ways to direct the agent:
+
+- **Speak instead of typing.** Hold the mic button, or hold Ctrl+Space, in any prompt box. Speech is
+  recognised in the browser (English, about 250 MB downloaded once); no audio leaves your computer.
+- **Draw on the video.** Use the pencil under the preview to circle or point at something, then describe
+  the change. You can also ask from the timeline playhead.
+- **Edit on the preview.** Click text or a picture to select its clip, drag to move it, and pull a corner
+  to resize it; it snaps to the frame's edges and centre. Double-click text to retype it, or use
+  **Add text** to put a new text clip at the playhead.
+- Chat shows token use for each request and a running total for the project.
+
+## Style Spy
+
+Paste an Instagram, TikTok, YouTube or X link, or drop a video file, then choose what to make:
+
+- **Copy the style** keeps your footage and story and takes the reference's editing: layouts and split
+  screens, cut rhythm, captions, motion graphics, transitions and colour. On an empty project it asks what
+  your video is about first.
+- **Clone the video** rebuilds a video you have the right to use as an editable project. Text, captions and
+  graphics are redrawn at the measured size, position and frame; footage and people stay as clips of the
+  original. Confirm that you have the rights before it starts.
+
+The import measures every frame on your computer: hard cuts, flashes and transitions, shots that share a
+setup, and things that appear inside a shot. The agent works from those measurements and a few images, so
+it uses fewer tokens, and it can compare reference frames with its own edit side by side.
+
+## Cinematic Mode and motion components
+
+The **Cinematic** tab turns screenshots and screen recordings into short product shots: 3D iPhone and
+MacBook models, camera pushes, pans and macro close-ups, lens blur and reflections. You can load your own
+GLB device model from the workspace library.
+
+Scenes can use the built-in motion component library (titles, captions, transitions, overlays, light
+leaks and 44 seamless motion loops) and the templates. Browse them on the
+[components](https://agentcut.synteq.app/components), [templates](https://agentcut.synteq.app/templates)
+and [loops](https://agentcut.synteq.app/loops) pages. The Styles gallery has ready-made house styles for
+talking-head videos, and you can save your own (see below).
+
+## Sound and media
+
+- **Voice-over** uses free local Kokoro by default, with 28 English voices. Optional local Ming voices run
+  on CPU or NVIDIA GPUs. ElevenLabs, Gemini, OpenAI and xAI run only when you select one and add your key.
+  Manage voices in the **Voices** tab of Assets. See [local voice setup and limits](docs/local-voice.md).
+- **Transcription** uses local Whisper, or AssemblyAI with your key, for captions and filler-word removal.
+- **Sound effects**: 276 effects ship with Agentcut, searchable by the agent and on the
+  [sound effects](https://agentcut.synteq.app/sound-effects) page.
+- **Music**: browse and audition the built-in library from the chat, bring your own file, or generate a
+  track with Gemini Lyria using your key.
+- **B-roll**: public-domain archival footage plus a separately labelled AI-generated collection, searchable
+  by the agent and on the [b-roll](https://agentcut.synteq.app/b-roll) page.
+- **Downloads**: give the agent a link to a song, video or image from any site and it saves the file to the
+  project (up to 2 GB). Protected links need downloading yourself first.
+- **Speaker framing**: ask the agent to keep a speaker centred; it tracks the face locally and the crop
+  follows them in the preview and the export.
+
+## Export
+
+Click **Export** to choose videos and formats. Each named video on the canvas can be exported separately,
+in several formats in one batch, at project size, 720p, 1080p or 4K, with a high quality or maximum quality
+setting. Render in the browser or on your computer; local renders capture lossless frames before encoding.
+Finished videos appear under **Renders**, where you can also make a smaller copy without another edit.
 
 ## Video types in chat
 
@@ -42,7 +130,8 @@ it waits for the exact final frame before it resumes playback, if playback was a
 For local footage with sparse keyframes or a long edge above 1920 pixels, the helper can make a
 fast-seeking preview copy in the background. It switches to a ready copy while paused. HDR video,
 transparent video and clips shorter than two seconds keep their original files. Copies are stored in
-the workspace's `.agentcut/proxies` cache, with a 20 GB limit and oldest entries removed first.
+the workspace's `.agentcut/proxies` cache, with a 10 GB limit and oldest entries removed first. Copies
+unused for 14 days, or whose footage or project was deleted, are removed too.
 Replacing a source file causes the studio to request a new copy.
 
 Recent paused video frames are cached for repeat seeks. Scenes measured as slow can also get small
@@ -159,7 +248,8 @@ workspace, reaches only npm and Openverse (media from other sites comes through 
 or keys (macOS, and Linux with `bubblewrap` and `socat`; **Windows has no sandbox, so use `--no-bash` with files you don't trust**). Codex's shell
 writes only to the workspace, but it can read your files and reach any site unless you pass `--no-bash`.
 
-Voice-over (ElevenLabs, Gemini, OpenAI, xAI) and music generation (Gemini Lyria) use your own keys,
+Voice-over uses free local Kokoro by default (the first generation downloads about 93 MB). Paid
+voice-over (ElevenLabs, Gemini, OpenAI, xAI) and music generation (Gemini Lyria) use your own keys,
 entered in the studio and kept in your user folder.
 
 Style Spy downloads references with [yt-dlp](https://github.com/yt-dlp/yt-dlp) and
@@ -285,7 +375,3 @@ If you host the page on another origin, start the helper with `--origin https://
 ## License
 
 MIT.
-
-### Free local voice-over
-
-Voice-over uses free local Kokoro by default, even when paid keys are saved. The Voices dialog includes 28 English voice samples. First generation downloads about 93 MB plus support files; later generations reuse the local cache. Paid providers run only when you select or request one. See [local voice setup and limits](docs/local-voice.md).

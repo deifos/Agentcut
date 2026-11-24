@@ -121,7 +121,9 @@ import {
 import { studioFileUrl } from "@/lib/studio/bundle";
 import type { StudioClip } from "@/lib/studio/types";
 import { uploadToProject } from "@/lib/studio/export";
+import { renderGroups } from "@/lib/studio/editing-styles";
 import type {
+  AssetEntry,
   ChatReference,
   ProjectSummary,
   StudioLayers,
@@ -333,6 +335,25 @@ export function StudioApp() {
     if (communityStyleFromHash(window.location.hash))
       history.replaceState(null, "", window.location.pathname + window.location.search);
   }, []);
+  // Every project's renders, for a saved style's demo clip (any project, the open one first).
+  const projectList = studio.projects;
+  const openSlug = doc?.slug ?? null;
+  const getStudioBridge = studio.getBridge;
+  const loadRenderGroups = useCallback(async () => {
+    const bridge = getStudioBridge();
+    if (!bridge) throw new Error("Connect the helper to find your renders.");
+    const listed = await Promise.all(
+      projectList.map(async (project) => {
+        try {
+          const { assets } = await bridge.request<{ assets: AssetEntry[] }>("studio.assets.list", { slug: project.slug });
+          return { slug: project.slug, name: project.name, assets };
+        } catch {
+          return { slug: project.slug, name: project.name, assets: [] };
+        }
+      }),
+    );
+    return renderGroups(listed, openSlug);
+  }, [getStudioBridge, projectList, openSlug]);
   const [stagingStyle, setStagingStyle] = useState(false);
   const [styleSpyOpen, setStyleSpyOpen] = useState(false);
   const [cinematicOpen, setCinematicOpen] = useState(false);
@@ -1359,9 +1380,10 @@ export function StudioApp() {
             onMakeStyleDemo={async (id, input) => {
               const bridge = studio.getBridge();
               if (!bridge) throw new Error("Connect the helper to make a demo.");
-              await bridge.request("studio.editingStyles.demo", { id, project: doc.slug, ...input }, 6 * 60 * 1000);
+              await bridge.request("studio.editingStyles.demo", { id, ...input }, 6 * 60 * 1000);
               toast("Demo saved with the style.");
             }}
+            onLoadRenders={loadRenderGroups}
             onSelect={simple || stagingStyle ? selectStyle : undefined}
             open={stylesOpen}
             onOpenChange={(open) => { setStylesOpen(open); if (!open) setStagingStyle(false); }}

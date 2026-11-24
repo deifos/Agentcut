@@ -25,7 +25,7 @@ import {
   submissionIssueUrl,
 } from "../lib/community-styles.ts";
 import { readCommunityCatalog, readCommunityStyleFolder } from "../lib/community-styles-read.ts";
-import { applyEditingStyleRequest, parseEditingStyle } from "../lib/studio/editing-styles.ts";
+import { applyEditingStyleRequest, parseEditingStyle, renderGroups } from "../lib/studio/editing-styles.ts";
 import { unzipStore, zipStore } from "../lib/zip-store.ts";
 
 const CATALOG = resolve("public", "community-styles");
@@ -264,4 +264,19 @@ test("small helpers: tags, links and the submission form", () => {
   assert.equal(url.hostname, "github.com");
   assert.equal(url.searchParams.get("title"), "Community style: Calm explainer");
   assert.match(url.searchParams.get("body"), /calm-explainer\.zip/);
+});
+
+test("a style's demo can come from any project's renders, the open project first", () => {
+  const groups = renderGroups(
+    [
+      { slug: "old", name: "Old", assets: [{ path: "renders/a.mp4", updatedAt: 5 }] },
+      { slug: "none", name: "No renders", assets: [{ path: "assets/raw.mp4", updatedAt: 9 }] },
+      { slug: "open", name: "Open", assets: [{ path: "renders/x.mp4", updatedAt: 1 }, { path: "renders/y.mp4", updatedAt: 2 }] },
+      { slug: "new", name: "New", assets: [{ path: "renders/b.mp4", updatedAt: 8 }, { path: "renders/sub/c.mp4", updatedAt: 9 }, { path: "renders/b.mp4.render.json", updatedAt: 9 }] },
+    ],
+    "open",
+  );
+  assert.deepEqual(groups.map((group) => group.slug), ["open", "new", "old"]);
+  assert.deepEqual(groups[0].renders.map((entry) => entry.path), ["renders/y.mp4", "renders/x.mp4"]);
+  assert.deepEqual(groups[1].renders.map((entry) => entry.path), ["renders/b.mp4"]);
 });

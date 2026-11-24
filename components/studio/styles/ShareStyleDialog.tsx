@@ -1,7 +1,7 @@
 "use client";
 
-// Share a saved editing style with the community library: make a short demo from one of this
-// project's renders, add an author and tags, then download a submission bundle and open the
+// Share a saved editing style with the community library: make a short demo from one of the
+// workspace's renders, add an author and tags, then download a submission bundle and open the
 // submission form. A maintainer reviews it before it's listed; nothing is published from here.
 import { useEffect, useState } from "react";
 import { Download, ExternalLink, Film, Loader2 } from "lucide-react";
@@ -17,8 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { studioFileUrl } from "@/lib/studio/file-url";
-import type { EditingStyle } from "@/lib/studio/editing-styles";
-import type { AssetEntry } from "@/lib/studio/types";
+import type { EditingStyle, RenderGroup } from "@/lib/studio/editing-styles";
 import {
   COMMUNITY_STYLE_FILES,
   DEMO_MAX_SECONDS,
@@ -71,7 +70,7 @@ export function ShareStyleDialog({
   onOpenChange,
   style,
   media,
-  renders,
+  loadRenders,
   canMakeDemo,
   helperHint,
   onMakeDemo,
@@ -81,14 +80,33 @@ export function ShareStyleDialog({
   onOpenChange(open: boolean): void;
   style: EditingStyle;
   media: StyleMedia;
-  /** This project's rendered MP4s (renders/…), newest first. */
-  renders: AssetEntry[];
+  /** Renders from every project in the workspace, the open project first. */
+  loadRenders(): Promise<RenderGroup[]>;
   canMakeDemo: boolean;
   helperHint: string | null;
-  onMakeDemo(input: { path: string; start: number; duration: number }): Promise<void>;
+  onMakeDemo(input: { project: string; path: string; start: number; duration: number }): Promise<void>;
   onSubmitted(): void;
 }) {
-  const [render, setRender] = useState(renders[0]?.path ?? "");
+  const [groups, setGroups] = useState<RenderGroup[] | null>(null);
+  const [rendersError, setRendersError] = useState<string | null>(null);
+  // "<project slug>/<path>": slugs have no slashes, so the first one splits it.
+  const [render, setRender] = useState("");
+  useEffect(() => {
+    if (!open || !canMakeDemo) return;
+    let live = true;
+    loadRenders()
+      .then((value) => {
+        if (!live) return;
+        setGroups(value);
+        setRendersError(null);
+        const first = value[0]?.renders[0];
+        setRender((current) => current || (first ? `${value[0].slug}/${first.path}` : ""));
+      })
+      .catch((error) => {
+        if (live) setRendersError(error instanceof Error ? error.message : "Could not list your renders.");
+      });
+    return () => { live = false; };
+  }, [open, canMakeDemo, loadRenders]);
   const [start, setStart] = useState("0");
   const [length, setLength] = useState(String(Math.min(8, DEMO_MAX_SECONDS)));
   const [making, setMaking] = useState(false);
@@ -142,14 +160,15 @@ export function ShareStyleDialog({
   const makeDemo = async () => {
     const startValue = Number(start);
     const lengthValue = Number(length);
-    if (!render) return setDemoError("Choose a rendered video.");
+    const split = render.indexOf("/");
+    if (split < 1) return setDemoError("Choose a rendered video.");
     if (!Number.isFinite(startValue) || startValue < 0) return setDemoError("Start must be 0 or more seconds.");
     if (!Number.isFinite(lengthValue) || lengthValue < 2 || lengthValue > DEMO_MAX_SECONDS)
       return setDemoError(`Length must be 2–${DEMO_MAX_SECONDS} seconds.`);
     setMaking(true);
     setDemoError(null);
     try {
-      await onMakeDemo({ path: render, start: startValue, duration: lengthValue });
+      await onMakeDemo({ project: render.slice(0, split), path: render.slice(split + 1), start: startValue, duration: lengthValue });
     } catch (error) {
       setDemoError(error instanceof Error ? error.message : "Could not make the demo.");
     } finally {
@@ -212,7 +231,10 @@ export function ShareStyleDialog({
         </DialogDescription>
 
         <section className="flex flex-col gap-3">
-          <h3 className="text-sm font-semibold">1. Demo clip</h3>
+          <h3 className="text-sm font-semibold">1. Make a demo clip</h3>
+          <p className="-mt-1 text-xs text-muted-foreground">
+            People see this before adding your style. Pick a few seconds of a finished video that show it off.
+          </p>
           <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
             <div className={`aspect-[9/16] overflow-hidden rounded-lg ${media.demo ? "bg-black" : "bg-muted"}`}>
               {media.demo ? (
@@ -224,23 +246,35 @@ export function ShareStyleDialog({
               )}
             </div>
             <div className="flex flex-col gap-3">
-              {renders.length === 0 ? (
+              {!canMakeDemo ? null : rendersError ? (
+                <p role="alert" className="text-sm text-destructive">{rendersError}</p>
+              ) : groups === null ? (
+                <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /> Finding your renders…
+                </p>
+              ) : groups.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  This project has no rendered videos. Export a video edited in this style (or open the project you made it
-                  on), then come back to make the demo.
+                  There are no rendered videos in this workspace yet. Export a video edited in this style, then come
+                  back to make the demo.
                 </p>
               ) : (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="share-render">Rendered video</Label>
+                    <Label htmlFor="share-render">A video edited in this style (from any project)</Label>
                     <select
                       id="share-render"
                       value={render}
                       onChange={(event) => setRender(event.target.value)}
                       className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
                     >
-                      {renders.map((entry) => (
-                        <option key={entry.path} value={entry.path}>{entry.path.replace(/^renders\//, "")}</option>
+                      {groups.map((group) => (
+                        <optgroup key={group.slug} label={group.name}>
+                          {group.renders.map((entry) => (
+                            <option key={entry.path} value={`${group.slug}/${entry.path}`}>
+                              {entry.path.replace(/^renders\//, "")}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                   </div>
@@ -254,7 +288,7 @@ export function ShareStyleDialog({
                       <Input id="share-length" inputMode="decimal" value={length} onChange={(event) => setLength(event.target.value)} />
                     </div>
                   </div>
-                  <Button type="button" variant="outline" className="self-start" disabled={!canMakeDemo || making} onClick={() => void makeDemo()}>
+                  <Button type="button" variant="outline" className="self-start" disabled={making || !render} onClick={() => void makeDemo()}>
                     {making ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <Film data-icon="inline-start" />}
                     {making ? "Making the demo…" : hasDemo ? "Remake demo" : "Make demo"}
                   </Button>
@@ -262,7 +296,7 @@ export function ShareStyleDialog({
               )}
               <p className="text-xs text-muted-foreground">
                 The demo is a small copy of part of your render, saved with the style. The render isn&apos;t changed.
-                Pick the stretch that shows the style best: the hook usually does.
+                The hook usually shows the style best.
               </p>
               {!canMakeDemo && helperHint ? <p role="status" className="text-xs text-muted-foreground">{helperHint}</p> : null}
               {demoError ? <p role="alert" className="text-sm text-destructive">{demoError}</p> : null}

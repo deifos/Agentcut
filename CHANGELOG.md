@@ -13,6 +13,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- **Sharing a style is easier to find.** Saved editing styles explains how sharing works (and highlights it when
+  you come from Community → Share yours), every saved style has the same Share publicly button, and the demo
+  clip can come from a render in any project, not only the open one.
+
 ## [0.2.33] - 2026-11-24
 
 ### Added

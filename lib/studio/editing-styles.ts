@@ -131,3 +131,35 @@ export function applyEditingStyleRequest(style: EditingStyle, slug: string) {
     "If required footage or information is missing, ask for it before editing. Explain any rule that cannot apply. Review the edited video, captions and sound, then report the changes.",
   ].join("\n\n");
 }
+
+/** One project's rendered MP4s, for picking a style's demo clip. */
+export interface RenderGroup {
+  slug: string;
+  name: string;
+  renders: { path: string; updatedAt: number }[];
+}
+
+const RENDER_MP4 = /^renders\/[^/]+\.mp4$/i;
+
+/**
+ * Projects that have renders, each with its MP4s newest first. The open project comes first (a
+ * style is usually shared from the video it was made on), then the projects rendered most recently.
+ */
+export function renderGroups(
+  projects: { slug: string; name: string; assets: { path: string; updatedAt: number }[] }[],
+  current: string | null,
+): RenderGroup[] {
+  return projects
+    .map((project) => ({
+      slug: project.slug,
+      name: project.name,
+      renders: project.assets
+        .filter((entry) => RENDER_MP4.test(entry.path))
+        .map(({ path, updatedAt }) => ({ path, updatedAt }))
+        .sort((a, b) => b.updatedAt - a.updatedAt),
+    }))
+    .filter((group) => group.renders.length > 0)
+    .sort((a, b) =>
+      a.slug === current ? -1 : b.slug === current ? 1 : b.renders[0].updatedAt - a.renders[0].updatedAt,
+    );
+}

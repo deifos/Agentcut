@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Film, Globe, Share2, Trash2 } from "lucide-react";
+import { Globe, Share2, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -17,6 +17,7 @@ import {
   applyEditingStyleRequest,
   editingStyleMedia,
   type EditingStyle,
+  type RenderGroup,
 } from "@/lib/studio/editing-styles";
 import type { AssetEntry } from "@/lib/studio/types";
 import type { SavedStylesState } from "@/components/studio/styles/use-saved-styles";
@@ -51,9 +52,10 @@ export function SavedEditingStyles({
   library,
   slug,
   disabled,
-  renders,
+  loadRenders,
   canMakeDemo,
   helperHint,
+  highlightShare,
   onSend,
   onDelete,
   onMakeDemo,
@@ -62,14 +64,16 @@ export function SavedEditingStyles({
   library: AssetEntry[];
   slug: string;
   disabled: boolean;
-  /** This project's rendered MP4s, for the demo clip. */
-  renders: AssetEntry[];
+  /** Renders from every project, for the demo clip. */
+  loadRenders(): Promise<RenderGroup[]>;
   /** The helper can make demo clips (connected and new enough). */
   canMakeDemo: boolean;
   helperHint: string | null;
+  /** Arrived from Community → Share yours: draw attention to how sharing works. */
+  highlightShare: boolean;
   onSend(text: string): Promise<void>;
   onDelete(id: string): Promise<void>;
-  onMakeDemo(id: string, input: { path: string; start: number; duration: number }): Promise<void>;
+  onMakeDemo(id: string, input: { project: string; path: string; start: number; duration: number }): Promise<void>;
 }) {
   const [sending, setSending] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -98,6 +102,21 @@ export function SavedEditingStyles({
               Refresh
             </Button>
           </div>
+          <div
+            className={
+              highlightShare
+                ? "flex items-start gap-2.5 rounded-lg border border-foreground/30 bg-muted p-3 text-sm"
+                : "flex items-start gap-2.5 rounded-lg border p-3 text-sm text-muted-foreground"
+            }
+          >
+            <Share2 className="mt-0.5 size-4 shrink-0" />
+            <p>
+              <span className={highlightShare ? "font-medium" : "font-medium text-foreground"}>Share a style with the community.</span>{" "}
+              Choose <span className="font-medium text-foreground">Share publicly</span> on one of your styles. You&apos;ll
+              make a short demo from any of your renders, then submit it on GitHub. Every submission is reviewed before
+              it&apos;s listed.
+            </p>
+          </div>
           {!saved.loaded ? (
             <p role="status">Loading saved editing styles…</p>
           ) : (
@@ -120,7 +139,6 @@ export function SavedEditingStyles({
               ) : null}
               {saved.styles.map((style) => {
                 const community = style.source?.kind === "community";
-                const hasDemo = Boolean(editingStyleMedia(library, style.id).demo);
                 return (
                   <article
                     key={style.id}
@@ -184,8 +202,8 @@ export function SavedEditingStyles({
                             disabled={deleting}
                             onClick={() => setSharing(style)}
                           >
-                            {hasDemo ? <Share2 data-icon="inline-start" /> : <Film data-icon="inline-start" />}
-                            {hasDemo ? "Share publicly" : "Add demo & share"}
+                            <Share2 data-icon="inline-start" />
+                            Share publicly
                           </Button>
                         )}
                         <Button
@@ -227,7 +245,7 @@ export function SavedEditingStyles({
           onOpenChange={(value) => { if (!value) setSharing(null); }}
           style={sharing}
           media={editingStyleMedia(library, sharing.id)}
-          renders={renders}
+          loadRenders={loadRenders}
           canMakeDemo={canMakeDemo}
           helperHint={helperHint}
           onMakeDemo={(input) => onMakeDemo(sharing.id, input)}

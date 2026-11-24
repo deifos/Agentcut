@@ -32,7 +32,7 @@ import { VideoStyles } from "@/components/studio/styles/VideoStyles";
 import { SavedEditingStyles } from "@/components/studio/styles/SavedEditingStyles";
 import { CommunityStyles, type CommunityInstall } from "@/components/studio/styles/CommunityStyles";
 import { useSavedStyles } from "@/components/studio/styles/use-saved-styles";
-import { applyEditingStyleRequest } from "@/lib/studio/editing-styles";
+import { applyEditingStyleRequest, type RenderGroup } from "@/lib/studio/editing-styles";
 import type { AssetEntry } from "@/lib/studio/types";
 import { useAgentName } from "@/components/studio/StudioAgent";
 import { cn } from "@/lib/utils";
@@ -147,6 +147,7 @@ export function StylesGallery({
   communityHint,
   onInstallCommunity,
   onMakeStyleDemo,
+  onLoadRenders,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
@@ -173,7 +174,9 @@ export function StylesGallery({
   /** Why it can't, when it can't (not connected, or the helper needs an update). */
   communityHint: string | null;
   onInstallCommunity(install: CommunityInstall): Promise<{ id: string; existing: boolean }>;
-  onMakeStyleDemo(id: string, input: { path: string; start: number; duration: number }): Promise<void>;
+  onMakeStyleDemo(id: string, input: { project: string; path: string; start: number; duration: number }): Promise<void>;
+  /** Renders from every project in the workspace, for a style's demo clip. */
+  onLoadRenders(): Promise<RenderGroup[]>;
   /** Stage a style in the composer. Selection does not edit or send. */
   onSelect?(style: MotionStyle): void;
 }) {
@@ -181,9 +184,8 @@ export function StylesGallery({
   const styles = Object.values(MOTION_STYLES);
   const [tab, setTab] = useState<Tab>(communityFocus ? "community" : "talking");
   const saved = useSavedStyles(library);
-  const renders = assets
-    .filter((entry) => /^renders\/[^/]+\.mp4$/i.test(entry.path))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+  // Set by Community → Share yours, so the Saved tab can point at how sharing works.
+  const [fromShareYours, setFromShareYours] = useState(false);
   // A link to a community style switches to its tab, even with the dialog already open.
   const [seenFocus, setSeenFocus] = useState(communityFocus);
   if (communityFocus !== seenFocus) {
@@ -282,7 +284,7 @@ export function StylesGallery({
           </div>
           <Tabs
             value={tab}
-            onValueChange={(v) => setTab(v as Tab)}
+            onValueChange={(v) => { setTab(v as Tab); setFromShareYours(false); }}
             className="min-w-0 max-w-full"
           >
             <TabsList className="h-auto! max-w-full flex-wrap">
@@ -368,7 +370,7 @@ export function StylesGallery({
             canInstall={communitySupported && !readOnly}
             installHint={readOnly ? "This project is read-only." : communityHint}
             disabled={readOnly || chatDisabled}
-            onShowSaved={() => setTab("saved")}
+            onShowSaved={() => { setTab("saved"); setFromShareYours(true); }}
             onInstall={async (install) => {
               const result = await onInstallCommunity(install);
               toast(result.existing ? `${install.entry.name} is already in your saved styles.` : `Added ${install.entry.name} to your saved styles.`);
@@ -386,9 +388,10 @@ export function StylesGallery({
             slug={slug}
             library={library}
             disabled={readOnly || chatDisabled}
-            renders={renders}
+            loadRenders={onLoadRenders}
             canMakeDemo={communitySupported}
             helperHint={communityHint}
+            highlightShare={fromShareYours}
             onMakeDemo={onMakeStyleDemo}
             onDelete={onDeleteStyle}
             onSend={async (text) => {

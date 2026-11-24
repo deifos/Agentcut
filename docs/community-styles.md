@@ -12,9 +12,9 @@ rules (`PROMPT.md`) the agent follows on new footage, plus a poster frame and a 
 ## Sharing your style
 
 1. Save a style: edit a video, then Styles → **Save current style**.
-2. Export a video edited in that style, so the project has a render.
-3. Styles → **Saved editing styles** → **Share publicly** (or **Add demo & share**):
-   - **Demo clip:** pick the render, a start time and a length (2–10 s). The helper makes a small copy
+2. Export a video edited in that style, so there's a render to cut the demo from (any project works).
+3. Styles → **Saved editing styles** → **Share publicly** (Community → **Share yours** takes you there):
+   - **Demo clip:** pick a render from any project in the workspace, a start time and a length (2–10 s). The helper makes a small copy
      (at most 960 px on the long side, metadata stripped) and a poster frame, saved next to the style as
      `demo.mp4` and `poster.jpg`. The render isn't changed.
    - **Details:** your name, an optional GitHub username, the description and up to six tags.

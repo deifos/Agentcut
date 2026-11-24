@@ -54,7 +54,8 @@ import { studioMcpServer, type WorkspacePaths } from "./workspace.js";
 import { previewVoice } from "./voice/previews.js";
 import { ReleaseVideos } from "./release-video.js";
 import { listMcpFiles, readMcpFile, writeMcpFile, copyMcpFile, type McpFileScope } from "./mcp-files.js";
-import { deleteEditingStyle, saveEditingStyle } from "./editing-styles.js";
+import { deleteEditingStyle, installCommunityStyle, saveEditingStyle } from "./editing-styles.js";
+import { makeEditingStyleDemo } from "./editing-style-demo.js";
 import { PhoneTransfers } from "./phone.js";
 import { ReleaseBrowser } from "./release-browser.js";
 import { exportQuality } from "./export-quality.js";
@@ -386,6 +387,16 @@ export class StudioHost implements BridgeExtension {
       case "studio.phone.disconnect": return this.phones.disconnect();
       case "studio.editingStyles.delete": {
         const result = deleteEditingStyle(this.paths, p.id);
+        this.emit("studio.library", {});
+        return result;
+      }
+      case "studio.editingStyles.install": {
+        const result = installCommunityStyle(this.paths, p);
+        this.emit("studio.library", {});
+        return result;
+      }
+      case "studio.editingStyles.demo": {
+        const result = await makeEditingStyleDemo(this.paths, p);
         this.emit("studio.library", {});
         return result;
       }
@@ -950,7 +961,7 @@ export class StudioHost implements BridgeExtension {
       bridgePort: this.options.port,
       // What the page may rely on beyond the basics ("styles": project.json accepts a style;
       // "drawing": chat context takes the pencil's strokes; "share": share links).
-      features: ["feature-launch", "chat-video-creation", "clip-canvas", "project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render"],
+      features: ["feature-launch", "chat-video-creation", "clip-canvas", "project-folders", "styles", "drawing", "share", "person-framing", "transcription-providers", "release-videos", "phone-transfer", "export-quality", "export-resolution", "export-4k", "resize-render", "community-styles"],
     };
   }
 

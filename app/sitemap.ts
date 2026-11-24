@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
 import { COMPONENT_METAS } from "@/motion/components/catalog";
 import { LOOPS } from "@/motion/components/loops/library";
+import { readCommunityCatalog } from "@/lib/community-styles-read";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // No synthetic lastModified dates: a build does not mean the content changed.
@@ -14,5 +15,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/b-roll",
     ...Object.keys(COMPONENT_METAS).map((id) => `/components/${id}`),
     ...LOOPS.map((loop) => `/loops/${loop.id}`),
+    ...readCommunityCatalog().styles.map((style) => `/templates/community/${style.id}`),
   ].map((path) => ({ url: new URL(path, SITE_URL).href }));
 }

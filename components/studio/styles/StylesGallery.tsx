@@ -9,6 +9,7 @@ import {
   Check,
   Bookmark,
   Clapperboard,
+  Globe,
   Loader2,
   Sparkles,
   Upload,
@@ -29,6 +30,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoStyles } from "@/components/studio/styles/VideoStyles";
 import { SavedEditingStyles } from "@/components/studio/styles/SavedEditingStyles";
+import { CommunityStyles, type CommunityInstall } from "@/components/studio/styles/CommunityStyles";
+import { useSavedStyles } from "@/components/studio/styles/use-saved-styles";
+import { applyEditingStyleRequest } from "@/lib/studio/editing-styles";
 import type { AssetEntry } from "@/lib/studio/types";
 import { useAgentName } from "@/components/studio/StudioAgent";
 import { cn } from "@/lib/utils";
@@ -47,6 +51,8 @@ import {
   DEMO_WORDS,
   type DemoWord,
 } from "@/components/studio/styles/demo-script";
+
+type Tab = "talking" | "video" | "saved" | "community";
 
 const W = 720;
 const H = 1280;
@@ -135,6 +141,12 @@ export function StylesGallery({
   onSelect,
   onSaveCurrentStyle,
   onDeleteStyle,
+  communityFocus,
+  onCommunityFocusHandled,
+  communitySupported,
+  communityHint,
+  onInstallCommunity,
+  onMakeStyleDemo,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
@@ -153,12 +165,31 @@ export function StylesGallery({
   onSend(text: string): Promise<void>;
   onSaveCurrentStyle(): void;
   onDeleteStyle(id: string): Promise<void>;
+  /** A community style to open (from the site's "Open in Agentcut"); opens the Community tab. */
+  communityFocus: string | null;
+  onCommunityFocusHandled(): void;
+  /** The connected helper can add community styles and make style demos. */
+  communitySupported: boolean;
+  /** Why it can't, when it can't (not connected, or the helper needs an update). */
+  communityHint: string | null;
+  onInstallCommunity(install: CommunityInstall): Promise<{ id: string; existing: boolean }>;
+  onMakeStyleDemo(id: string, input: { path: string; start: number; duration: number }): Promise<void>;
   /** Stage a style in the composer. Selection does not edit or send. */
   onSelect?(style: MotionStyle): void;
 }) {
   const agentName = useAgentName();
   const styles = Object.values(MOTION_STYLES);
-  const [tab, setTab] = useState<"talking" | "video" | "saved">("talking");
+  const [tab, setTab] = useState<Tab>(communityFocus ? "community" : "talking");
+  const saved = useSavedStyles(library);
+  const renders = assets
+    .filter((entry) => /^renders\/[^/]+\.mp4$/i.test(entry.path))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+  // A link to a community style switches to its tab, even with the dialog already open.
+  const [seenFocus, setSeenFocus] = useState(communityFocus);
+  if (communityFocus !== seenFocus) {
+    setSeenFocus(communityFocus);
+    if (communityFocus) setTab("community");
+  }
   const [selected, setSelected] = useState(currentStyle ?? styles[0]?.id);
   const [muted, setMuted] = useState(true);
   // Only the hovered card plays (plus the big preview): seven live players at once is too much.
@@ -246,12 +277,12 @@ export function StylesGallery({
             <DialogDescription className="sr-only">
               {tab === "talking"
                 ? onSelect ? "Choose a look for your video. Review the request, then press Send." : "Restyle a talking-head video: graphics, captions, camera moves and texture."
-                : tab === "saved" ? "Reuse editing rules on different footage." : "Video presets with scene and asset kits. Fill the blanks and the agent builds it."}
+                : tab === "saved" ? "Reuse editing rules on different footage." : tab === "community" ? "Editing styles shared by the Agentcut community." : "Video presets with scene and asset kits. Fill the blanks and the agent builds it."}
             </DialogDescription>
           </div>
           <Tabs
             value={tab}
-            onValueChange={(v) => setTab(v as "talking" | "video" | "saved")}
+            onValueChange={(v) => setTab(v as Tab)}
             className="min-w-0 max-w-full"
           >
             <TabsList className="h-auto! max-w-full flex-wrap">
@@ -266,6 +297,10 @@ export function StylesGallery({
               <TabsTrigger value="saved" className="gap-1.5 text-[12px]">
                 <Bookmark data-icon="inline-start" />
                 Saved editing styles
+              </TabsTrigger>
+              <TabsTrigger value="community" className="gap-1.5 text-[12px]">
+                <Globe data-icon="inline-start" />
+                Community
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -325,12 +360,43 @@ export function StylesGallery({
           </div>
         </div>
 
-        {tab === "saved" ? (
-          <SavedEditingStyles slug={slug} library={library} disabled={readOnly || chatDisabled} onDelete={onDeleteStyle} onSend={async (text) => {
-            await onSend(text);
-            onOpenChange(false);
-            toast("Style request sent. Follow progress in chat.");
-          }} />
+        {tab === "community" ? (
+          <CommunityStyles
+            saved={saved}
+            focusId={communityFocus}
+            onFocusHandled={onCommunityFocusHandled}
+            canInstall={communitySupported && !readOnly}
+            installHint={readOnly ? "This project is read-only." : communityHint}
+            disabled={readOnly || chatDisabled}
+            onShowSaved={() => setTab("saved")}
+            onInstall={async (install) => {
+              const result = await onInstallCommunity(install);
+              toast(result.existing ? `${install.entry.name} is already in your saved styles.` : `Added ${install.entry.name} to your saved styles.`);
+              return result;
+            }}
+            onApply={async (style) => {
+              await onSend(applyEditingStyleRequest(style, slug));
+              onOpenChange(false);
+              toast("Style request sent. Follow progress in chat.");
+            }}
+          />
+        ) : tab === "saved" ? (
+          <SavedEditingStyles
+            saved={saved}
+            slug={slug}
+            library={library}
+            disabled={readOnly || chatDisabled}
+            renders={renders}
+            canMakeDemo={communitySupported}
+            helperHint={communityHint}
+            onMakeDemo={onMakeStyleDemo}
+            onDelete={onDeleteStyle}
+            onSend={async (text) => {
+              await onSend(text);
+              onOpenChange(false);
+              toast("Style request sent. Follow progress in chat.");
+            }}
+          />
         ) : tab === "video" ? (
           <VideoStyles
             slug={slug}

@@ -13,6 +13,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.33] - 2026-11-24
+
+### Added
+
+- **Community styles.** A public library of editing styles people made and shared, each with a demo clip.
+  Browse it in Styles → Community (search and tags, every rule readable before adding) or on the site at
+  `/templates#community`, where each style has its own page with an "Open in Agentcut" button. Adding a style
+  copies its reviewed rules into your saved styles; the studio checks them against the catalog's SHA-256 first,
+  and the agent is told to treat a community style only as editing rules. Needs the new helper.
+- **Share a saved style publicly.** Saved editing styles have a Share publicly button: make a short demo clip
+  and poster from one of the project's renders (the helper trims and shrinks it and strips metadata; the render
+  isn't changed), add your name and tags, then download a submission zip and open the submission form on GitHub.
+  Saved styles now show their demo. Maintainers add submissions with `npm run community:add -- <zip>`
+  (see `docs/community-styles.md`).
+
 ## [0.2.32] - 2026-11-19
 
 ### Changed
@@ -739,7 +754,8 @@ First release: an open-source video studio you edit by chatting with Claude Code
 preview, timeline and inspector, browser and local export, motion component library, templates and video
 styles, voice-over and music with your own keys, and the `agentcut` helper with its MCP tools.
 
-[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.32...HEAD
+[Unreleased]: https://github.com/deifos/Agentcut/compare/v0.2.33...HEAD
+[0.2.33]: https://github.com/deifos/Agentcut/compare/v0.2.32...v0.2.33
 [0.2.32]: https://github.com/deifos/Agentcut/compare/v0.2.31...v0.2.32
 [0.2.31]: https://github.com/deifos/Agentcut/compare/v0.2.30...v0.2.31
 [0.2.30]: https://github.com/deifos/Agentcut/compare/v0.2.29...v0.2.30

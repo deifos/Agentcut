@@ -89,6 +89,7 @@ import { ExportDialog } from "@/components/studio/ExportDialog";
 import { IncomingShareDialog, ShareDialog } from "@/components/studio/ShareDialogs";
 import { PhoneDialog } from "@/components/studio/PhoneDialog";
 import { SHARE_AVAILABLE, shareFromHash } from "@/lib/studio/share";
+import { communityFileUrl, communityStyleFromHash } from "@/lib/community-styles";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -302,6 +303,36 @@ export function StudioApp() {
   // Before the helper reports its version and features, don't claim it's too old.
   const shareSupported = info ? Boolean(info.features?.includes("share")) : true;
   const [stylesOpen, setStylesOpen] = useState(false);
+  // Opened from a community style's "Open in Agentcut" (/studio#community-style=<id>).
+  const [communityFocus, setCommunityFocus] = useState(() => communityStyleFromHash(window.location.hash));
+  const communitySupported = status === "connected" && Boolean(info?.features?.includes("community-styles"));
+  const communityHint =
+    status !== "connected"
+      ? "Connect the helper to add styles and make demos."
+      : info && !info.features?.includes("community-styles")
+        ? `Community styles need a newer helper (you have ${info.version ?? "an older one"}). Stop it (Ctrl+C) and run: ${STUDIO_COMMAND}@latest`
+        : null;
+  useEffect(() => {
+    const onHash = () => {
+      const id = communityStyleFromHash(window.location.hash);
+      if (id) setCommunityFocus(id);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  // The Styles dialog belongs to an open project; open it once there is one.
+  const hasProject = Boolean(doc?.project);
+  const [openedForCommunity, setOpenedForCommunity] = useState<string | null>(null);
+  if (communityFocus && hasProject && openedForCommunity !== communityFocus) {
+    setOpenedForCommunity(communityFocus);
+    setStylesOpen(true);
+  }
+  if (!communityFocus && openedForCommunity) setOpenedForCommunity(null);
+  const communityFocusHandled = useCallback(() => {
+    setCommunityFocus(null);
+    if (communityStyleFromHash(window.location.hash))
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, []);
   const [stagingStyle, setStagingStyle] = useState(false);
   const [styleSpyOpen, setStyleSpyOpen] = useState(false);
   const [cinematicOpen, setCinematicOpen] = useState(false);
@@ -1303,6 +1334,34 @@ export function StudioApp() {
             }}
             key={doc.slug}
             onSaveCurrentStyle={() => { setStylesOpen(false); setStagingStyle(false); setSaveStyleOpen(true); }}
+            communityFocus={communityFocus}
+            onCommunityFocusHandled={communityFocusHandled}
+            communitySupported={communitySupported}
+            communityHint={communityHint}
+            onInstallCommunity={async ({ entry, prompt, catalog }) => {
+              const bridge = studio.getBridge();
+              if (!bridge) throw new Error("Connect the helper to add a style.");
+              const file = (path: string) => communityFileUrl(path, catalog);
+              return bridge.request<{ id: string; existing: boolean }>("studio.editingStyles.install", {
+                id: entry.id,
+                name: entry.name,
+                description: entry.description,
+                prompt,
+                sha256: entry.promptSha256,
+                revision: entry.revision,
+                author: entry.author,
+                tags: entry.tags,
+                catalog,
+                poster: file(entry.poster),
+                demo: entry.demo ? file(entry.demo) : null,
+              });
+            }}
+            onMakeStyleDemo={async (id, input) => {
+              const bridge = studio.getBridge();
+              if (!bridge) throw new Error("Connect the helper to make a demo.");
+              await bridge.request("studio.editingStyles.demo", { id, project: doc.slug, ...input }, 6 * 60 * 1000);
+              toast("Demo saved with the style.");
+            }}
             onSelect={simple || stagingStyle ? selectStyle : undefined}
             open={stylesOpen}
             onOpenChange={(open) => { setStylesOpen(open); if (!open) setStagingStyle(false); }}

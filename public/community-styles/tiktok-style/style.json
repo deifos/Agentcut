@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "name": "TikTok style",
+  "description": "Turns a flat talking-head into a fast vertical TikTok: hard-cut hook with bold kinetic text over a punch-in, word-boundary jump cuts every 1.5–2 s with alternating framing, pop captions with emphasis words, an animated stat graphic, zoom/shake on key lines, and a quiet upbeat lo-fi bed under the original voice.",
+  "author": { "name": "Agentcut", "github": "deifos" },
+  "tags": ["vertical", "talking-head", "captions", "jump-cuts", "tiktok"],
+  "revision": 1
+}

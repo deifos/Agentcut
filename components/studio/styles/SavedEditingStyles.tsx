@@ -31,16 +31,16 @@ function StyleThumb({ style, library }: { style: EditingStyle; library: AssetEnt
   if (!poster && !demo) return null;
   return (
     <div
-      className="relative aspect-[9/16] w-[96px] shrink-0 overflow-hidden rounded-md bg-muted"
+      className="relative aspect-[9/16] w-[96px] shrink-0 overflow-hidden rounded-md bg-black"
       onMouseEnter={() => setPlaying(true)}
       onMouseLeave={() => setPlaying(false)}
     >
       {poster ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={poster} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+        <img src={poster} alt="" loading="lazy" className="absolute inset-0 size-full object-contain" />
       ) : null}
       {demo && (playing || !poster) ? (
-        <video src={demo} muted loop autoPlay={playing} playsInline className="absolute inset-0 size-full object-cover" />
+        <video src={demo} muted loop autoPlay={playing} playsInline className="absolute inset-0 size-full object-contain" />
       ) : null}
     </div>
   );

@@ -23,11 +23,11 @@ export function CommunityStyleCard({ style }: { style: CommunityStyleEntry }) {
             loop
             playsInline
             preload="none"
-            className="absolute inset-0 size-full object-cover"
+            className="absolute inset-0 size-full object-contain"
           />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={communityFileUrl(style.poster)} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+          <img src={communityFileUrl(style.poster)} alt="" loading="lazy" className="absolute inset-0 size-full object-contain" />
         )}
       </div>
       <div className="flex flex-1 flex-col p-5">

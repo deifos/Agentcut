@@ -59,9 +59,9 @@ function StyleReel({ entry, active, className }: { entry: CommunityStyleEntry; a
     }
   }, [active]);
   return (
-    <div className={cn("relative aspect-[9/16] overflow-hidden rounded-lg bg-muted", className)}>
+    <div className={cn("relative aspect-[9/16] overflow-hidden rounded-lg bg-black", className)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={communityFileUrl(entry.poster)} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+      <img src={communityFileUrl(entry.poster)} alt="" loading="lazy" className="absolute inset-0 size-full object-contain" />
       {entry.demo ? (
         <video
           ref={video}
@@ -70,7 +70,7 @@ function StyleReel({ entry, active, className }: { entry: CommunityStyleEntry; a
           loop
           playsInline
           preload="none"
-          className={cn("absolute inset-0 size-full object-cover transition-opacity", active ? "opacity-100" : "opacity-0")}
+          className={cn("absolute inset-0 size-full object-contain transition-opacity", active ? "opacity-100" : "opacity-0")}
         />
       ) : null}
     </div>
@@ -334,7 +334,8 @@ function CommunityStyleDetail({
     <Dialog open onOpenChange={(value) => { if (!value && !busy) onClose(); }}>
       <DialogContent className="max-h-[92vh] max-w-[min(920px,96vw)] gap-0 overflow-hidden p-0 sm:max-w-[min(920px,96vw)]">
         <div className="grid max-h-[92vh] grid-cols-1 md:grid-cols-[minmax(0,300px)_1fr]">
-          <div className="bg-black md:max-h-[92vh]">
+          {/* Centred at its own shape, vertical or wide, however tall the rules column makes the row. */}
+          <div className="flex items-center justify-center bg-black md:max-h-[92vh]">
             {entry.demo ? (
               <video
                 src={communityFileUrl(entry.demo)}
@@ -344,11 +345,11 @@ function CommunityStyleDetail({
                 loop
                 playsInline
                 controls
-                className="mx-auto aspect-[9/16] max-h-[50vh] w-auto md:max-h-[92vh] md:w-full"
+                className="block max-h-[50vh] w-full object-contain md:max-h-[92vh]"
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={communityFileUrl(entry.poster)} alt="" className="mx-auto aspect-[9/16] max-h-[50vh] object-cover md:max-h-[92vh] md:w-full" />
+              <img src={communityFileUrl(entry.poster)} alt="" className="block max-h-[50vh] w-full object-contain md:max-h-[92vh]" />
             )}
           </div>
           <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-5">

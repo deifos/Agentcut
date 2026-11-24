@@ -42,7 +42,7 @@ export default async function CommunityStylePage({ params }: PageProps<"/templat
         <ArrowLeft className="size-4" /> Community styles
       </Link>
       <div className="mt-8 grid gap-10 md:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-        <div className="overflow-hidden rounded-[28px] bg-black md:sticky md:top-24 md:self-start">
+        <div className="flex items-center justify-center overflow-hidden rounded-[28px] bg-black md:sticky md:top-24 md:self-start">
           {style.demo ? (
             <video
               src={communityFileUrl(style.demo)}
@@ -52,11 +52,11 @@ export default async function CommunityStylePage({ params }: PageProps<"/templat
               loop
               playsInline
               controls
-              className="aspect-[9/16] w-full object-cover"
+              className="block max-h-[80vh] w-full object-contain"
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={communityFileUrl(style.poster)} alt="" className="aspect-[9/16] w-full object-cover" />
+            <img src={communityFileUrl(style.poster)} alt="" className="block max-h-[80vh] w-full object-contain" />
           )}
         </div>
         <div className="min-w-0">

@@ -214,9 +214,9 @@ export function ShareStyleDialog({
         <section className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold">1. Demo clip</h3>
           <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
-            <div className="aspect-[9/16] overflow-hidden rounded-lg bg-muted">
+            <div className={`aspect-[9/16] overflow-hidden rounded-lg ${media.demo ? "bg-black" : "bg-muted"}`}>
               {media.demo ? (
-                <video key={fileUrl(media.demo)} src={fileUrl(media.demo)} poster={media.poster ? fileUrl(media.poster) : undefined} muted loop autoPlay playsInline controls className="size-full object-cover" />
+                <video key={fileUrl(media.demo)} src={fileUrl(media.demo)} poster={media.poster ? fileUrl(media.poster) : undefined} muted loop autoPlay playsInline controls className="size-full object-contain" />
               ) : (
                 <div className="flex size-full flex-col items-center justify-center gap-2 p-3 text-center text-xs text-muted-foreground">
                   <Film className="size-5" /> No demo yet

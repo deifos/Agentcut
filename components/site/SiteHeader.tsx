@@ -9,6 +9,7 @@ const NAV = [
   { href: "/sound-effects", label: "Sounds" },
   { href: "/b-roll", label: "B-roll" },
   { href: "/templates", label: "Templates" },
+  { href: "/templates#community", label: "Community" },
 ];
 
 export function SiteHeader() {

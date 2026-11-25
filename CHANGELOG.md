@@ -15,6 +15,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- **Consistent studio side drawers.** Renders now uses the same sliding Sheet drawer as Tools, preserving its scrollable previews, downloads, and export action.
+
 - **Studio tools drawer.** Uses the shadcn Sheet component with slide-in animation and avoids duplicate dividers when sharing tools are unavailable.
 
 - **Compact studio navigation in every view.** A single view selector switches between Simple, Advanced, and Canvas; Tools groups creation and sharing controls. Renders opens a side drawer from any view with previews, downloads, and folder access.

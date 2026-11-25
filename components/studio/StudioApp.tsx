@@ -60,7 +60,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -900,20 +899,20 @@ export function StudioApp() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Dialog open={rendersOpen} onOpenChange={setRendersOpen}>
-              <DialogTrigger asChild>
+            <Sheet open={rendersOpen} onOpenChange={setRendersOpen}>
+              <SheetTrigger asChild>
                 <Button type="button" variant="ghost" size="sm" disabled={!doc}><Film /> Renders</Button>
-              </DialogTrigger>
-              <DialogContent className="top-0 right-0 left-auto flex h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col rounded-none border-y-0 border-r-0 p-0 sm:max-w-md">
-                <DialogHeader className="border-b p-5 pr-10">
-                  <DialogTitle>Renders</DialogTitle>
-                  <DialogDescription>Finished videos for {activeCutName || "this project"}. Preview, download, or open a file.</DialogDescription>
-                </DialogHeader>
+              </SheetTrigger>
+              <SheetContent side="right" className="h-dvh w-full p-0 sm:max-w-md">
+                <SheetHeader className="gap-2 border-b p-5 pr-10">
+                  <SheetTitle className="text-lg leading-none">Renders</SheetTitle>
+                  <SheetDescription>Finished videos for {activeCutName || "this project"}. Preview, download, or open a file.</SheetDescription>
+                </SheetHeader>
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   {doc ? <RendersPanel key={doc.slug} doc={doc} assets={studio.assets} getBridge={studio.getBridge} onExport={() => { setRendersOpen(false); setExportOpen(true); }} /> : null}
                 </div>
-              </DialogContent>
-            </Dialog>
+              </SheetContent>
+            </Sheet>
             <ConnectionBadge
               helperVersion={info?.version ?? null}
               status={status}

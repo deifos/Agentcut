@@ -2407,12 +2407,12 @@ function ProjectInspector({
 }
 
 /** Everything in renders/: where it is, play it, open it, show it in the folder. */
-function RendersPanel({
+export function RendersPanel({
   doc,
   assets,
   getBridge,
   onExport,
-}: StudioInspectorProps) {
+}: Pick<StudioInspectorProps, "doc" | "assets" | "getBridge" | "onExport">) {
   const renders = rendersFrom(assets);
   const files = useRenderFileActions(doc.slug, getBridge);
   return (

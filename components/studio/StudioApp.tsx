@@ -22,6 +22,9 @@ import {
 import Link from "next/link";
 import { MusicSidebar, type MusicChoice, type MusicSidebarHandle } from "@/components/studio/MusicPicker";
 import {
+  ChevronDown,
+  Film,
+  Settings2,
   Download,
   FilePlus2,
   Loader2,
@@ -57,7 +60,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ChatPanel } from "@/components/studio/ChatPanel";
 import { StylesGallery } from "@/components/studio/styles/StylesGallery";
@@ -98,7 +103,7 @@ import {
 } from "@/components/ui/tooltip";
 import { VoicesDialog } from "@/components/studio/VoicesDialog";
 import { TranscriptionDialog } from "@/components/studio/TranscriptionDialog";
-import { StudioInspector } from "@/components/studio/StudioInspector";
+import { StudioInspector, RendersPanel } from "@/components/studio/StudioInspector";
 import { StudioPreview } from "@/components/studio/StudioPreview";
 import { StudioTimeline } from "@/components/studio/StudioTimeline";
 import { useStudioController } from "@/components/studio/useStudioController";
@@ -282,6 +287,8 @@ export function StudioApp() {
     [chatSlug],
   );
   const [voicesOpen, setVoicesOpen] = useState(false);
+  const [rendersOpen, setRendersOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [transcriptionOpen, setTranscriptionOpen] = useState(false);
   const [recordOpen, setRecordOpen] = useState(false);
   const [pendingAsks, setPendingAsks] = useState<
@@ -843,79 +850,73 @@ export function StudioApp() {
             </div>
           ) : null}
 
-          <div className="ml-auto flex items-center gap-1.5">
-            {canvasAvailable && <Button type="button" size="sm" variant={showCanvas ? "secondary" : "outline"} aria-pressed={showCanvas} onClick={() => {
-              playerRef.current?.pause();
-              setSimple(false);
-              setCanvasOpen(!showCanvas);
-            }}>{showCanvas ? "Preview" : "Canvas"}</Button>}
-            <Button type="button" variant="outline" size="sm" onClick={() => setSimple((value) => !value)}>
-              {simple ? "Advanced editor" : "Simple view"}
-            </Button>
-            <div className="studio-header-tools flex items-center gap-1.5">
-            <HeaderButton
-              label="Undo (Ctrl+Z)"
-              onClick={studio.undo}
-              disabled={!studio.canUndo}
-            >
-              <Undo2 className="size-4" />
-            </HeaderButton>
-            <HeaderButton
-              label="Redo (Ctrl+Shift+Z)"
-              onClick={studio.redo}
-              disabled={!studio.canRedo}
-            >
-              <Redo2 className="size-4" />
-            </HeaderButton>
-            <TooltipHint content="Record a talking-head take with your camera">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setRecordOpen(true)}
-                disabled={readOnly || !doc?.project}
-                className="text-xs text-muted-foreground"
-              >
-                <Video /> Record
-              </Button>
-            </TooltipHint>
-            <TooltipHint content="Voice-over providers (ElevenLabs, Gemini, OpenAI, Grok)">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setVoicesOpen(true)}
-                disabled={status !== "connected"}
-                className="text-xs text-muted-foreground"
-              >
-                <Mic /> Voice-over
-              </Button>
-            </TooltipHint>
-            <ThemeToggle
-              className="size-9 rounded-full"
-              placeholderClassName="size-9"
-            />
-            </div>
-            {simple ? <Button type="button" variant="ghost" size="sm" disabled={status !== "connected"} onClick={() => setVoicesOpen(true)}>Voice-over</Button> : null}
-            <Button type="button" variant="ghost" size="sm" disabled={status !== "connected"} onClick={() => setTranscriptionOpen(true)}>Transcription</Button>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" size="sm" aria-label="Choose editor view">
+                  {simple ? "Simple" : showCanvas ? "Canvas" : "Advanced"} <ChevronDown className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuRadioGroup value={simple ? "simple" : showCanvas ? "canvas" : "advanced"} onValueChange={(view) => {
+                  playerRef.current?.pause();
+                  setSimple(view === "simple");
+                  setCanvasOpen(view === "canvas");
+                }}>
+                  <DropdownMenuRadioItem value="simple">Simple view</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="advanced">Advanced editor</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="canvas" disabled={!canvasAvailable}>Canvas</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="ghost" size="sm"><Settings2 /> Tools</Button>
+              </DialogTrigger>
+              <DialogContent className="top-0 right-0 left-auto flex h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col rounded-none border-y-0 border-r-0 sm:max-w-sm">
+                <DialogHeader className="pr-6">
+                  <DialogTitle>Studio tools</DialogTitle>
+                  <DialogDescription>Creation, sharing, and workspace settings.</DialogDescription>
+                </DialogHeader>
+                <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+                  <Button variant="ghost" className="justify-start" disabled={readOnly || !doc?.project} onClick={() => { setToolsOpen(false); setRecordOpen(true); }}><Video /> Record video</Button>
+                  <Button variant="ghost" className="justify-start" disabled={status !== "connected"} onClick={() => { setToolsOpen(false); setVoicesOpen(true); }}><Mic /> Voice-over &amp; music</Button>
+                  <Button variant="ghost" className="justify-start" disabled={status !== "connected"} onClick={() => { setToolsOpen(false); setTranscriptionOpen(true); }}>Transcription</Button>
+                  <div className="my-1 border-t" />
+                  <PhoneDialog getBridge={studio.getBridge} supported={Boolean(info?.features?.includes("phone-transfer"))} />
+                  {SHARE_AVAILABLE ? <Button variant="ghost" className="justify-start" disabled={!doc?.project || status !== "connected"} onClick={() => { setToolsOpen(false); setShareOpen(true); }}><Share2 /> Share project</Button> : null}
+                  <div className="my-1 border-t" />
+                  <div className="flex items-center justify-between px-3 text-sm">
+                    Edit history
+                    <div className="flex gap-1">
+                      <HeaderButton label="Undo (Ctrl+Z)" onClick={studio.undo} disabled={!studio.canUndo}><Undo2 className="size-4" /></HeaderButton>
+                      <HeaderButton label="Redo (Ctrl+Shift+Z)" onClick={studio.redo} disabled={!studio.canRedo}><Redo2 className="size-4" /></HeaderButton>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between px-3 text-sm">Theme <ThemeToggle /></div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={rendersOpen} onOpenChange={setRendersOpen}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" disabled={!doc}><Film /> Renders</Button>
+              </DialogTrigger>
+              <DialogContent className="top-0 right-0 left-auto flex h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col rounded-none border-y-0 border-r-0 p-0 sm:max-w-md">
+                <DialogHeader className="border-b p-5 pr-10">
+                  <DialogTitle>Renders</DialogTitle>
+                  <DialogDescription>Finished videos for {activeCutName || "this project"}. Preview, download, or open a file.</DialogDescription>
+                </DialogHeader>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  {doc ? <RendersPanel key={doc.slug} doc={doc} assets={studio.assets} getBridge={studio.getBridge} onExport={() => { setRendersOpen(false); setExportOpen(true); }} /> : null}
+                </div>
+              </DialogContent>
+            </Dialog>
             <ConnectionBadge
               helperVersion={info?.version ?? null}
               status={status}
               working={Boolean(chat.running)}
               onReconnect={studio.reconnect}
             />
-            <PhoneDialog getBridge={studio.getBridge} supported={Boolean(info?.features?.includes("phone-transfer"))} />
-            {SHARE_AVAILABLE ? (
-              <TooltipHint content="Send this project to someone with a link (expires in 3 days)">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShareOpen(true)}
-                  disabled={!doc?.project || status !== "connected"}
-                  className="text-xs text-muted-foreground"
-                >
-                  <Share2 /> Share
-                </Button>
-              </TooltipHint>
-            ) : null}
             {exporting ? (
               <TooltipHint content="Export in progress. Click to see details or cancel.">
                 <Button

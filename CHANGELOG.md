@@ -15,6 +15,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- **Studio tools drawer.** Uses the shadcn Sheet component with slide-in animation and avoids duplicate dividers when sharing tools are unavailable.
+
 - **Compact studio navigation in every view.** A single view selector switches between Simple, Advanced, and Canvas; Tools groups creation and sharing controls. Renders opens a side drawer from any view with previews, downloads, and folder access.
 
 - **Sharing a style is easier to find.** Saved editing styles explains how sharing works (and highlights it when

@@ -62,6 +62,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { PHONE_API } from "@/lib/studio/phone";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ChatPanel } from "@/components/studio/ChatPanel";
@@ -869,23 +872,23 @@ export function StudioApp() {
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
-              <DialogTrigger asChild>
+            <Sheet open={toolsOpen} onOpenChange={setToolsOpen}>
+              <SheetTrigger asChild>
                 <Button type="button" variant="ghost" size="sm"><Settings2 /> Tools</Button>
-              </DialogTrigger>
-              <DialogContent className="top-0 right-0 left-auto flex h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col rounded-none border-y-0 border-r-0 sm:max-w-sm">
-                <DialogHeader className="pr-6">
-                  <DialogTitle>Studio tools</DialogTitle>
-                  <DialogDescription>Creation, sharing, and workspace settings.</DialogDescription>
-                </DialogHeader>
+              </SheetTrigger>
+              <SheetContent side="right" className="h-dvh w-full p-6 sm:max-w-sm">
+                <SheetHeader className="gap-2 p-0 pr-6">
+                  <SheetTitle className="text-lg leading-none">Studio tools</SheetTitle>
+                  <SheetDescription>Creation, sharing, and workspace settings.</SheetDescription>
+                </SheetHeader>
                 <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
                   <Button variant="ghost" className="justify-start" disabled={readOnly || !doc?.project} onClick={() => { setToolsOpen(false); setRecordOpen(true); }}><Video /> Record video</Button>
                   <Button variant="ghost" className="justify-start" disabled={status !== "connected"} onClick={() => { setToolsOpen(false); setVoicesOpen(true); }}><Mic /> Voice-over &amp; music</Button>
                   <Button variant="ghost" className="justify-start" disabled={status !== "connected"} onClick={() => { setToolsOpen(false); setTranscriptionOpen(true); }}>Transcription</Button>
-                  <div className="my-1 border-t" />
+                  {PHONE_API || SHARE_AVAILABLE ? <Separator className="my-1" /> : null}
                   <PhoneDialog getBridge={studio.getBridge} supported={Boolean(info?.features?.includes("phone-transfer"))} />
                   {SHARE_AVAILABLE ? <Button variant="ghost" className="justify-start" disabled={!doc?.project || status !== "connected"} onClick={() => { setToolsOpen(false); setShareOpen(true); }}><Share2 /> Share project</Button> : null}
-                  <div className="my-1 border-t" />
+                  <Separator className="my-1" />
                   <div className="flex items-center justify-between px-3 text-sm">
                     Edit history
                     <div className="flex gap-1">
@@ -895,8 +898,8 @@ export function StudioApp() {
                   </div>
                   <div className="flex items-center justify-between px-3 text-sm">Theme <ThemeToggle /></div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </SheetContent>
+            </Sheet>
             <Dialog open={rendersOpen} onOpenChange={setRendersOpen}>
               <DialogTrigger asChild>
                 <Button type="button" variant="ghost" size="sm" disabled={!doc}><Film /> Renders</Button>

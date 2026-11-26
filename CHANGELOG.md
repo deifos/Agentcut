@@ -19,6 +19,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- **A new landing page.** The home page now wears the studio's dark Simple view: a recording of the real
+  studio cutting a road trip montage, eight features shown as the sentence you would type next to a picture of the result, an example
+  conversation beside the timeline it wrote, and the three setup steps laid out as clips on a timeline.
+
 - **Adding songs to the music library is one command.** `npm run music:add` uploads a song, lists it and
   analyzes it (documented in `scripts/music-catalog/README.md`). Re-running the analysis now measures only new
   songs.

@@ -1,17 +1,12 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Code2,
-  Layers,
-  Type,
-  Upload,
-  Sparkles,
-} from "lucide-react";
+import { ArrowUpRight, Download, MessageSquare, Terminal } from "lucide-react";
 import { ComponentShowcase } from "@/components/site/ComponentShowcase";
 import { CopyCommand } from "@/components/site/CopyCommand";
-import { HeroBackground } from "@/components/site/HeroBackground";
-import { HeroStudio } from "@/components/site/HeroStudio";
+import { FeatureGrid } from "@/components/site/FeatureGrid";
+import { HeroDemo } from "@/components/site/HeroDemo";
+import { PromptToCut } from "@/components/site/PromptToCut";
 import { StyleShowcase } from "@/components/site/StyleShowcase";
+import { COMPONENT_METAS } from "@/motion/components/catalog";
 import { REPO_URL, STUDIO_COMMAND } from "@/lib/studio/commands";
 import {
   pageMetadata,
@@ -48,33 +43,34 @@ const structuredData = {
   ],
 };
 
-const MARQUEE = [
-  "Kinetic titles",
-  "Lower thirds",
-  "Word-by-word captions",
-  "Voice-over",
-  "Music on the beat",
-  "Sound effects",
-  "Stat counters",
-  "Transitions",
-  "16:9 and 9:16",
-  "MP4 export in the browser",
+const COMPONENT_COUNT = Object.keys(COMPONENT_METAS).length;
+
+// Things people type, for the ticker under the hero.
+const ASKS = [
+  ["Add captions", "Make it shorter", "Cut it to the beat", "Remove the filler words", "Make a vertical version", "Add a lower third", "Zoom in on the product", "End on the logo"],
+  ["Make the title huge", "Add a whoosh on every cut", "Restyle it as Punk", "Use my brand colors", "Add a voice-over", "Swap the music", "Tighten the intro", "Export it for Reels"],
 ];
 
 const STEPS = [
   {
     time: "00:00",
+    icon: Terminal,
+    clip: "oklch(0.7 0.19 35)",
     title: "Start the helper",
     body: "One command on your computer. It uses the Claude Code or Codex you already signed in to, and keeps your projects in a folder you own.",
     command: true,
   },
   {
     time: "00:05",
+    icon: MessageSquare,
+    clip: "oklch(0.72 0.13 155)",
     title: "Say what you want",
     body: "Describe the video in the chat. The agent writes real Remotion scenes, places library components and lays out the timeline while the preview rebuilds live.",
   },
   {
     time: "00:20",
+    icon: Download,
+    clip: "oklch(0.72 0.12 250)",
     title: "Tweak it and export",
     body: "Drag clips, change any prop in the inspector, or point at a frame and ask for a fix. Export an MP4 right in the browser, wide and mobile.",
   },
@@ -91,7 +87,11 @@ const LAYERS_SNIPPET = [
     ', "with a *prompt*."] } },',
   ],
   ['      { "component": ', '"stat-counter"', ', "from": 90, "duration": 90,'],
-  ['        "props": { "value": ', "49", ', "label": "components" } }'],
+  [
+    '        "props": { "value": ',
+    String(COMPONENT_COUNT),
+    ', "label": "components" } }',
+  ],
   ["    ] },", ""],
   ['    { "kind": "audio", "clips": [{ "src": ', '"assets/music.mp3"', " }] }"],
   ["  ]", ""],
@@ -113,13 +113,13 @@ const FACTS = [
   ],
   [
     "Open source, MIT",
-    "The studio, the helper and all 49 components. Fork it, extend it, ship it.",
+    `The studio, the helper and all ${COMPONENT_COUNT} components. Fork it, extend it, ship it.`,
   ],
 ];
 
 export default function LandingPage() {
   return (
-    <main>
+    <main className="landing dark">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -127,170 +127,171 @@ export default function LandingPage() {
         }}
       />
       {/* Hero */}
-      <section className="hero-editorial" aria-labelledby="hero-title">
-        <HeroBackground />
-        <div className="hero-layout">
-          <div className="hero-copy">
-            <p className="site-rise hero-eyebrow">
-              Open source · Claude Code + Codex · Remotion
-            </p>
-            <h1 id="hero-title" className="hero-title font-display">
-              <span className="site-rise" style={{ ["--i" as string]: 1 }}>
-                Edit video
-              </span>{" "}
-              <span className="site-rise" style={{ ["--i" as string]: 2 }}>
-                with a
-              </span>{" "}
-              <span className="site-rise" style={{ ["--i" as string]: 3 }}>
-                <span className="hero-title-cut">prompt.</span>
-              </span>
-            </h1>
-            <p
-              className="site-rise hero-description"
-              style={{ ["--i" as string]: 4 }}
+      <section className="landing-hero" aria-labelledby="hero-title">
+        <div className="mx-auto max-w-7xl px-5 pb-10 pt-16 text-center md:px-8 md:pt-24">
+          <p className="site-rise font-mono text-[11px] uppercase tracking-[0.2em] text-ink/55">
+            Open source · Claude Code + Codex · Remotion
+          </p>
+          <h1
+            id="hero-title"
+            className="site-rise landing-title mx-auto mt-6 max-w-4xl font-display"
+            style={{ ["--i" as string]: 1 }}
+          >
+            Edit video with a <span className="text-brand">prompt.</span>
+          </h1>
+          <p
+            className="site-rise mx-auto mt-6 max-w-xl text-lg leading-relaxed text-ink/65 md:text-xl"
+            style={{ ["--i" as string]: 2 }}
+          >
+            Say what you want. Your coding agent cuts the clips, adds captions,
+            graphics and music, and you export. Free, open source, and on your
+            own computer.
+          </p>
+          <div
+            className="site-rise mt-8 flex flex-wrap items-center justify-center gap-3"
+            style={{ ["--i" as string]: 3 }}
+          >
+            <Link href="/studio" className="landing-cta">
+              Open the studio <ArrowUpRight className="size-5" />
+            </Link>
+            <CopyCommand command={STUDIO_COMMAND} />
+          </div>
+          <p
+            className="site-rise mx-auto mt-4 max-w-md text-sm text-ink/50"
+            style={{ ["--i" as string]: 4 }}
+          >
+            Needs{" "}
+            <a
+              className="underline underline-offset-2 hover:text-ink"
+              href="https://nodejs.org/en/download"
+              target="_blank"
+              rel="noreferrer"
             >
-              Describe the video you want. Your coding agent creates the scenes,
-              places the motion graphics, and syncs the music. Every layer lands
-              on the timeline. Then tweak anything by hand and export.
-            </p>
-            <div
-              className="site-rise hero-actions"
-              style={{ ["--i" as string]: 5 }}
-            >
-              <Link href="/studio" className="hero-open">
-                Open the studio <ArrowUpRight className="size-5" />
-              </Link>
-              <CopyCommand command={STUDIO_COMMAND} />
-            </div>
-            <p className="mt-3 text-sm text-ink/60">
-              First, install{" "}
-              <a className="underline" href="https://nodejs.org/en/download" target="_blank" rel="noreferrer">
-                Node.js LTS
-              </a>{" "}
-              (20.10 or newer) and reopen your terminal. The command downloads
-              and starts Agentcut automatically.
-            </p>
+              Node.js LTS
+            </a>{" "}
+            (20.10 or newer). The command downloads and starts Agentcut.
+          </p>
+          <div
+            className="site-rise mx-auto mt-12 max-w-6xl md:mt-16"
+            style={{ ["--i" as string]: 5 }}
+          >
+            <HeroDemo />
+          </div>
+        </div>
+
+        {/* Things you can say */}
+        <div
+          className="prompt-ticker space-y-3 overflow-hidden pb-20 pt-4 md:pb-28"
+          aria-label="Examples of what you can ask for"
+        >
+          {ASKS.map((row, rowIndex) => (
             <ul
-              className="site-rise hero-features"
-              style={{ ["--i" as string]: 6 }}
-              aria-label="Studio features"
+              key={rowIndex}
+              className="site-marquee flex w-max gap-3"
+              data-reverse={rowIndex === 1 ? "" : undefined}
             >
-              {[
-                {
-                  icon: Code2,
-                  label: (
-                    <>
-                      Prompt
-                      <br />
-                      to video
-                    </>
-                  ),
-                },
-                {
-                  icon: Layers,
-                  label: (
-                    <>
-                      Full layer
-                      <br />
-                      control
-                    </>
-                  ),
-                },
-                {
-                  icon: Type,
-                  label: (
-                    <>
-                      Motion
-                      <br />
-                      graphics ready
-                    </>
-                  ),
-                },
-                {
-                  icon: Upload,
-                  label: (
-                    <>
-                      Export
-                      <br />
-                      and share
-                    </>
-                  ),
-                },
-              ].map(({ icon: FeatureIcon, label }, index) => (
-                <li key={index}>
-                  <FeatureIcon aria-hidden="true" />
-                  <span>{label}</span>
+              {[...row, ...row].map((ask, index) => (
+                <li
+                  key={index}
+                  aria-hidden={index >= row.length}
+                  className="whitespace-nowrap rounded-full border border-ink/12 bg-ink/[0.04] px-5 py-2.5 text-[15px] font-medium text-ink/75"
+                >
+                  <span className="mr-2 text-brand">›</span>
+                  {ask}
                 </li>
               ))}
             </ul>
-          </div>
-          <div className="hero-stage">
-            <div className="hero-studio-tilt">
-              <HeroStudio />
-            </div>
-            <div className="hero-layer-note" aria-hidden="true">
-              <Sparkles /> Your idea. Every layer.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Capabilities band */}
-      <section
-        aria-label="What it can do"
-        className="overflow-hidden border-y border-ink/10 bg-ink py-5 text-paper"
-      >
-        <div className="site-marquee flex w-max gap-10 whitespace-nowrap font-display text-2xl font-bold tracking-tight md:text-3xl">
-          {[...MARQUEE, ...MARQUEE].map((item, index) => (
-            <span
-              key={index}
-              className="flex items-center gap-10"
-              aria-hidden={index >= MARQUEE.length}
-            >
-              {item}
-              <span className="text-brand">✂</span>
-            </span>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="mx-auto max-w-7xl px-5 py-24 md:px-8 md:py-32">
-        <div className="site-reveal grid gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-          <div className="md:sticky md:top-28 md:self-start">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
-              How it works
-            </p>
-            <h2 className="mt-4 font-display text-4xl font-extrabold leading-[0.95] tracking-[-0.04em] md:text-6xl">
-              Three cuts to a finished video.
+      {/* Features */}
+      <section
+        className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28"
+        aria-labelledby="features-title"
+      >
+        <div className="site-reveal flex flex-wrap items-end gap-x-8 gap-y-4">
+          <span
+            aria-hidden="true"
+            className="landing-count font-display"
+          >
+            8
+          </span>
+          <div className="min-w-0 flex-1 basis-80 pb-1">
+            <h2 id="features-title" className="landing-h2 max-w-2xl font-display">
+              things you can just say.
             </h2>
+            <p className="mt-4 max-w-xl text-lg text-ink/60">
+              Each one is an afternoon in a normal timeline. Here it is a
+              sentence, and the result stays editable by hand.
+            </p>
           </div>
-          <ol className="divide-y divide-ink/10 border-y border-ink/10">
-            {STEPS.map((step) => (
+        </div>
+        <div className="site-reveal mt-12 md:mt-16">
+          <FeatureGrid />
+        </div>
+      </section>
+
+      {/* Prompt to timeline */}
+      <section
+        className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28"
+        aria-labelledby="prompt-title"
+      >
+        <div className="site-reveal md:flex md:items-end md:justify-between md:gap-10">
+          <h2 id="prompt-title" className="landing-h2 max-w-xl font-display">
+            Ask. Look. <span className="text-brand">Ask again.</span>
+          </h2>
+          <p className="mt-4 max-w-md text-lg text-ink/60 md:mt-0">
+            It is a conversation, not a render queue. Every reply lands as real
+            layers on a real timeline, and a follow-up changes only what you
+            point at.
+          </p>
+        </div>
+        <div className="site-reveal mt-12 md:mt-16">
+          <PromptToCut />
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section
+        className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28"
+        aria-labelledby="steps-title"
+      >
+        <h2 id="steps-title" className="site-reveal landing-h2 max-w-2xl font-display">
+          From zero to export in three clips.
+        </h2>
+        <div className="site-reveal mt-12 md:mt-16">
+          <div className="steps-ruler hidden md:block" aria-hidden="true" />
+          <ol className="grid gap-4 md:grid-cols-12 md:gap-x-3 md:gap-y-3 md:pt-4">
+            {STEPS.map((step, index) => (
               <li
-                key={step.time}
-                className="grid gap-4 py-8 sm:grid-cols-[88px_minmax(0,1fr)]"
+                key={step.title}
+                className={
+                  [
+                    "md:col-span-5 md:col-start-1",
+                    "md:col-span-6 md:col-start-3",
+                    "md:col-span-7 md:col-start-6",
+                  ][index]
+                }
               >
-                <span className="font-mono text-sm tabular-nums text-ink/40">
-                  {step.time}
-                </span>
-                <div>
-                  <h3 className="font-display text-2xl font-bold tracking-tight">
+                <div
+                  className="step-clip"
+                  style={{ ["--clip" as string]: step.clip }}
+                >
+                  <div className="flex items-center gap-3 font-mono text-xs tabular-nums text-ink/55">
+                    <step.icon
+                      className="size-4"
+                      style={{ color: step.clip }}
+                    />
+                    {step.time}
+                    <span className="ml-auto">V{index + 1}</span>
+                  </div>
+                  <h3 className="mt-4 font-display text-2xl font-bold tracking-tight">
                     {step.title}
                   </h3>
-                  <p className="mt-2 max-w-lg text-ink/60">{step.body}</p>
+                  <p className="mt-2 max-w-lg text-ink/65">{step.body}</p>
                   {"command" in step ? (
-                    <>
-                      <p className="mt-3 text-sm text-ink/60">
-                        Install{" "}
-                        <a className="underline" href="https://nodejs.org/en/download" target="_blank" rel="noreferrer">
-                          Node.js LTS
-                        </a>{" "}
-                        (20.10 or newer) first, then reopen your terminal.
-                        This command downloads and starts Agentcut automatically.
-                      </p>
-                      <CopyCommand command={STUDIO_COMMAND} className="mt-5" />
-                    </>
+                    <CopyCommand command={STUDIO_COMMAND} className="mt-5" />
                   ) : null}
                 </div>
               </li>
@@ -300,16 +301,18 @@ export default function LandingPage() {
       </section>
 
       {/* Components */}
-      <section className="mx-auto max-w-7xl px-5 pb-24 md:px-8 md:pb-32">
+      <section className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28">
         <div className="site-reveal">
           <ComponentShowcase />
         </div>
       </section>
 
       {/* Styles */}
-      <section className="overflow-hidden bg-ink py-24 text-paper md:py-32">
-        <div className="site-reveal mx-auto max-w-7xl px-5 md:px-8">
-          <StyleShowcase />
+      <section className="px-3 md:px-6">
+        <div className="landing-panel overflow-hidden rounded-[32px] border border-paper/10 bg-ink py-20 text-paper md:py-28">
+          <div className="site-reveal mx-auto max-w-7xl px-5 md:px-8">
+            <StyleShowcase />
+          </div>
         </div>
       </section>
 
@@ -320,7 +323,7 @@ export default function LandingPage() {
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
               Under the hood
             </p>
-            <h2 className="mt-4 font-display text-4xl font-extrabold leading-[0.95] tracking-[-0.04em] md:text-6xl">
+            <h2 className="landing-h2 mt-4 font-display">
               The timeline is a file. The video is code.
             </h2>
             <dl className="mt-10 grid gap-8 sm:grid-cols-2">
@@ -334,16 +337,16 @@ export default function LandingPage() {
               ))}
             </dl>
           </div>
-          <figure className="-rotate-1 overflow-hidden rounded-3xl bg-ink text-paper shadow-[0_30px_60px_-25px_rgba(40,20,10,0.5)]">
-            <figcaption className="flex items-center gap-2 border-b border-paper/10 px-5 py-3 font-mono text-xs text-paper/50">
+          <figure className="feature-card overflow-hidden !p-0">
+            <figcaption className="flex items-center gap-2 border-b border-ink/10 px-5 py-3 font-mono text-xs text-ink/50">
               projects/launch-video/layers.json
             </figcaption>
             <pre className="overflow-x-auto p-6 font-mono text-[13px] leading-7">
               {LAYERS_SNIPPET.map(([code, value, rest = ""], index) => (
                 <div key={index}>
-                  <span className="text-paper/70">{code}</span>
+                  <span className="text-ink/70">{code}</span>
                   <span className="text-brand">{value}</span>
-                  <span className="text-paper/70">{rest}</span>
+                  <span className="text-ink/70">{rest}</span>
                 </div>
               ))}
             </pre>
@@ -352,24 +355,21 @@ export default function LandingPage() {
       </section>
 
       {/* Final call */}
-      <section className="relative overflow-hidden border-t border-ink/10">
-        <div className="mx-auto max-w-7xl px-5 py-28 md:px-8 md:py-40">
-          <h2 className="site-reveal max-w-5xl font-display text-[clamp(3rem,8vw,7.5rem)] font-extrabold leading-[0.88] tracking-[-0.05em]">
-            Your next video is <span className="site-cut">one message</span>{" "}
+      <section className="landing-hero border-t border-ink/10">
+        <div className="mx-auto max-w-7xl px-5 py-28 text-center md:px-8 md:py-40">
+          <h2 className="site-reveal landing-title mx-auto max-w-4xl font-display">
+            Your next video is <span className="text-brand">one message</span>{" "}
             away.
           </h2>
-          <div className="mt-12 flex flex-wrap items-center gap-3">
-            <Link
-              href="/studio"
-              className="inline-flex h-14 items-center gap-2 rounded-full bg-brand px-8 text-lg font-semibold text-brand-foreground shadow-[0_10px_30px_-10px_var(--brand)] transition-transform hover:-translate-y-0.5"
-            >
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/studio" className="landing-cta">
               Open the studio <ArrowUpRight className="size-5" />
             </Link>
             <a
               href={REPO_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-14 items-center rounded-full border border-ink/15 px-8 text-lg font-semibold transition-colors hover:border-ink"
+              className="inline-flex h-12 items-center rounded-full border border-ink/20 px-6 text-[15px] font-semibold transition-colors hover:border-ink"
             >
               Star on GitHub
             </a>

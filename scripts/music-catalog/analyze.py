@@ -4,7 +4,8 @@ and shape instead of by name. Writes lib/music-analysis.json (shipped) and scrip
 Needs the earshot venv (CLAP + librosa):
     E:/projects/earshot/.venv/Scripts/python.exe -I scripts/music-catalog/analyze.py [music dir]
 Songs missing from the dir are downloaded from the hosted library into scripts/music-catalog/cache/.
-Re-runs reuse raw.json; delete it to re-measure.
+Re-runs reuse raw.json (measurements and CLAP tags per song), so a new song is the only one measured; delete it
+to re-measure. To add a song end to end (upload, list, analyze), use `npm run music:add` (see README.md here).
 """
 import hashlib
 import json
@@ -117,16 +118,21 @@ def shape(curve):
     return {'introS': intro, 'drops': sorted(drops), 'ending': ending, 'shape': spark}
 
 
-def clap_tags(paths):
-    sys.path.insert(0, 'E:/projects/earshot')
+def clap_vocab():
+    sys.path.insert(0, os.environ.get('EARSHOT_DIR', 'E:/projects/earshot'))
     from earshot import vocab
     v = vocab.get()
     cats = {k: v.cats[k] for k in ('music_genre', 'music_mood', 'instruments')}
     extra = ['singing vocals', 'an instrumental track with no vocals']
     terms = [t for ts in cats.values() for t in ts] + extra
+    return vocab, v, terms, cats
+
+
+def clap_scores(vocab, v, terms, paths):
+    """per song, {term: z} (earshot describe's z: against the vocabulary on that same song, so it never depends on
+    the rest of the library and can be kept in raw.json)"""
     A = vocab.embed_files(paths, max_win=12)
-    Z = np.array([[r['z'] for r in row] for row in v.scores(A, terms)])
-    return terms, cats, Z
+    return [{t: float(r['z']) for t, r in zip(terms, row)} for row in v.scores(A, terms)]
 
 
 def label(term):
@@ -139,8 +145,14 @@ def main():
     raw_path = os.path.join(HERE, 'out', 'raw.json')
     raw = json.load(open(raw_path, encoding='utf-8')) if os.path.exists(raw_path) else {}
     songs = catalog()[:int(os.environ.get("LIMIT") or 10**9)]
+    vocab, v, terms, cats = clap_vocab()
+    done = lambda sid: sid in raw and 'octaveChecked' in raw[sid] and 'md5' in raw[sid] and all(
+        t in raw[sid].get('clap', {}) for t in terms)
+    # Only songs not fully measured and tagged yet need their file (a new song: just that one).
     paths = {}
     for i, (sid, filename) in enumerate(songs, 1):
+        if done(sid):
+            continue
         paths[sid] = local_file(music_dir, filename)
         if sid not in raw:
             raw[sid] = measure(paths[sid])
@@ -155,8 +167,13 @@ def main():
     json.dump(raw, open(raw_path, 'w', encoding='utf-8'))
 
     ids = [sid for sid, _ in songs]
-    print('CLAP tags...', file=sys.stderr, flush=True)
-    terms, cats, Z = clap_tags([paths[i] for i in ids])
+    todo = [sid for sid in ids if not all(t in raw[sid].get('clap', {}) for t in terms)]
+    if todo:
+        print(f'CLAP tags for {len(todo)} songs...', file=sys.stderr, flush=True)
+        for sid, z in zip(todo, clap_scores(vocab, v, terms, [paths[s] for s in todo])):
+            raw[sid]['clap'] = z
+        json.dump(raw, open(raw_path, 'w', encoding='utf-8'))
+    Z = np.array([[raw[sid]['clap'][t] for t in terms] for sid in ids])
     col = {t: j for j, t in enumerate(terms)}
     # How each song stands out against the rest of the library, per term (CLAP's music terms are unvalidated
     # in absolute terms; relative to 235 songs of the same kind they separate well).

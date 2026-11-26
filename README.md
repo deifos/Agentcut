@@ -363,7 +363,8 @@ The site is a Next.js app with no backend; the `Dockerfile` builds a standalone 
 this repo (root directory `/`); pushes to `main` build the Dockerfile and roll out. Optional build-time
 env: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_MUSIC_CDN_URL`, `NEXT_PUBLIC_BROLL_CDN_URL`,
 `NEXT_PUBLIC_SHARE_API_URL` (see `.env.example`). The b-roll
-catalog is built and uploaded with `scripts/broll-index` (see its README).
+catalog is built and uploaded with `scripts/broll-index` (see its README). Songs are added to the music
+library with `npm run music:add` (see `scripts/music-catalog/README.md`).
 
 ```bash
 docker build -t agentcut-web . && docker run -p 3000:3000 agentcut-web

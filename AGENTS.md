@@ -14,6 +14,8 @@ Follow React and Next.js best practices (https://react.dev/learn/you-might-not-n
 - `packages/agentcut/`: the local helper (`npx agentcut`): bridge on 127.0.0.1:32118, workspace, esbuild bundles,
   agent adapters (Claude Code, Codex), the `agentcut` MCP server. Its `template/skill`, `template/components` and
   `template/presets` are generated copies: run `npm run sync:skill` after changing the originals.
+- `scripts/music-catalog/`: the hosted music library. Add songs with `npm run music:add` (uploads to R2, lists
+  the song in `lib/music-tracks.ts`, analyzes it into `lib/music-analysis.json`); see its README.
 
 Record user-facing changes under **Unreleased** in `CHANGELOG.md`. Editor and helper share a version
 (root `package.json` and `packages/agentcut/package.json`); see README › Releasing.

@@ -1123,6 +1123,13 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     category: "electronic",
     durationSeconds: 58,
   },
+  {
+    id: "night-drive-loop",
+    name: "Night Drive Loop",
+    filename: "Night Drive Loop.mp3",
+    category: "electronic",
+    durationSeconds: 204,
+  },
 
   // ── Cinematic ──
   {

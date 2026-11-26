@@ -13,7 +13,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **Night Drive Loop in the music library.** A driving instrumental tech-house track (electronic, 123 BPM, 3:24).
+
 ### Changed
+
+- **Adding songs to the music library is one command.** `npm run music:add` uploads a song, lists it and
+  analyzes it (documented in `scripts/music-catalog/README.md`). Re-running the analysis now measures only new
+  songs.
 
 - **Consistent studio side drawers.** Renders now uses the same sliding Sheet drawer as Tools, preserving its scrollable previews, downloads, and export action.
 
